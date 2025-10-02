@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "@google-cloud/storage": "^7.17.1",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
@@ -74,7 +75,6 @@
     "react-icons": "^5.4.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.2",
-    "resend": "^6.1.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "^1.2.5",
