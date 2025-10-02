@@ -59,6 +59,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/auth/user/department', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { department } = req.body;
+      
+      if (!department) {
+        return res.status(400).json({ message: "Department is required" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await storage.upsertUser({
+        ...user,
+        department,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating user department:", error);
+      res.status(500).json({ message: "Failed to update user department" });
+    }
+  });
+
   // Data request routes
   app.post('/api/requests', isAuthenticated, async (req: any, res) => {
     try {

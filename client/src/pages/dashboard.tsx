@@ -59,6 +59,13 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, queryClient]);
 
+  // Redirect to profile setup if team lead without department
+  useEffect(() => {
+    if (isAuthenticated && user && (user as any)?.role === "team_lead" && !(user as any)?.department) {
+      window.location.href = "/profile-setup";
+    }
+  }, [isAuthenticated, user]);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

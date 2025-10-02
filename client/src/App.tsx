@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
+import ProfileSetup from "@/pages/profile-setup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/analytics" component={Analytics} />
+          <Route path="/profile-setup" component={ProfileSetup} />
         </>
       )}
       <Route component={NotFound} />
