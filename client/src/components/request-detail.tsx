@@ -240,12 +240,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      submitted: "status-submitted",
-      "under_review": "status-under-review",
-      "in_progress": "status-in-progress",
-      completed: "status-completed",
+      submitted: "gradient-badge-submitted",
+      "under_review": "gradient-badge-review",
+      "in_progress": "gradient-badge-progress",
+      completed: "gradient-badge-completed",
     };
-    return variants[status as keyof typeof variants] || "status-submitted";
+    return variants[status as keyof typeof variants] || "gradient-badge-submitted";
   };
 
   const getPriorityIcon = (priority: string) => {
@@ -391,7 +391,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         {/* Description */}
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Description</p>
-          <Card>
+          <Card className="border-2 border-purple-200 shadow-md">
             <CardContent className="p-4">
               <p className="text-sm text-foreground" data-testid="text-description">
                 {request.description}
@@ -419,7 +419,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           {request.attachments && request.attachments.length > 0 ? (
             <div className="space-y-2">
               {request.attachments.map((attachment) => (
-                <Card key={attachment.id} className="bg-muted">
+                <Card key={attachment.id} className="border-2 border-blue-200 shadow-sm hover:shadow-md transition-all">
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -449,7 +449,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               ))}
             </div>
           ) : (
-            <Card>
+            <Card className="border-2 border-dashed border-gray-300">
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground text-center">No attachments yet</p>
               </CardContent>
@@ -461,7 +461,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         {request.assignedTo && (
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Assigned To</p>
-            <Card>
+            <Card className="border-2 border-green-200 shadow-md">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <Avatar className="w-8 h-8">
@@ -484,7 +484,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
         {/* Assignment Section for Analysts */}
         {isAnalyst && (
-          <Card className="bg-info-light">
+          <Card className="border-2 border-blue-300 shadow-md bg-blue-50/50">
             <CardContent className="p-4">
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <UserPlus className="w-4 h-4" />

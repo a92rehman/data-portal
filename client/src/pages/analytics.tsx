@@ -107,21 +107,23 @@ export default function Analytics() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} />
+    <div className="min-h-screen">
+      <Header user={user as any} />
       
       <div className="flex">
         <Sidebar onNewRequest={() => {}} />
         
         <main className="flex-1 p-6">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Analytics & Insights</h2>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">Analytics & Insights</h2>
 
           {/* Key Metrics */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <Card>
+            <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <PieChart className="w-4 h-4" />
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 70%, 65%) 100%)'}}>
+                    <PieChart className="w-4 h-4 text-white" />
+                  </div>
                   Requests by Department
                 </CardTitle>
               </CardHeader>
@@ -141,10 +143,12 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4" />
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                    <BarChart3 className="w-4 h-4 text-white" />
+                  </div>
                   Requests by Type
                 </CardTitle>
               </CardHeader>
@@ -164,10 +168,12 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
+                <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
                   Status Distribution
                 </CardTitle>
               </CardHeader>
@@ -192,9 +198,9 @@ export default function Analytics() {
 
           {/* Performance Metrics */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-foreground">Priority Distribution</CardTitle>
+                <CardTitle className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Priority Distribution</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -224,9 +230,9 @@ export default function Analytics() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-foreground">Average Completion Time</CardTitle>
+                <CardTitle className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Average Completion Time</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8">

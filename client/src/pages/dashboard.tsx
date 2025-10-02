@@ -79,12 +79,12 @@ export default function Dashboard() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      submitted: "status-submitted",
-      "under_review": "status-under-review",
-      "in_progress": "status-in-progress",
-      completed: "status-completed",
+      submitted: "gradient-badge-submitted",
+      "under_review": "gradient-badge-review",
+      "in_progress": "gradient-badge-progress",
+      completed: "gradient-badge-completed",
     };
-    return variants[status as keyof typeof variants] || "status-submitted";
+    return variants[status as keyof typeof variants] || "gradient-badge-submitted";
   };
 
   const getPriorityIcon = (priority: string) => {
@@ -135,59 +135,67 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header user={user} />
+    <div className="min-h-screen">
+      <Header user={user as any} />
       
       <div className="flex">
         <Sidebar onNewRequest={() => setShowRequestForm(true)} />
         
         <main className="flex-1 p-6">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-4">Dashboard Overview</h2>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4">Dashboard Overview</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
+              <Card className="gradient-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">Total Requests</p>
-                    <Inbox className="w-5 h-5 text-primary" />
+                    <p className="text-sm font-medium text-gray-600">Total Requests</p>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                      <Inbox className="w-5 h-5 text-white" />
+                    </div>
                   </div>
                   <p className="text-3xl font-bold text-foreground">{stats?.totalRequests || 0}</p>
-                  <p className="text-xs text-success mt-1">
-                    <span className="inline-block w-2 h-2 bg-success rounded-full mr-1"></span>
+                  <p className="text-xs mt-1 font-medium" style={{color: 'hsl(142, 71%, 45%)'}}>
+                    <span className="inline-block w-2 h-2 rounded-full mr-1" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}></span>
                     All time
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="gradient-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                    <Clock className="w-5 h-5 text-warning" />
+                    <p className="text-sm font-medium text-gray-600">In Progress</p>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
                   </div>
                   <p className="text-3xl font-bold text-foreground">{stats?.inProgress || 0}</p>
                   <p className="text-xs text-muted-foreground mt-1">Active requests</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="gradient-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                    <CheckCircle className="w-5 h-5 text-success" />
+                    <p className="text-sm font-medium text-gray-600">Completed</p>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
                   </div>
                   <p className="text-3xl font-bold text-foreground">{stats?.completed || 0}</p>
-                  <p className="text-xs text-success mt-1">
+                  <p className="text-xs mt-1 font-medium" style={{color: 'hsl(142, 71%, 45%)'}}>
                     {stats?.totalRequests ? Math.round((stats.completed / stats.totalRequests) * 100) : 0}% completion rate
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="gradient-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">Avg. Completion</p>
-                    <BarChart3 className="w-5 h-5 text-info" />
+                    <p className="text-sm font-medium text-gray-600">Avg. Completion</p>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                      <BarChart3 className="w-5 h-5 text-white" />
+                    </div>
                   </div>
                   <p className="text-3xl font-bold text-foreground">{stats?.avgCompletionDays || 0}</p>
                   <p className="text-xs text-muted-foreground mt-1">days</p>
@@ -197,7 +205,7 @@ export default function Dashboard() {
           </div>
 
           {/* Filters and Actions */}
-          <Card className="mb-4">
+          <Card className="mb-4 border-2 border-gray-200 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -281,7 +289,11 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <Button onClick={() => setShowRequestForm(true)} data-testid="button-new-request">
+                <Button 
+                  onClick={() => setShowRequestForm(true)} 
+                  data-testid="button-new-request"
+                  className="gradient-button-primary text-white font-semibold"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   New Request
                 </Button>
@@ -290,7 +302,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Requests Table */}
-          <Card>
+          <Card className="border-2 border-gray-200 shadow-md">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
