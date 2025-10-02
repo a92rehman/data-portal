@@ -35,6 +35,7 @@ export interface IStorage {
   }): Promise<DataRequestWithDetails[]>;
   updateDataRequestStatus(id: string, status: string, estimatedDays?: number): Promise<DataRequest | undefined>;
   assignDataRequest(id: string, analystId: string): Promise<DataRequest | undefined>;
+  updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined>;
   
   // Comment operations
   addComment(comment: InsertComment, userId: string): Promise<Comment>;
@@ -211,6 +212,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(dataRequests)
       .set({ assignedToId: analystId, updatedAt: new Date() })
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined> {
+    const [updated] = await db
+      .update(dataRequests)
+      .set({ priority: priority as "low" | "medium" | "high", dueDate, updatedAt: new Date() })
       .where(eq(dataRequests.id, id))
       .returning();
     return updated;

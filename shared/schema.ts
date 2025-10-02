@@ -42,7 +42,8 @@ export const requestStatusEnum = pgEnum("request_status", [
   "submitted",
   "under_review", 
   "in_progress",
-  "completed"
+  "completed",
+  "cancelled"
 ]);
 
 // Request priority enum

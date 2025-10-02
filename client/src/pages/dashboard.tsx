@@ -83,6 +83,7 @@ export default function Dashboard() {
       "under_review": "gradient-badge-review",
       "in_progress": "gradient-badge-progress",
       completed: "gradient-badge-completed",
+      cancelled: "gradient-badge-cancelled",
     };
     return variants[status as keyof typeof variants] || "gradient-badge-submitted";
   };

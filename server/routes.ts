@@ -52,6 +52,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/requests', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
       const filters = {
         status: req.query.status as string,
         department: req.query.department as string,
@@ -60,6 +63,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestedById: req.query.requestedById as string,
         assignedToId: req.query.assignedToId as string,
       };
+
+      // If user is a team lead, they can only see their own requests
+      if (user?.role === 'team_lead') {
+        filters.requestedById = userId;
+      }
 
       // Remove undefined filters
       Object.keys(filters).forEach(key => {
@@ -128,6 +136,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error assigning request:", error);
       res.status(500).json({ message: "Failed to assign request" });
+    }
+  });
+
+  app.patch('/api/requests/:id/priority-deadline', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'data_analyst') {
+        return res.status(403).json({ message: "Only data analysts can update priority and deadline" });
+      }
+
+      const { priority, dueDate } = req.body;
+      if (!priority || !dueDate) {
+        return res.status(400).json({ message: "Priority and due date are required" });
+      }
+
+      const request = await storage.updateDataRequestPriorityAndDeadline(
+        req.params.id, 
+        priority, 
+        new Date(dueDate)
+      );
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error updating priority and deadline:", error);
+      res.status(500).json({ message: "Failed to update priority and deadline" });
     }
   });
 

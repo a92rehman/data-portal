@@ -46,6 +46,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
   const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "");
+  const [isEditingPriorityDeadline, setIsEditingPriorityDeadline] = useState(false);
+  const [editedPriority, setEditedPriority] = useState(request.priority);
+  const [editedDueDate, setEditedDueDate] = useState(new Date(request.dueDate).toISOString().split('T')[0]);
 
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
@@ -117,6 +120,38 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       toast({
         title: "Error",
         description: error.message || "Failed to add comment",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePriorityDeadlineMutation = useMutation({
+    mutationFn: async (data: { priority: string; dueDate: string }) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/priority-deadline`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Priority and deadline updated successfully",
+      });
+      setIsEditingPriorityDeadline(false);
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update priority and deadline",
         variant: "destructive",
       });
     },
@@ -244,6 +279,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       "under_review": "gradient-badge-review",
       "in_progress": "gradient-badge-progress",
       completed: "gradient-badge-completed",
+      cancelled: "gradient-badge-cancelled",
     };
     return variants[status as keyof typeof variants] || "gradient-badge-submitted";
   };
@@ -353,10 +389,23 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Priority</p>
-              <div className="flex items-center gap-1" data-testid="priority-display">
-                {getPriorityIcon(request.priority)}
-                <span className="text-sm font-medium capitalize">{request.priority}</span>
-              </div>
+              {isAnalyst && isEditingPriorityDeadline ? (
+                <Select value={editedPriority} onValueChange={setEditedPriority} data-testid="select-edit-priority">
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex items-center gap-1" data-testid="priority-display">
+                  {getPriorityIcon(request.priority)}
+                  <span className="text-sm font-medium capitalize">{request.priority}</span>
+                </div>
+              )}
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Request Type</p>
@@ -381,12 +430,66 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Due Date</p>
-              <p className="text-sm font-medium text-foreground" data-testid="text-due-date">
-                {formatDate(request.dueDate.toString())}
-              </p>
+              {isAnalyst && isEditingPriorityDeadline ? (
+                <Input 
+                  type="date" 
+                  value={editedDueDate}
+                  onChange={(e) => setEditedDueDate(e.target.value)}
+                  data-testid="input-edit-due-date"
+                />
+              ) : (
+                <p className="text-sm font-medium text-foreground" data-testid="text-due-date">
+                  {formatDate(request.dueDate.toString())}
+                </p>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Edit Priority and Deadline buttons for Analysts */}
+        {isAnalyst && (
+          <div className="flex justify-end gap-2 -mt-2">
+            {isEditingPriorityDeadline ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditingPriorityDeadline(false);
+                    setEditedPriority(request.priority);
+                    setEditedDueDate(new Date(request.dueDate).toISOString().split('T')[0]);
+                  }}
+                  data-testid="button-cancel-edit-priority-deadline"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    updatePriorityDeadlineMutation.mutate({
+                      priority: editedPriority,
+                      dueDate: editedDueDate,
+                    });
+                  }}
+                  disabled={updatePriorityDeadlineMutation.isPending}
+                  data-testid="button-save-priority-deadline"
+                >
+                  {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingPriorityDeadline(true)}
+                data-testid="button-edit-priority-deadline"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Edit Priority & Deadline
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Description */}
         <div>
@@ -549,6 +652,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                               <SelectItem value="under_review">Under Review</SelectItem>
                               <SelectItem value="in_progress">In Progress</SelectItem>
                               <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
