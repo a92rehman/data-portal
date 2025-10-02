@@ -40,7 +40,7 @@ export default function ProfileSetup() {
       });
 
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        window.location.href = "/";
       }, 500);
     } catch (error) {
       toast({
