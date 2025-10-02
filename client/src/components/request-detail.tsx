@@ -473,6 +473,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   }}
                   disabled={updatePriorityDeadlineMutation.isPending}
                   data-testid="button-save-priority-deadline"
+                  className="gradient-button-primary text-white font-semibold"
+                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
                 >
                   {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
