@@ -252,10 +252,12 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
               type="submit" 
               disabled={createRequestMutation.isPending}
               data-testid="button-submit-form"
+              className="gradient-button-primary text-white font-semibold"
+              style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
             >
               {createRequestMutation.isPending ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                   Submitting...
                 </>
               ) : (

@@ -204,3 +204,25 @@
     @apply border border-red-300 text-red-800;
   }
 }
+
+/* Fix dropdown hover states - ensure text is always visible */
+[data-radix-select-content] [role="option"]:hover,
+[data-radix-select-content] [role="option"][data-highlighted] {
+  background-color: hsl(239, 84%, 67%) !important;
+  color: white !important;
+}
+
+[data-radix-select-content] [role="option"] {
+  color: hsl(222, 47%, 11%) !important;
+}
+
+/* Dark mode dropdown fixes */
+.dark [data-radix-select-content] [role="option"]:hover,
+.dark [data-radix-select-content] [role="option"][data-highlighted] {
+  background-color: hsl(239, 84%, 67%) !important;
+  color: white !important;
+}
+
+.dark [data-radix-select-content] [role="option"] {
+  color: hsl(210, 40%, 98%) !important;
+}
