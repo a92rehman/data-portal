@@ -57,13 +57,18 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
-  await storage.upsertUser({
+  console.log("[AUTH] OIDC Claims received:", JSON.stringify(claims, null, 2));
+  const userData = {
     id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
-  });
+    role: claims["role"] || "team_lead",
+    department: claims["department"] || "engineering",
+  };
+  console.log("[AUTH] Upserting user with data:", JSON.stringify(userData, null, 2));
+  await storage.upsertUser(userData);
 }
 
 export async function setupAuth(app: Express) {
