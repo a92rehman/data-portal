@@ -362,18 +362,13 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       <DialogHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <DialogTitle className="text-xl font-semibold" data-testid="text-request-id">
-              {request.id.slice(0, 12)}...
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1" data-testid="text-request-title">
-              {request.title}
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-detail">
-            <X className="w-4 h-4" />
-          </Button>
+        <div>
+          <DialogTitle className="text-xl font-semibold" data-testid="text-request-id">
+            {request.id.slice(0, 12)}...
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1" data-testid="text-request-title">
+            {request.title}
+          </p>
         </div>
       </DialogHeader>
 
@@ -614,9 +609,11 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   onClick={handleAssignAnalyst}
                   disabled={!selectedAnalyst || assignMutation.isPending}
                   data-testid="button-assign"
+                  className="gradient-button-primary text-white font-semibold"
+                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
                 >
                   {assignMutation.isPending ? (
-                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
                       <UserPlus className="w-4 h-4 mr-2" />
