@@ -7,30 +7,36 @@
 @tailwind utilities;
 
 :root {
-  --background: hsl(210, 40%, 98%);
+  --background: linear-gradient(135deg, hsl(210, 100%, 97%) 0%, hsl(220, 100%, 98%) 50%, hsl(240, 100%, 99%) 100%);
   --foreground: hsl(222, 47%, 11%);
   --card: hsl(0, 0%, 100%);
   --card-foreground: hsl(222, 47%, 11%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(222, 47%, 11%);
-  --primary: hsl(239, 84%, 67%);
+  --primary: linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%);
+  --primary-solid: hsl(239, 84%, 67%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(210, 40%, 96%);
+  --secondary: linear-gradient(135deg, hsl(210, 60%, 95%) 0%, hsl(220, 60%, 96%) 100%);
+  --secondary-solid: hsl(210, 40%, 96%);
   --secondary-foreground: hsl(222, 47%, 11%);
   --muted: hsl(210, 40%, 96%);
   --muted-foreground: hsl(215, 16%, 47%);
-  --accent: hsl(210, 40%, 96%);
-  --accent-foreground: hsl(222, 47%, 11%);
+  --accent: linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 70%, 65%) 100%);
+  --accent-solid: hsl(290, 70%, 62%);
+  --accent-foreground: hsl(0, 0%, 100%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --border: hsl(214, 32%, 91%);
+  --border: hsl(214, 32%, 85%);
   --input: hsl(214, 32%, 91%);
   --ring: hsl(239, 84%, 67%);
-  --success: hsl(142, 71%, 45%);
+  --success: linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%);
+  --success-solid: hsl(142, 71%, 45%);
   --success-foreground: hsl(0, 0%, 100%);
-  --warning: hsl(38, 92%, 50%);
+  --warning: linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%);
+  --warning-solid: hsl(38, 92%, 50%);
   --warning-foreground: hsl(0, 0%, 100%);
-  --info: hsl(199, 89%, 48%);
+  --info: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%);
+  --info-solid: hsl(199, 89%, 48%);
   --info-foreground: hsl(0, 0%, 100%);
   --sidebar: hsl(0, 0%, 100%);
   --sidebar-foreground: hsl(222, 47%, 11%);
@@ -43,7 +49,7 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 }
 
 .dark {
@@ -88,7 +94,9 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased text-foreground;
+    background: linear-gradient(135deg, hsl(210, 100%, 97%) 0%, hsl(220, 100%, 98%) 50%, hsl(240, 100%, 99%) 100%);
+    background-attachment: fixed;
   }
 }
 
@@ -143,5 +151,45 @@
 
   .table-row:hover {
     @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  .gradient-card {
+    @apply bg-white border-2 border-border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
+    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 60%, 99%) 100%);
+  }
+
+  .gradient-button-primary {
+    background: linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%);
+    @apply border-2 border-transparent hover:border-purple-400 shadow-md hover:shadow-lg transition-all duration-300;
+  }
+
+  .gradient-button-secondary {
+    background: linear-gradient(135deg, hsl(210, 60%, 95%) 0%, hsl(220, 60%, 96%) 100%);
+    @apply border-2 border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  .gradient-button-success {
+    background: linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%);
+    @apply border-2 border-transparent hover:border-green-400 shadow-md hover:shadow-lg transition-all duration-300;
+  }
+
+  .gradient-badge-submitted {
+    background: linear-gradient(135deg, hsl(210, 50%, 92%) 0%, hsl(220, 50%, 94%) 100%);
+    @apply border border-gray-300 text-gray-700;
+  }
+
+  .gradient-badge-review {
+    background: linear-gradient(135deg, hsl(199, 89%, 88%) 0%, hsl(209, 89%, 90%) 100%);
+    @apply border border-blue-300 text-blue-700;
+  }
+
+  .gradient-badge-progress {
+    background: linear-gradient(135deg, hsl(38, 92%, 85%) 0%, hsl(48, 92%, 87%) 100%);
+    @apply border border-yellow-300 text-yellow-800;
+  }
+
+  .gradient-badge-completed {
+    background: linear-gradient(135deg, hsl(142, 71%, 85%) 0%, hsl(152, 71%, 87%) 100%);
+    @apply border border-green-300 text-green-800;
   }
 }
