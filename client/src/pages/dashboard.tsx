@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search } from "lucide-react";
-import type { DataRequestWithDetails } from "@shared/schema";
+import type { DataRequestWithDetails, User } from "@shared/schema";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -28,9 +28,16 @@ export default function Dashboard() {
     department: "",
     priority: "",
     type: "",
+    assignedToId: "",
   });
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
+
+  // Fetch analysts for filter
+  const { data: analysts = [] } = useQuery<User[]>({
+    queryKey: ["/api/users/analysts"],
+    enabled: isAuthenticated && (user as any)?.role === "data_analyst",
+  });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -255,6 +262,23 @@ export default function Dashboard() {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {(user as any)?.role === "data_analyst" && (
+                    <Select value={filters.assignedToId || "all"} onValueChange={(value) => setFilters({...filters, assignedToId: value === "all" ? "" : value})}>
+                      <SelectTrigger className="w-40" data-testid="select-assigned">
+                        <SelectValue placeholder="All Analysts" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Analysts</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {analysts.map((analyst) => (
+                          <SelectItem key={analyst.id} value={analyst.id}>
+                            {analyst.firstName} {analyst.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 <Button onClick={() => setShowRequestForm(true)} data-testid="button-new-request">
@@ -277,6 +301,7 @@ export default function Dashboard() {
                     <TableHead>Type</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Assigned To</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -284,14 +309,14 @@ export default function Dashboard() {
                 <TableBody>
                   {isRequestsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
+                      <TableCell colSpan={9} className="text-center py-8">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                         Loading requests...
                       </TableCell>
                     </TableRow>
                   ) : filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         No requests found matching your criteria
                       </TableCell>
                     </TableRow>
@@ -317,6 +342,15 @@ export default function Dashboard() {
                           <Badge className={`status-badge ${getStatusBadge(request.status)}`}>
                             {formatStatus(request.status)}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {request.assignedTo ? (
+                            <span className="text-sm" data-testid={`assigned-${request.id}`}>
+                              {request.assignedTo.firstName} {request.assignedTo.lastName}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Unassigned</span>
+                          )}
                         </TableCell>
                         <TableCell>{formatDate(request.dueDate.toString())}</TableCell>
                         <TableCell>

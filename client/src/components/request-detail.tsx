@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,9 +24,10 @@ import {
   Clock,
   CircleAlert,
   MinusCircle,
-  InfoIcon 
+  InfoIcon,
+  UserPlus
 } from "lucide-react";
-import type { DataRequestWithDetails } from "@shared/schema";
+import type { DataRequestWithDetails, User } from "@shared/schema";
 
 interface RequestDetailProps {
   request: DataRequestWithDetails;
@@ -39,6 +40,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
+  const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "");
+
+  const { data: analysts = [] } = useQuery<User[]>({
+    queryKey: ["/api/users/analysts"],
+    enabled: (user as any)?.role === "data_analyst",
+  });
 
   const analystForm = useForm({
     defaultValues: {
@@ -109,6 +116,43 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       });
     },
   });
+
+  const assignMutation = useMutation({
+    mutationFn: async (analystId: string) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/assign`, { analystId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request assigned successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign request",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAssignAnalyst = () => {
+    if (selectedAnalyst) {
+      assignMutation.mutate(selectedAnalyst);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -271,6 +315,73 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </CardContent>
           </Card>
         </div>
+
+        {/* Assigned Analyst Display */}
+        {request.assignedTo && (
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Assigned To</p>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={request.assignedTo.profileImageUrl ?? ""} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                      {getInitials(request.assignedTo.firstName ?? undefined, request.assignedTo.lastName ?? undefined)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium text-foreground" data-testid="text-assigned-analyst">
+                      {request.assignedTo.firstName} {request.assignedTo.lastName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{request.assignedTo.email}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Assignment Section for Analysts */}
+        {isAnalyst && (
+          <Card className="bg-info-light">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                Assign Request
+              </h4>
+              <div className="flex gap-2">
+                <Select value={selectedAnalyst} onValueChange={setSelectedAnalyst} data-testid="select-assign-analyst">
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select analyst..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {analysts.map((analyst) => (
+                      <SelectItem key={analyst.id} value={analyst.id}>
+                        {analyst.firstName} {analyst.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  size="sm" 
+                  onClick={handleAssignAnalyst}
+                  disabled={!selectedAnalyst || assignMutation.isPending}
+                  data-testid="button-assign"
+                >
+                  {assignMutation.isPending ? (
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Assign
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Data Analyst Response Section */}
         {isAnalyst && (

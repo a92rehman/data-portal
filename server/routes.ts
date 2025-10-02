@@ -21,6 +21,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/users/analysts', isAuthenticated, async (req: any, res) => {
+    try {
+      const analysts = await storage.getDataAnalysts();
+      res.json(analysts);
+    } catch (error) {
+      console.error("Error fetching analysts:", error);
+      res.status(500).json({ message: "Failed to fetch analysts" });
+    }
+  });
+
   // Data request routes
   app.post('/api/requests', isAuthenticated, async (req: any, res) => {
     try {
