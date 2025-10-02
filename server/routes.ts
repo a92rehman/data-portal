@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { sendAssignmentEmail } from "./emailService";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -183,6 +184,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
+      }
+
+      // Send email notification to assigned analyst
+      try {
+        const assignedAnalyst = await storage.getUser(analystId);
+        if (assignedAnalyst && assignedAnalyst.email) {
+          const dueDateString = request.dueDate 
+            ? new Date(request.dueDate).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              }) 
+            : 'Not set';
+          
+          await sendAssignmentEmail({
+            assigneeName: `${assignedAnalyst.firstName || ''} ${assignedAnalyst.lastName || ''}`.trim() || assignedAnalyst.email,
+            assigneeEmail: assignedAnalyst.email,
+            taskTitle: request.title,
+            taskDescription: request.description,
+            taskId: request.id,
+            dueDate: dueDateString,
+            priority: request.priority,
+            assignerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '',
+            department: request.department,
+          });
+          console.log(`[email] Assignment notification sent to ${assignedAnalyst.email}`);
+        }
+      } catch (emailError) {
+        console.error("[email] Failed to send assignment notification:", emailError);
+        // Don't fail the request if email fails
       }
 
       res.json(request);
