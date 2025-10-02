@@ -390,7 +390,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Priority</p>
               {isAnalyst && isEditingPriorityDeadline ? (
-                <Select value={editedPriority} onValueChange={setEditedPriority} data-testid="select-edit-priority">
+                <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "low" | "medium" | "high")} data-testid="select-edit-priority">
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
