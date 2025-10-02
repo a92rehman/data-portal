@@ -1,9 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChartLine, Sparkles, TrendingUp, Users } from "lucide-react";
+import { ChartLine, Sparkles, TrendingUp, Users, BarChart3, Building2 } from "lucide-react";
 
 export default function Landing() {
-  const handleReplitAuth = () => {
+  const handleRoleSelection = (role: "data_analyst" | "team_lead") => {
+    localStorage.setItem("selected_role", role);
     window.location.href = "/api/login";
   };
 
@@ -67,19 +68,47 @@ export default function Landing() {
           <CardContent className="p-10">
             <div className="text-center space-y-6">
               <div>
-                <h2 className="text-2xl font-bold mb-3 text-gray-900">Get Started Today</h2>
-                <p className="text-gray-600">Sign in with your Replit account to access the system</p>
+                <h2 className="text-2xl font-bold mb-3 text-gray-900">Choose Your Role</h2>
+                <p className="text-gray-600">Select your role to continue</p>
               </div>
 
-              <Button 
-                className="w-full md:w-auto px-12 py-6 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-purple-400"
-                style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                onClick={handleReplitAuth}
-                data-testid="button-login"
-              >
-                <Sparkles className="w-5 h-5 mr-2 inline" />
-                Get Started
-              </Button>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="border-2 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("data_analyst")}>
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 mx-auto rounded-2xl mb-4 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                      <BarChart3 className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">Data Analyst</h3>
+                    <p className="text-sm text-gray-600 mb-4">Access all requests, manage priorities, and assign tasks</p>
+                    <Button 
+                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                      data-testid="button-login-analyst"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Continue as Analyst
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-blue-300 hover:border-blue-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("team_lead")}>
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 mx-auto rounded-2xl mb-4 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                      <Building2 className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">Other Teams</h3>
+                    <p className="text-sm text-gray-600 mb-4">Submit data requests and track progress</p>
+                    <Button 
+                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+                      style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}
+                      data-testid="button-login-team"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Continue as Team Member
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
 
               <p className="text-xs text-gray-500 mt-4">
                 Access restricted to Taleemabad team members

@@ -39,6 +39,26 @@ export default function Dashboard() {
     enabled: isAuthenticated && (user as any)?.role === "data_analyst",
   });
 
+  // Apply stored role selection after login
+  useEffect(() => {
+    const applyRoleSelection = async () => {
+      const selectedRole = localStorage.getItem("selected_role");
+      if (selectedRole && isAuthenticated) {
+        try {
+          await apiRequest("PATCH", "/api/auth/user/role", { role: selectedRole });
+          localStorage.removeItem("selected_role");
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        } catch (error) {
+          console.error("Error applying role:", error);
+        }
+      }
+    };
+    
+    if (isAuthenticated) {
+      applyRoleSelection();
+    }
+  }, [isAuthenticated, queryClient]);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
