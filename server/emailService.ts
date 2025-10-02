@@ -1,6 +1,7 @@
-import { Resend } from 'resend';
+import * as brevo from '@getbrevo/brevo';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY || '');
 
 interface AssignmentEmailData {
   assigneeName: string;
@@ -125,13 +126,13 @@ export async function sendAssignmentEmail(data: AssignmentEmailData) {
       </html>
     `;
 
-    const result = await resend.emails.send({
-      from: 'Taleemabad Data Requests <onboarding@resend.dev>',
-      to: assigneeEmail,
-      subject: `New Task Assignment: ${taskTitle}`,
-      html: htmlContent,
-    });
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.to = [{ email: assigneeEmail, name: assigneeName }];
+    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'Taleemabad Data Requests' };
+    sendSmtpEmail.subject = `New Task Assignment: ${taskTitle}`;
+    sendSmtpEmail.htmlContent = htmlContent;
 
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
     console.log(`[email] Assignment email sent successfully to ${assigneeEmail}:`, result);
     return result;
   } catch (error) {
