@@ -12,6 +12,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Role-Based Authentication Flow (October 2, 2025)**: Implemented complete role selection and onboarding flow
+  - Landing page now shows two role options: "Data Analyst" and "Other Teams" before authentication
+  - Role selection stored in localStorage and applied after Replit Auth login
+  - Profile setup page for team leads to select their department (Engineering, Product, Marketing, Operations, Finance)
+  - Team leads redirected to profile setup if department not set, then to dashboard
+  - API routes: PATCH /api/auth/user/role (update user role), PATCH /api/auth/user/department (update department)
+  - Fixed request form cache invalidation to refresh dashboard after creating new requests
+
 - **File Attachment Feature (October 2, 2025)**: Implemented complete file attachment functionality using Replit Object Storage
   - Users can upload files (max 5 files, 10MB each) to data requests via Uppy file uploader
   - Files stored securely in object storage with metadata tracked in attachments database table
@@ -33,9 +41,9 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod validation
 
 **Design Decisions:**
-- **Component Architecture**: The application uses a component-based architecture with reusable UI components from shadcn/ui. Custom components are built for domain-specific features (Header, Sidebar, RequestForm, RequestDetail).
-- **State Management Pattern**: Server state is managed through React Query with aggressive caching (staleTime: Infinity) to minimize unnecessary API calls. The application invalidates queries manually when mutations occur.
-- **Authentication Flow**: Unauthorized users are redirected to a landing page with Replit Auth login. After authentication, users access the dashboard and analytics pages.
+- **Component Architecture**: The application uses a component-based architecture with reusable UI components from shadcn/ui. Custom components are built for domain-specific features (Header, Sidebar, RequestForm, RequestDetail, ProfileSetup).
+- **State Management Pattern**: Server state is managed through React Query with aggressive caching (staleTime: Infinity) to minimize unnecessary API calls. The application invalidates queries manually when mutations occur (e.g., after creating requests, updating status).
+- **Authentication Flow**: Landing page shows role selection ("Data Analyst" vs "Other Teams"). After Replit Auth login, role is applied to user profile. Team leads without a department are redirected to profile setup page to select their department, then proceed to dashboard.
 - **Form Validation**: Zod schemas are shared between client and server for consistent validation. Form errors are displayed inline using React Hook Form integration.
 
 ### Backend Architecture
@@ -83,22 +91,42 @@ Preferred communication style: Simple, everyday language.
 - Passport.js strategy handles OAuth flow
 - User information is stored in PostgreSQL after first login
 - Sessions are cookie-based with httpOnly and secure flags
+- Role selection happens on landing page before authentication
+
+**Onboarding Flow:**
+1. User selects role on landing page: "Data Analyst" or "Other Teams"
+2. User authenticates via Replit Auth
+3. Role is applied to user profile after login (stored in localStorage during selection)
+4. Team leads without department are redirected to profile setup page
+5. Team lead selects department (Engineering, Product, Marketing, Operations, Finance)
+6. User is redirected to dashboard
 
 **Authorization Model:**
 - Role-based access control (team leads vs data analysts)
-- Team leads can create and view requests
-- Data analysts can assign themselves, update status, and add completion estimates
+- Team leads can create requests and view only their own requests (filtered by requestedById)
+- Data analysts see all requests across all departments
+- Data analysts can assign requests, update status/priority/deadline, cancel requests, and add completion estimates
 - All authenticated users can view analytics
+
+**Data Analyst Accounts:**
+- abdul.rehman@niete.edu.pk (Abdul Rehman)
+- abdur.rehman@taleemabad.com (Abdur Rehman)
+- muhammad.haris@taleemabad.com (Muhammad Haris)
+- sameer.sheikh@taleemabad.com (Sameer Sheikh)
 
 ### API Structure
 
 **RESTful Endpoints:**
 - `GET /api/auth/user` - Get current user profile
+- `PATCH /api/auth/user/role` - Update user role (data_analyst or team_lead)
+- `PATCH /api/auth/user/department` - Update user department
+- `GET /api/users/analysts` - Get list of data analysts (for assignment dropdown)
 - `POST /api/requests` - Create new data request
-- `GET /api/requests` - List requests with optional filters (status, department, priority, type, requester, assignee)
+- `GET /api/requests` - List requests with optional filters (status, department, priority, type, requester, assignee); automatically filtered by requestedById for team leads
 - `GET /api/requests/:id` - Get single request with details
-- `PUT /api/requests/:id/status` - Update request status
-- `PUT /api/requests/:id/assign` - Assign request to analyst
+- `PATCH /api/requests/:id/status` - Update request status (data analysts only)
+- `PATCH /api/requests/:id/assign` - Assign request to analyst (data analysts only)
+- `PATCH /api/requests/:id/priority-deadline` - Update request priority and deadline (data analysts only)
 - `POST /api/requests/:id/attachments` - Add file attachment metadata to request
 - `POST /api/requests/:id/comments` - Add comment to request
 - `GET /api/requests/:id/comments` - Get request comments
