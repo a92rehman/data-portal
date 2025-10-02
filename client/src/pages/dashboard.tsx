@@ -145,11 +145,11 @@ export default function Dashboard() {
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4">Dashboard Overview</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="gradient-card">
+              <Card className="border-2 border-gray-300 shadow-lg hover:shadow-xl transition-all rounded-xl" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 60%, 99%) 100%)'}}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600">Total Requests</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
                       <Inbox className="w-5 h-5 text-white" />
                     </div>
                   </div>
@@ -161,11 +161,11 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="gradient-card">
+              <Card className="border-2 border-gray-300 shadow-lg hover:shadow-xl transition-all rounded-xl" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 60%, 99%) 100%)'}}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600">In Progress</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
                       <Clock className="w-5 h-5 text-white" />
                     </div>
                   </div>
@@ -174,11 +174,11 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="gradient-card">
+              <Card className="border-2 border-gray-300 shadow-lg hover:shadow-xl transition-all rounded-xl" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 60%, 99%) 100%)'}}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600">Completed</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
                       <CheckCircle className="w-5 h-5 text-white" />
                     </div>
                   </div>
@@ -189,11 +189,11 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="gradient-card">
+              <Card className="border-2 border-gray-300 shadow-lg hover:shadow-xl transition-all rounded-xl" style={{background: 'linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 60%, 99%) 100%)'}}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600">Avg. Completion</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
                       <BarChart3 className="w-5 h-5 text-white" />
                     </div>
                   </div>

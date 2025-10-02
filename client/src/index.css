@@ -154,22 +154,28 @@
   }
 
   .gradient-card {
-    @apply bg-white border-2 border-border rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
-    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 60%, 99%) 100%);
+    @apply rounded-xl transition-all duration-300;
+    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 60%, 99%) 100%) !important;
+    border: 2px solid hsl(214, 32%, 85%) !important;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+  }
+  
+  .gradient-card:hover {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
   }
 
   .gradient-button-primary {
-    background: linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%);
+    background: linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%) !important;
     @apply border-2 border-transparent hover:border-purple-400 shadow-md hover:shadow-lg transition-all duration-300;
   }
 
   .gradient-button-secondary {
-    background: linear-gradient(135deg, hsl(210, 60%, 95%) 0%, hsl(220, 60%, 96%) 100%);
+    background: linear-gradient(135deg, hsl(210, 60%, 95%) 0%, hsl(220, 60%, 96%) 100%) !important;
     @apply border-2 border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md transition-all duration-300;
   }
 
   .gradient-button-success {
-    background: linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%);
+    background: linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%) !important;
     @apply border-2 border-transparent hover:border-green-400 shadow-md hover:shadow-lg transition-all duration-300;
   }
 

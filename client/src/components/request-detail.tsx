@@ -223,7 +223,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       }
       uploadAttachmentMutation.mutate({
         uploadToken,
-        fileName: file.name,
+        fileName: file.name || "untitled",
         fileSize: file.size || 0,
         mimeType: file.type || "application/octet-stream",
       });

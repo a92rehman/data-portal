@@ -28,7 +28,7 @@ export default function Sidebar({ onNewRequest }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-64 bg-card border-r border-border min-h-[calc(100vh-73px)] p-4">
+    <aside className="w-64 bg-white border-r-2 border-purple-200 min-h-[calc(100vh-73px)] p-4 shadow-md">
       <nav className="space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -37,7 +37,7 @@ export default function Sidebar({ onNewRequest }: SidebarProps) {
           return (
             <Link key={item.href} href={item.href}>
               <a 
-                className={`sidebar-link ${isActive ? "active" : "text-muted-foreground"}`}
+                className={`sidebar-link ${isActive ? "gradient-button-primary text-white" : "text-gray-600 hover:bg-purple-50"}`}
                 data-testid={item.testId}
               >
                 <Icon className="w-5 h-5" />
@@ -47,15 +47,15 @@ export default function Sidebar({ onNewRequest }: SidebarProps) {
           );
         })}
 
-        <Separator className="my-4" />
+        <Separator className="my-4 bg-purple-200" />
         
         <div className="pt-2">
-          <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
             Quick Actions
           </p>
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-primary hover:bg-secondary" 
+            className="w-full justify-start gradient-button-secondary font-medium" 
             onClick={onNewRequest}
             data-testid="button-quick-new-request"
           >
@@ -64,12 +64,12 @@ export default function Sidebar({ onNewRequest }: SidebarProps) {
           </Button>
         </div>
 
-        <Separator className="my-4" />
+        <Separator className="my-4 bg-purple-200" />
         
         <div className="pt-2 space-y-1">
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-muted-foreground" 
+            className="w-full justify-start text-gray-600 hover:bg-purple-50 border-2 border-transparent hover:border-purple-200 transition-all" 
             data-testid="button-settings"
           >
             <Settings className="w-5 h-5 mr-3" />
@@ -77,7 +77,7 @@ export default function Sidebar({ onNewRequest }: SidebarProps) {
           </Button>
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-muted-foreground" 
+            className="w-full justify-start text-gray-600 hover:bg-red-50 border-2 border-transparent hover:border-red-200 transition-all" 
             onClick={handleLogout}
             data-testid="button-logout"
           >
