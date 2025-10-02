@@ -10,6 +10,16 @@ The system includes authentication via Replit Auth, request tracking with status
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **File Attachment Feature (October 2, 2025)**: Implemented complete file attachment functionality using Replit Object Storage
+  - Users can upload files (max 5 files, 10MB each) to data requests via Uppy file uploader
+  - Files stored securely in object storage with metadata tracked in attachments database table
+  - Download functionality for uploaded files with file name, size, and uploader information displayed
+  - ObjectUploader component wraps Uppy Dashboard with AWS S3 plugin for pre-signed URL uploads
+  - API routes: POST /api/objects/upload (generate upload URL), POST /api/requests/:id/attachments (save metadata)
+  - Attachments section integrated into RequestDetail component
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -48,12 +58,15 @@ Preferred communication style: Simple, everyday language.
 **Core Tables:**
 - **users**: Stores user profiles with email, name, profile image, role (team_lead/data_analyst), and department
 - **dataRequests**: Tracks data requests with title, description, type, priority, status, requester, assignee, and timestamps
+- **attachments**: Stores file attachment metadata with fileName, filePath, fileSize, mimeType, requestId (foreign key), uploadedById (foreign key), uploadedAt timestamp
 - **comments**: Allows threaded discussions on requests with user associations
 - **sessions**: PostgreSQL-backed session storage for authentication
 
 **Key Relationships:**
 - Users can create multiple data requests (one-to-many)
 - Users can be assigned to multiple data requests (one-to-many)
+- Data requests can have multiple attachments (one-to-many)
+- Attachments belong to both a user (uploader) and a data request (many-to-one)
 - Data requests can have multiple comments (one-to-many)
 - Comments belong to both a user and a data request (many-to-one)
 
@@ -86,8 +99,10 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/requests/:id` - Get single request with details
 - `PUT /api/requests/:id/status` - Update request status
 - `PUT /api/requests/:id/assign` - Assign request to analyst
+- `POST /api/requests/:id/attachments` - Add file attachment metadata to request
 - `POST /api/requests/:id/comments` - Add comment to request
 - `GET /api/requests/:id/comments` - Get request comments
+- `POST /api/objects/upload` - Generate pre-signed URL for object storage upload
 - `GET /api/analytics/*` - Various analytics endpoints for dashboards
 
 **API Design Patterns:**
@@ -117,7 +132,14 @@ Preferred communication style: Simple, everyday language.
 - **Vite**: Build tool and dev server with HMR
 - **Replit Plugins**: Development-only plugins for enhanced Replit IDE integration (@replit/vite-plugin-cartographer, @replit/vite-plugin-dev-banner, @replit/vite-plugin-runtime-error-modal)
 
+**Object Storage:**
+- **Replit Object Storage**: Cloud storage for file attachments
+- **Google Cloud Storage**: Backend provider for object storage
+- **Configuration**: Uses `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR` environment variables
+- **File Upload**: Uppy file uploader with AWS S3 plugin using pre-signed URLs
+- **Max Limits**: 5 files per upload session, 10MB per file
+
 **Build & Deployment:**
 - **esbuild**: Bundles server code for production
 - **TypeScript**: Type checking with `tsc` via npm check script
-- **Environment Variables**: `DATABASE_URL`, `SESSION_SECRET`, `REPL_ID`, `ISSUER_URL`, `REPLIT_DOMAINS` required for operation
+- **Environment Variables**: `DATABASE_URL`, `SESSION_SECRET`, `REPL_ID`, `ISSUER_URL`, `REPLIT_DOMAINS`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR` required for operation

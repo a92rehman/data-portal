@@ -2,12 +2,15 @@ import {
   users,
   dataRequests,
   comments,
+  attachments,
   type User,
   type UpsertUser,
   type DataRequest,
   type InsertDataRequest,
   type Comment,
   type InsertComment,
+  type Attachment,
+  type InsertAttachment,
   type DataRequestWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
@@ -36,6 +39,11 @@ export interface IStorage {
   // Comment operations
   addComment(comment: InsertComment, userId: string): Promise<Comment>;
   getRequestComments(requestId: string): Promise<(Comment & { user: User })[]>;
+  
+  // Attachment operations
+  addAttachment(attachment: InsertAttachment, userId: string): Promise<Attachment>;
+  getRequestAttachments(requestId: string): Promise<(Attachment & { uploadedBy: User })[]>;
+  getAttachmentByFilePath(filePath: string): Promise<Attachment | undefined>;
   
   // Analytics operations
   getRequestStats(): Promise<{
@@ -111,12 +119,14 @@ export class DatabaseStorage implements IStorage {
 
     const requestData = result[0];
     const requestComments = await this.getRequestComments(id);
+    const requestAttachments = await this.getRequestAttachments(id);
 
     return {
       ...requestData.request,
       requestedBy: requestData.requestedBy,
       assignedTo: requestData.assignedTo.id ? requestData.assignedTo : null,
       comments: requestComments,
+      attachments: requestAttachments,
     } as DataRequestWithDetails;
   }
 
@@ -165,20 +175,22 @@ export class DatabaseStorage implements IStorage {
 
     const results = await query;
 
-    // Get comments for each request
-    const requestsWithComments = await Promise.all(
+    // Get comments and attachments for each request
+    const requestsWithDetails = await Promise.all(
       results.map(async (result) => {
         const requestComments = await this.getRequestComments(result.request.id);
+        const requestAttachments = await this.getRequestAttachments(result.request.id);
         return {
           ...result.request,
           requestedBy: result.requestedBy,
           assignedTo: result.assignedTo.id ? result.assignedTo : null,
           comments: requestComments,
+          attachments: requestAttachments,
         } as DataRequestWithDetails;
       })
     );
 
-    return requestsWithComments;
+    return requestsWithDetails;
   }
 
   async updateDataRequestStatus(id: string, status: string, estimatedDays?: number): Promise<DataRequest | undefined> {
@@ -224,6 +236,36 @@ export class DatabaseStorage implements IStorage {
       .orderBy(comments.createdAt);
 
     return result.map(r => ({ ...r.comment, user: r.user }));
+  }
+
+  async addAttachment(attachment: InsertAttachment, userId: string): Promise<Attachment> {
+    const [newAttachment] = await db
+      .insert(attachments)
+      .values({ ...attachment, uploadedById: userId })
+      .returning();
+    return newAttachment;
+  }
+
+  async getRequestAttachments(requestId: string): Promise<(Attachment & { uploadedBy: User })[]> {
+    const result = await db
+      .select({
+        attachment: attachments,
+        user: users,
+      })
+      .from(attachments)
+      .innerJoin(users, eq(attachments.uploadedById, users.id))
+      .where(eq(attachments.requestId, requestId))
+      .orderBy(attachments.createdAt);
+
+    return result.map(r => ({ ...r.attachment, uploadedBy: r.user }));
+  }
+
+  async getAttachmentByFilePath(filePath: string): Promise<Attachment | undefined> {
+    const [attachment] = await db
+      .select()
+      .from(attachments)
+      .where(eq(attachments.filePath, filePath));
+    return attachment;
   }
 
   async getRequestStats(): Promise<{

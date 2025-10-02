@@ -25,9 +25,14 @@ import {
   CircleAlert,
   MinusCircle,
   InfoIcon,
-  UserPlus
+  UserPlus,
+  Paperclip,
+  Download,
+  FileIcon
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 interface RequestDetailProps {
   request: DataRequestWithDetails;
@@ -152,6 +157,85 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     if (selectedAnalyst) {
       assignMutation.mutate(selectedAnalyst);
     }
+  };
+
+  const uploadAttachmentMutation = useMutation({
+    mutationFn: async (data: { uploadToken: string; fileName: string; fileSize: number; mimeType: string }) => {
+      return await apiRequest("POST", `/api/requests/${request.id}/attachments`, data);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/requests", request.id] });
+      toast({
+        title: "Success",
+        description: "File uploaded successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload file",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGetUploadParameters = async () => {
+    const response = await fetch("/api/objects/upload", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ requestId: request.id }),
+    });
+    const data = await response.json();
+    return {
+      method: "PUT" as const,
+      url: data.uploadURL,
+      fields: { uploadToken: data.uploadToken },
+    };
+  };
+
+  const handleUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const file = result.successful[0];
+      const uploadToken = file.meta?.uploadToken as string;
+      if (!uploadToken) {
+        toast({
+          title: "Error",
+          description: "Upload succeeded but upload token is missing",
+          variant: "destructive",
+        });
+        return;
+      }
+      uploadAttachmentMutation.mutate({
+        uploadToken,
+        fileName: file.name,
+        fileSize: file.size || 0,
+        mimeType: file.type || "application/octet-stream",
+      });
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
   const getStatusBadge = (status: string) => {
@@ -314,6 +398,63 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Attachments Section */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Attachments</p>
+            <ObjectUploader
+              maxNumberOfFiles={5}
+              maxFileSize={10485760}
+              onGetUploadParameters={handleGetUploadParameters}
+              onComplete={handleUploadComplete}
+              buttonVariant="outline"
+              buttonSize="sm"
+            >
+              <Paperclip className="w-4 h-4 mr-2" />
+              Upload File
+            </ObjectUploader>
+          </div>
+          {request.attachments && request.attachments.length > 0 ? (
+            <div className="space-y-2">
+              {request.attachments.map((attachment) => (
+                <Card key={attachment.id} className="bg-muted">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <FileIcon className="w-4 h-4 text-primary flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate" data-testid={`attachment-name-${attachment.id}`}>
+                            {attachment.fileName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(attachment.fileSize)} • Uploaded by {attachment.uploadedBy.firstName} {attachment.uploadedBy.lastName}
+                          </p>
+                        </div>
+                      </div>
+                      <a
+                        href={attachment.filePath}
+                        download={attachment.fileName}
+                        className="flex-shrink-0"
+                        data-testid={`button-download-${attachment.id}`}
+                      >
+                        <Button variant="ghost" size="sm">
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </a>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground text-center">No attachments yet</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Assigned Analyst Display */}

@@ -85,6 +85,18 @@ export const comments = pgTable("comments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Attachments table for file uploads
+export const attachments = pgTable("attachments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  requestId: varchar("request_id").notNull().references(() => dataRequests.id, { onDelete: 'cascade' }),
+  fileName: varchar("file_name").notNull(),
+  filePath: varchar("file_path").notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  uploadedById: varchar("uploaded_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   requestedDataRequests: many(dataRequests, { relationName: "requestedBy" }),
@@ -104,6 +116,7 @@ export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => 
     relationName: "assignedTo",
   }),
   comments: many(comments),
+  attachments: many(attachments),
 }));
 
 export const commentsRelations = relations(comments, ({ one }) => ({
@@ -113,6 +126,17 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   }),
   user: one(users, {
     fields: [comments.userId],
+    references: [users.id],
+  }),
+}));
+
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+  request: one(dataRequests, {
+    fields: [attachments.requestId],
+    references: [dataRequests.id],
+  }),
+  uploadedBy: one(users, {
+    fields: [attachments.uploadedById],
     references: [users.id],
   }),
 }));
@@ -134,6 +158,11 @@ export const insertCommentSchema = createInsertSchema(comments).omit({
   createdAt: true,
   userId: true 
 });
+export const insertAttachmentSchema = createInsertSchema(attachments).omit({ 
+  id: true, 
+  createdAt: true,
+  uploadedById: true 
+});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -142,10 +171,13 @@ export type InsertDataRequest = z.infer<typeof insertDataRequestSchema>;
 export type DataRequest = typeof dataRequests.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
+export type InsertAttachment = z.infer<typeof insertAttachmentSchema>;
+export type Attachment = typeof attachments.$inferSelect;
 
 // Extended types for API responses
 export type DataRequestWithDetails = DataRequest & {
   requestedBy: User;
   assignedTo: User | null;
   comments: (Comment & { user: User })[];
+  attachments: (Attachment & { uploadedBy: User })[];
 };

@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertDataRequestSchema, insertCommentSchema } from "@shared/schema";
+import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -148,6 +149,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to add comment" });
       }
+    }
+  });
+
+  // Object storage routes
+  app.post('/api/objects/upload', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const requestId = req.body.requestId;
+      
+      if (!requestId) {
+        return res.status(400).json({ message: "Request ID is required" });
+      }
+      
+      const objectStorageService = new ObjectStorageService();
+      const result = await objectStorageService.getObjectEntityUploadURL(userId, requestId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  app.post('/api/requests/:id/attachments', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const requestId = req.params.id;
+      const uploadToken = req.body.uploadToken;
+      
+      if (!uploadToken) {
+        return res.status(400).json({ message: "Upload token is required" });
+      }
+      
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.validateAndConsumeUploadToken(uploadToken, userId, requestId);
+      
+      const validatedData = insertAttachmentSchema.parse({
+        requestId,
+        fileName: req.body.fileName,
+        filePath: objectPath,
+        fileSize: req.body.fileSize,
+        mimeType: req.body.mimeType,
+      });
+      
+      const attachment = await storage.addAttachment(validatedData, userId);
+      res.status(201).json(attachment);
+    } catch (error) {
+      console.error("Error adding attachment:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid attachment data", errors: error.errors });
+      } else if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to add attachment" });
+      }
+    }
+  });
+
+  app.get('/objects/:objectPath(*)', isAuthenticated, async (req: any, res) => {
+    const objectStorageService = new ObjectStorageService();
+    const userId = req.user.claims.sub;
+    
+    try {
+      const objectPath = req.path;
+      
+      const attachment = await storage.getAttachmentByFilePath(objectPath);
+      if (!attachment) {
+        return res.status(404).json({ message: "Attachment not found" });
+      }
+      
+      const request = await storage.getDataRequest(attachment.requestId);
+      if (!request) {
+        return res.status(404).json({ message: "Associated request not found" });
+      }
+      
+      const isRequester = request.requestedById === userId;
+      const isAssignee = request.assignedToId === userId || request.assignedTo?.id === userId;
+      const isDataAnalyst = req.user.claims.role === "data_analyst";
+      
+      if (!isRequester && !isAssignee && !isDataAnalyst) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
