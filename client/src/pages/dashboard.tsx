@@ -117,11 +117,13 @@ export default function Dashboard() {
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case "high":
+      case "p0_critical":
+        return <CircleAlert className="w-4 h-4" style={{color: 'hsl(0, 84%, 60%)'}} />;
+      case "p1_high":
         return <CircleAlert className="w-4 h-4 text-destructive" />;
-      case "medium":
+      case "p2_medium":
         return <MinusCircle className="w-4 h-4 text-warning" />;
-      case "low":
+      case "p3_low":
         return <InfoIcon className="w-4 h-4 text-info" />;
       default:
         return <InfoIcon className="w-4 h-4 text-info" />;
@@ -138,10 +140,16 @@ export default function Dashboard() {
 
   const formatRequestType = (type: string) => {
     switch (type) {
-      case "powerbi":
-        return "Power BI";
-      case "adhoc":
-        return "Ad-hoc";
+      case "new_dashboard":
+        return "New Dashboard";
+      case "modify_dashboard":
+        return "Modify Dashboard";
+      case "adhoc_analysis":
+        return "Ad-hoc Analysis";
+      case "data_extraction":
+        return "Data Extraction";
+      case "data_bug":
+        return "Data Bug";
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
@@ -267,11 +275,16 @@ export default function Dashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Departments</SelectItem>
-                      <SelectItem value="engineering">Engineering</SelectItem>
-                      <SelectItem value="product">Product</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="operations">Operations</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="Program">Program</SelectItem>
+                      <SelectItem value="P&C">P&C</SelectItem>
+                      <SelectItem value="Product">Product</SelectItem>
+                      <SelectItem value="LP">LP</SelectItem>
+                      <SelectItem value="Training">Training</SelectItem>
+                      <SelectItem value="ERP">ERP</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                      <SelectItem value="Leadership">Leadership</SelectItem>
+                      <SelectItem value="Strategy">Strategy</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -281,9 +294,10 @@ export default function Dashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Priority</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="p0_critical">P0 - Critical</SelectItem>
+                      <SelectItem value="p1_high">P1 - High</SelectItem>
+                      <SelectItem value="p2_medium">P2 - Medium</SelectItem>
+                      <SelectItem value="p3_low">P3 - Low</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -293,8 +307,11 @@ export default function Dashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="powerbi">Power BI Dashboard</SelectItem>
-                      <SelectItem value="adhoc">Ad-hoc Request</SelectItem>
+                      <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
+                      <SelectItem value="modify_dashboard">Modify Dashboard/Report</SelectItem>
+                      <SelectItem value="adhoc_analysis">Ad-hoc Analysis</SelectItem>
+                      <SelectItem value="data_extraction">Data Extraction</SelectItem>
+                      <SelectItem value="data_bug">Data Bug</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
