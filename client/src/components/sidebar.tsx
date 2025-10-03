@@ -13,9 +13,10 @@ import {
 
 interface SidebarProps {
   onNewRequest: () => void;
+  user?: any;
 }
 
-export default function Sidebar({ onNewRequest }: SidebarProps) {
+export default function Sidebar({ onNewRequest, user }: SidebarProps) {
   const [location] = useLocation();
 
   const handleLogout = () => {
@@ -24,7 +25,7 @@ export default function Sidebar({ onNewRequest }: SidebarProps) {
 
   const navItems = [
     { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
-    { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
+    ...(user?.role === "data_analyst" ? [{ href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" }] : []),
   ];
 
   return (

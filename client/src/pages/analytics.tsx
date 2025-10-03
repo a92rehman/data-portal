@@ -25,7 +25,20 @@ export default function Analytics() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+
+    // Redirect team leads to dashboard
+    if (!isLoading && isAuthenticated && user?.role !== "data_analyst") {
+      toast({
+        title: "Access Denied",
+        description: "Analytics is only available for data analysts",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, user, toast]);
 
   const { data: departmentStats = [] } = useQuery<Array<{ department: string; count: number }>>({
     queryKey: ["/api/analytics/departments"],
@@ -111,7 +124,7 @@ export default function Analytics() {
       <Header user={user as any} />
       
       <div className="flex">
-        <Sidebar onNewRequest={() => {}} />
+        <Sidebar onNewRequest={() => {}} user={user as any} />
         
         <main className="flex-1 p-6">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">Analytics & Insights</h2>

@@ -12,6 +12,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Analytics Access Control (October 3, 2025)**: Restricted Analytics view to data analysts only
+  - Analytics navigation link removed from sidebar for team leads
+  - Only data analysts can see and access the Analytics page
+  - Route protection: team leads redirected to dashboard if they attempt to access /analytics directly
+  - Access denied toast message displayed to unauthorized users
+
 - **PDF-Based Form Structure (October 3, 2025)**: Complete overhaul of data request form to match official PDF requirements
   - Replaced all hardcoded values with PDF-specified options for request types, priorities, and departments
   - Updated request types: New Dashboard/Report, Modify Dashboard/Report, Ad-hoc Analysis, Data Extraction, Data Bug, Other

@@ -210,7 +210,7 @@ export default function Dashboard() {
       <Header user={user as any} />
       
       <div className="flex">
-        <Sidebar onNewRequest={() => setShowRequestForm(true)} />
+        <Sidebar onNewRequest={() => setShowRequestForm(true)} user={user as any} />
         
         <main className="flex-1 p-6">
           <div className="mb-6">
