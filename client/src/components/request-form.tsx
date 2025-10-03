@@ -101,7 +101,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
 
   return (
     <>
-      <DialogHeader className="sticky top-0 z-10 bg-background pb-6 -mb-4">
+      <DialogHeader className="sticky top-0 z-[5] bg-background pb-6 -mb-4">
         <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">New Data Request</DialogTitle>
       </DialogHeader>
 
