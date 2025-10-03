@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search } from "lucide-react";
+import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search, Trash2 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 
 export default function Dashboard() {
@@ -96,6 +96,43 @@ export default function Dashboard() {
   }>({
     queryKey: ["/api/analytics/stats"],
     enabled: isAuthenticated,
+  });
+
+  // Delete request mutation
+  const deleteRequestMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const response = await apiRequest(`/api/requests/${requestId}`, {
+        method: "DELETE",
+      });
+      return response;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/stats"] });
+      setSelectedRequest(null);
+    },
+    onError: (error: any) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete request",
+        variant: "destructive",
+      });
+    },
   });
 
   // Filter requests based on search query
@@ -411,17 +448,35 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell>{formatDate(request.dueDate.toString())}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedRequest(request);
-                            }}
-                            data-testid={`button-view-${request.id}`}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRequest(request);
+                              }}
+                              data-testid={`button-view-${request.id}`}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {(user as any)?.role === "data_analyst" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Are you sure you want to delete "${request.title}"?`)) {
+                                    deleteRequestMutation.mutate(request.id);
+                                  }
+                                }}
+                                data-testid={`button-delete-${request.id}`}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
