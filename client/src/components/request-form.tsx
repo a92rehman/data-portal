@@ -100,13 +100,14 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
   const isDashboardRequest = selectedType === "new_dashboard" || selectedType === "modify_dashboard";
 
   return (
-    <>
-      <DialogHeader className="sticky top-0 z-[5] bg-background pb-6 -mb-4">
+    <div className="flex flex-col max-h-[70vh]">
+      <DialogHeader className="sticky top-0 z-10 bg-background pb-4 border-b border-border">
         <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">New Data Request</DialogTitle>
       </DialogHeader>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 max-h-[70vh] overflow-y-auto pr-2 mt-4">
+      <div className="flex-1 overflow-y-auto pr-2">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-4">
           
           <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(260, 100%, 97%) 0%, hsl(220, 100%, 98%) 100%)'}}>
             <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Section 1: Requester & Project Information</h3>
@@ -574,6 +575,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
           </div>
         </form>
       </Form>
-    </>
+      </div>
+    </div>
   );
 }
