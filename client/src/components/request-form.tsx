@@ -409,8 +409,9 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
           </div>
 
           {isDashboardRequest && (
-            <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
-              <h3 className="font-semibold text-sm">Dashboard-Specific Information</h3>
+            <>
+              <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
+                <h3 className="font-semibold text-sm">Dashboard-Specific Information</h3>
               
               <FormField
                 control={form.control}
@@ -513,30 +514,31 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 )}
               />
             </div>
-          )}
 
-          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
-            <h3 className="font-semibold text-sm">Section 4: Actions</h3>
-            
-            <FormField
-              control={form.control}
-              name="actionPlan"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Action Plan</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="How will you and your team act on the insights from this analysis/dashboard?"
-                      rows={3}
-                      {...field}
-                      data-testid="textarea-form-action-plan"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+            <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
+              <h3 className="font-semibold text-sm">Section 4: Actions</h3>
+              
+              <FormField
+                control={form.control}
+                name="actionPlan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Action Plan</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="How will you and your team act on the insights from this analysis/dashboard?"
+                        rows={3}
+                        {...field}
+                        data-testid="textarea-form-action-plan"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            </>
+          )}
 
           <Card className="bg-muted">
             <CardContent className="p-4">

@@ -12,10 +12,20 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **PDF-Based Form Structure (October 3, 2025)**: Complete overhaul of data request form to match official PDF requirements
+  - Replaced all hardcoded values with PDF-specified options for request types, priorities, and departments
+  - Updated request types: New Dashboard/Report, Modify Dashboard/Report, Ad-hoc Analysis, Data Extraction, Data Bug, Other
+  - Updated priority levels: P0-Critical, P1-High, P2-Medium, P3-Low (from old low/medium/high)
+  - Updated departments: Program, P&C, Product, LP, Training, ERP, Finance, Leadership, Strategy, Other
+  - Added new required fields: Primary Question, Business Problem, Decision/Action, Impact, Frequency
+  - Implemented conditional form sections: Dashboard-specific fields and Section 4 (Actions) only appear for dashboard request types
+  - Performed database migration: migrated all existing requests to new enum values, dropped legacy description column
+  - Updated all UI components (dashboard filters, request detail, analytics) to display new labels via formatters utility
+
 - **Role-Based Authentication Flow (October 2, 2025)**: Implemented complete role selection and onboarding flow
   - Landing page now shows two role options: "Data Analyst" and "Other Teams" before authentication
   - Role selection stored in localStorage and applied after Replit Auth login
-  - Profile setup page for team leads to select their department (Engineering, Product, Marketing, Operations, Finance)
+  - Profile setup page for team leads to select their department
   - Team leads redirected to profile setup if department not set, then to dashboard
   - API routes: PATCH /api/auth/user/role (update user role), PATCH /api/auth/user/department (update department)
   - Fixed request form cache invalidation to refresh dashboard after creating new requests
