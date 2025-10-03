@@ -32,7 +32,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("team_lead"), // team_lead, data_analyst
-  department: varchar("department"), // engineering, product, marketing, operations, finance
+  department: varchar("department"), // Program, P&C, Product, LP, Training, ERP, Finance, Leadership, Strategy, Other
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -68,7 +68,6 @@ export const requestTypeEnum = pgEnum("request_type", [
 export const dataRequests = pgTable("data_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: varchar("title").notNull(),
-  description: text("description").notNull(),
   type: requestTypeEnum("type").notNull(),
   priority: requestPriorityEnum("priority").notNull(),
   status: requestStatusEnum("status").notNull().default("submitted"),
@@ -77,6 +76,22 @@ export const dataRequests = pgTable("data_requests", {
   assignedToId: varchar("assigned_to_id").references(() => users.id),
   dueDate: timestamp("due_date").notNull(),
   estimatedCompletionDays: integer("estimated_completion_days"),
+  
+  primaryQuestion: text("primary_question").notNull(),
+  businessProblem: text("business_problem").notNull(),
+  decisionAction: text("decision_action").notNull(),
+  impact: varchar("impact").notNull(),
+  frequency: varchar("frequency").notNull(),
+  frequencyDuration: integer("frequency_duration"),
+  frequencyUnit: varchar("frequency_unit"),
+  
+  dashboardAudience: text("dashboard_audience"),
+  dashboardRefreshFrequency: varchar("dashboard_refresh_frequency"),
+  keyMetrics: text("key_metrics"),
+  filters: text("filters"),
+  mockups: text("mockups"),
+  actionPlan: text("action_plan"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -90,11 +90,16 @@ export default function ProfileSetup() {
                   <SelectValue placeholder="Select your department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="engineering" data-testid="option-engineering">Engineering</SelectItem>
-                  <SelectItem value="product" data-testid="option-product">Product</SelectItem>
-                  <SelectItem value="marketing" data-testid="option-marketing">Marketing</SelectItem>
-                  <SelectItem value="operations" data-testid="option-operations">Operations</SelectItem>
-                  <SelectItem value="finance" data-testid="option-finance">Finance</SelectItem>
+                  <SelectItem value="Program" data-testid="option-program">Program</SelectItem>
+                  <SelectItem value="P&C" data-testid="option-pc">P&C</SelectItem>
+                  <SelectItem value="Product" data-testid="option-product">Product</SelectItem>
+                  <SelectItem value="LP" data-testid="option-lp">LP</SelectItem>
+                  <SelectItem value="Training" data-testid="option-training">Training</SelectItem>
+                  <SelectItem value="ERP" data-testid="option-erp">ERP</SelectItem>
+                  <SelectItem value="Finance" data-testid="option-finance">Finance</SelectItem>
+                  <SelectItem value="Leadership" data-testid="option-leadership">Leadership</SelectItem>
+                  <SelectItem value="Strategy" data-testid="option-strategy">Strategy</SelectItem>
+                  <SelectItem value="Other" data-testid="option-other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>

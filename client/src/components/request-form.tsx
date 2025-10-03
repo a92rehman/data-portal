@@ -10,15 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { X, Send, Info } from "lucide-react";
 import { z } from "zod";
 
 const formSchema = insertDataRequestSchema.extend({
-  title: z.string().min(1, "Title is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  title: z.string().min(1, "Project name is required"),
+  dueDate: z.string().min(1, "Deadline is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -30,16 +30,29 @@ interface RequestFormProps {
 
 export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
   const { toast } = useToast();
+  const [selectedType, setSelectedType] = useState<string>("");
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      description: "",
       type: undefined,
       priority: undefined,
       department: "",
       dueDate: "",
+      primaryQuestion: "",
+      businessProblem: "",
+      decisionAction: "",
+      impact: undefined,
+      frequency: undefined,
+      frequencyDuration: 0,
+      frequencyUnit: "",
+      dashboardAudience: "",
+      dashboardRefreshFrequency: "",
+      keyMetrics: "",
+      filters: "",
+      mockups: "",
+      actionPlan: "",
     },
   });
 
@@ -84,6 +97,8 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
     createRequestMutation.mutate(data);
   };
 
+  const isDashboardRequest = selectedType === "new_dashboard" || selectedType === "modify_dashboard";
+
   return (
     <>
       <DialogHeader>
@@ -96,77 +111,35 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
       </DialogHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Request Type <span className="text-destructive">*</span></FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-type">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
+          
+          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
+            <h3 className="font-semibold text-sm">Section 1: Requester & Project Information</h3>
+            
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project Name <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type..." />
-                    </SelectTrigger>
+                    <Input 
+                      placeholder="e.g., Weekly Student Engagement Pulse"
+                      {...field}
+                      data-testid="input-form-title"
+                    />
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value="powerbi">Power BI Dashboard</SelectItem>
-                    <SelectItem value="adhoc">Ad-hoc Request</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title <span className="text-destructive">*</span></FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Brief title for your request..."
-                    {...field}
-                    data-testid="input-form-title"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description <span className="text-destructive">*</span></FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Provide a detailed description of your data request..."
-                    rows={4}
-                    {...field}
-                    data-testid="textarea-form-description"
-                  />
-                </FormControl>
-                <p className="text-xs text-muted-foreground">
-                  Be specific about the data points, visualizations, or analysis you need
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="department"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Department <span className="text-destructive">*</span></FormLabel>
+                  <FormLabel>Department/Team <span className="text-destructive">*</span></FormLabel>
                   <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-department">
                     <FormControl>
                       <SelectTrigger>
@@ -174,11 +147,16 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="engineering">Engineering</SelectItem>
-                      <SelectItem value="product">Product</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="operations">Operations</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="Program">Program</SelectItem>
+                      <SelectItem value="P&C">P&C</SelectItem>
+                      <SelectItem value="Product">Product</SelectItem>
+                      <SelectItem value="LP">LP</SelectItem>
+                      <SelectItem value="Training">Training</SelectItem>
+                      <SelectItem value="ERP">ERP</SelectItem>
+                      <SelectItem value="Finance">Finance</SelectItem>
+                      <SelectItem value="Leadership">Leadership</SelectItem>
+                      <SelectItem value="Strategy">Strategy</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -188,45 +166,377 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
 
             <FormField
               control={form.control}
-              name="priority"
+              name="dueDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Priority <span className="text-destructive">*</span></FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-priority">
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="high">High - Urgent</SelectItem>
-                      <SelectItem value="medium">Medium - Important</SelectItem>
-                      <SelectItem value="low">Low - Can wait</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Deadline Date <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date"
+                      {...field}
+                      data-testid="input-form-due-date"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="dueDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Required Delivery Date <span className="text-destructive">*</span></FormLabel>
-                <FormControl>
-                  <Input 
-                    type="date"
-                    {...field}
-                    data-testid="input-form-due-date"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
+            <h3 className="font-semibold text-sm">Section 2: Request Details & Business Impact</h3>
+            
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Type of Request <span className="text-destructive">*</span></FormLabel>
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setSelectedType(value);
+                    }} 
+                    value={field.value} 
+                    data-testid="select-form-type"
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
+                      <SelectItem value="modify_dashboard">Modification to Existing Dashboard/Report</SelectItem>
+                      <SelectItem value="adhoc_analysis">Ad-hoc Data Analysis</SelectItem>
+                      <SelectItem value="data_extraction">One-time Data Extraction (CSV/Excel)</SelectItem>
+                      <SelectItem value="data_bug">Data Bug / Data Quality Issue</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="primaryQuestion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Primary Question <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="What is the primary question you are trying to answer through this request? Be specific about the metric and time window..."
+                      rows={3}
+                      {...field}
+                      data-testid="textarea-form-primary-question"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Be specific about the metric, time window, and why you need this data
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="businessProblem"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Problem or Goal <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Describe the program or operational problem this request solves, and the outcome you're aiming for..."
+                      rows={3}
+                      {...field}
+                      data-testid="textarea-form-business-problem"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="decisionAction"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Decision or Action <span className="text-destructive">*</span></FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="What specific decision or action will you take once you have this data/analysis/dashboard?"
+                      rows={3}
+                      {...field}
+                      data-testid="textarea-form-decision-action"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority Level <span className="text-destructive">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-priority">
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="p0_critical">P0 - Critical (Imminent business decision/launch)</SelectItem>
+                        <SelectItem value="p1_high">P1 - High (Key business decisions)</SelectItem>
+                        <SelectItem value="p2_medium">P2 - Medium (Important for planning)</SelectItem>
+                        <SelectItem value="p3_low">P3 - Low (General curiosity, future planning)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="impact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Impact <span className="text-destructive">*</span></FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-impact">
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select impact..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Program Implementation">Program Implementation</SelectItem>
+                        <SelectItem value="Product Improvement">Product Improvement</SelectItem>
+                        <SelectItem value="Strategic Decision">Strategic Decision</SelectItem>
+                        <SelectItem value="Content Improvement">Content Improvement</SelectItem>
+                        <SelectItem value="Others">Others</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
+            <h3 className="font-semibold text-sm">Section 3: Data Frequency</h3>
+            
+            <FormField
+              control={form.control}
+              name="frequency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>At which frequency will you see this data? <span className="text-destructive">*</span></FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-frequency">
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select frequency..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="One Time">One Time</SelectItem>
+                      <SelectItem value="Daily">Daily</SelectItem>
+                      <SelectItem value="Weekly">Weekly</SelectItem>
+                      <SelectItem value="Monthly">Monthly</SelectItem>
+                      <SelectItem value="Quarterly">Quarterly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {form.watch("frequency") && form.watch("frequency") !== "One Time" && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="frequencyDuration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>For how long?</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number"
+                          placeholder="e.g., 3"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                          data-testid="input-form-frequency-duration"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="frequencyUnit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-frequency-unit">
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select unit..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="days">Days</SelectItem>
+                          <SelectItem value="weeks">Weeks</SelectItem>
+                          <SelectItem value="months">Months</SelectItem>
+                          <SelectItem value="quarters">Quarters</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
-          />
+          </div>
+
+          {isDashboardRequest && (
+            <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
+              <h3 className="font-semibold text-sm">Dashboard-Specific Information</h3>
+              
+              <FormField
+                control={form.control}
+                name="dashboardAudience"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Who are the primary audience/users?</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., PMs, Coaches, PAFM, RMs, AEOs, Principals..."
+                        {...field}
+                        data-testid="input-form-dashboard-audience"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="dashboardRefreshFrequency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Intended Refresh Frequency</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-dashboard-refresh">
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select refresh frequency..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Real-time">Real-time / Live</SelectItem>
+                        <SelectItem value="Daily">Daily</SelectItem>
+                        <SelectItem value="Weekly">Weekly</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="Quarterly">Quarterly</SelectItem>
+                        <SelectItem value="On-demand">On-demand (Manual Refresh)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="keyMetrics"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Key Metrics/KPIs Needed</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Please list the specific metrics. Example: Daily Active Users, Course Completion Rate, etc."
+                        rows={3}
+                        {...field}
+                        data-testid="textarea-form-key-metrics"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="filters"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Filters</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="How do you want to slice the data? Example: By date range, by geographic region, by school, by user type..."
+                        rows={3}
+                        {...field}
+                        data-testid="textarea-form-filters"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="mockups"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mock-ups, Examples, or Links</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Please provide links or descriptions of similar reports/dashboards..."
+                        rows={2}
+                        {...field}
+                        data-testid="textarea-form-mockups"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
+          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
+            <h3 className="font-semibold text-sm">Section 4: Actions</h3>
+            
+            <FormField
+              control={form.control}
+              name="actionPlan"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Action Plan</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="How will you and your team act on the insights from this analysis/dashboard?"
+                      rows={3}
+                      {...field}
+                      data-testid="textarea-form-action-plan"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <Card className="bg-muted">
             <CardContent className="p-4">
@@ -235,7 +545,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 <div className="text-sm text-muted-foreground">
                   <p className="font-medium text-foreground mb-1">What happens next?</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>Your request will be reviewed by the data team</li>
+                    <li>Your request will be reviewed by the Data & Impact team</li>
                     <li>You'll receive an estimated completion time within 24 hours</li>
                     <li>Track progress and communicate through the request detail page</li>
                   </ul>
