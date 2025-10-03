@@ -36,6 +36,7 @@ export interface IStorage {
   updateDataRequestStatus(id: string, status: string, estimatedDays?: number): Promise<DataRequest | undefined>;
   assignDataRequest(id: string, analystId: string): Promise<DataRequest | undefined>;
   updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined>;
+  deleteDataRequest(id: string): Promise<void>;
   purgeAllRequests(): Promise<{ deleted: number }>;
   
   // Comment operations
@@ -338,6 +339,10 @@ export class DatabaseStorage implements IStorage {
       .groupBy(dataRequests.priority);
 
     return results.map(r => ({ priority: r.priority, count: r.count }));
+  }
+
+  async deleteDataRequest(id: string): Promise<void> {
+    await db.delete(dataRequests).where(eq(dataRequests.id, id));
   }
 
   async purgeAllRequests(): Promise<{ deleted: number }> {
