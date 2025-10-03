@@ -36,6 +36,7 @@ export interface IStorage {
   updateDataRequestStatus(id: string, status: string, estimatedDays?: number): Promise<DataRequest | undefined>;
   assignDataRequest(id: string, analystId: string): Promise<DataRequest | undefined>;
   updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined>;
+  purgeAllRequests(): Promise<{ deleted: number }>;
   
   // Comment operations
   addComment(comment: InsertComment, userId: string): Promise<Comment>;
@@ -337,6 +338,17 @@ export class DatabaseStorage implements IStorage {
       .groupBy(dataRequests.priority);
 
     return results.map(r => ({ priority: r.priority, count: r.count }));
+  }
+
+  async purgeAllRequests(): Promise<{ deleted: number }> {
+    const [countResult] = await db.select({ count: count() }).from(dataRequests);
+    const total = countResult.count;
+    
+    await db.delete(comments);
+    await db.delete(attachments);
+    await db.delete(dataRequests);
+    
+    return { deleted: total };
   }
 }
 

@@ -404,6 +404,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin route to purge all requests
+  app.post('/api/admin/purge-requests', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'data_analyst') {
+        return res.status(403).json({ message: "Unauthorized - admin only" });
+      }
+
+      const result = await storage.purgeAllRequests();
+      res.json(result);
+    } catch (error) {
+      console.error("Error purging requests:", error);
+      res.status(500).json({ message: "Failed to purge requests" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
