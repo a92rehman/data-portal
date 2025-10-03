@@ -48,15 +48,19 @@ export const requestStatusEnum = pgEnum("request_status", [
 
 // Request priority enum
 export const requestPriorityEnum = pgEnum("request_priority", [
-  "low",
-  "medium", 
-  "high"
+  "p0_critical",
+  "p1_high", 
+  "p2_medium",
+  "p3_low"
 ]);
 
 // Request type enum
 export const requestTypeEnum = pgEnum("request_type", [
-  "powerbi",
-  "adhoc",
+  "new_dashboard",
+  "modify_dashboard",
+  "adhoc_analysis",
+  "data_extraction",
+  "data_bug",
   "other"
 ]);
 
