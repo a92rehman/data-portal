@@ -488,7 +488,7 @@ export default function Dashboard() {
 
       {/* Request Form Modal */}
       <Dialog open={showRequestForm} onOpenChange={setShowRequestForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-6">
           <RequestForm 
             onClose={() => setShowRequestForm(false)}
             onSuccess={() => {

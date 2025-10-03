@@ -100,12 +100,12 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
   const isDashboardRequest = selectedType === "new_dashboard" || selectedType === "modify_dashboard";
 
   return (
-    <div className="flex flex-col max-h-[70vh]">
-      <DialogHeader className="sticky top-0 z-10 bg-background pb-4 border-b border-border">
+    <div className="flex flex-col h-[calc(85vh-100px)]">
+      <DialogHeader className="flex-shrink-0 pb-4 border-b border-border">
         <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">New Data Request</DialogTitle>
       </DialogHeader>
 
-      <div className="flex-1 overflow-y-auto pr-2">
+      <div className="flex-1 overflow-y-auto pr-2 mt-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pt-4">
           
