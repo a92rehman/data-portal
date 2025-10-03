@@ -101,12 +101,12 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className="sticky top-0 z-10 bg-background pb-4">
         <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">New Data Request</DialogTitle>
       </DialogHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 max-h-[70vh] overflow-y-auto pr-2 pt-2">
           
           <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(260, 100%, 97%) 0%, hsl(220, 100%, 98%) 100%)'}}>
             <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Section 1: Requester & Project Information</h3>
