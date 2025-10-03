@@ -102,19 +102,14 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
   return (
     <>
       <DialogHeader>
-        <div className="flex items-center justify-between">
-          <DialogTitle className="text-xl font-semibold">New Data Request</DialogTitle>
-          <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-close-form">
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+        <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">New Data Request</DialogTitle>
       </DialogHeader>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 max-h-[70vh] overflow-y-auto pr-2">
           
-          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
-            <h3 className="font-semibold text-sm">Section 1: Requester & Project Information</h3>
+          <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(260, 100%, 97%) 0%, hsl(220, 100%, 98%) 100%)'}}>
+            <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Section 1: Requester & Project Information</h3>
             
             <FormField
               control={form.control}
@@ -183,8 +178,8 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
             />
           </div>
 
-          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
-            <h3 className="font-semibold text-sm">Section 2: Request Details & Business Impact</h3>
+          <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(200, 100%, 97%) 0%, hsl(180, 100%, 98%) 100%)'}}>
+            <h3 className="font-semibold text-sm bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Section 2: Request Details & Business Impact</h3>
             
             <FormField
               control={form.control}
@@ -233,9 +228,6 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                       data-testid="textarea-form-primary-question"
                     />
                   </FormControl>
-                  <FormDescription>
-                    Be specific about the metric, time window, and why you need this data
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -331,8 +323,8 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
             </div>
           </div>
 
-          <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
-            <h3 className="font-semibold text-sm">Section 3: Data Frequency</h3>
+          <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(280, 100%, 97%) 0%, hsl(300, 100%, 98%) 100%)'}}>
+            <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Section 3: Data Frequency</h3>
             
             <FormField
               control={form.control}
@@ -410,8 +402,8 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
 
           {isDashboardRequest && (
             <>
-              <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
-                <h3 className="font-semibold text-sm">Dashboard-Specific Information</h3>
+              <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(140, 100%, 97%) 0%, hsl(160, 100%, 98%) 100%)'}}>
+                <h3 className="font-semibold text-sm bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">Dashboard-Specific Information</h3>
               
               <FormField
                 control={form.control}
@@ -515,8 +507,8 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
               />
             </div>
 
-            <div className="space-y-4 bg-muted/30 p-4 rounded-lg border border-border">
-              <h3 className="font-semibold text-sm">Section 4: Actions</h3>
+            <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(40, 100%, 97%) 0%, hsl(20, 100%, 98%) 100%)'}}>
+              <h3 className="font-semibold text-sm bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Section 4: Actions</h3>
               
               <FormField
                 control={form.control}
