@@ -101,9 +101,7 @@ export default function Dashboard() {
   // Delete request mutation
   const deleteRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const response = await apiRequest(`/api/requests/${requestId}`, {
-        method: "DELETE",
-      });
+      const response = await apiRequest("DELETE", `/api/requests/${requestId}`);
       return response;
     },
     onSuccess: () => {
