@@ -337,6 +337,21 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     return status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  const formatPriority = (priority: string) => {
+    switch (priority) {
+      case "p0_critical":
+        return "P0 - Critical";
+      case "p1_high":
+        return "P1 - High";
+      case "p2_medium":
+        return "P2 - Medium";
+      case "p3_low":
+        return "P3 - Low";
+      default:
+        return priority.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName && !lastName) return "U";
     return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
@@ -385,20 +400,21 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Priority</p>
               {isAnalyst && isEditingPriorityDeadline ? (
-                <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "low" | "medium" | "high")} data-testid="select-edit-priority">
+                <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="p0_critical">P0 - Critical</SelectItem>
+                    <SelectItem value="p1_high">P1 - High</SelectItem>
+                    <SelectItem value="p2_medium">P2 - Medium</SelectItem>
+                    <SelectItem value="p3_low">P3 - Low</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
                 <div className="flex items-center gap-1" data-testid="priority-display">
                   {getPriorityIcon(request.priority)}
-                  <span className="text-sm font-medium capitalize">{request.priority}</span>
+                  <span className="text-sm font-medium capitalize">{formatPriority(request.priority)}</span>
                 </div>
               )}
             </div>
@@ -488,17 +504,161 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-        {/* Description */}
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Description</p>
-          <Card className="border-2 border-purple-200 shadow-md">
-            <CardContent className="p-4">
-              <p className="text-sm text-foreground" data-testid="text-description">
-                {request.description}
-              </p>
-            </CardContent>
-          </Card>
+        {/* Section 3: Request Details & Business Impact */}
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <InfoIcon className="w-4 h-4" />
+            Section 3: Request Details & Business Impact
+          </h4>
+          
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Primary Question</p>
+            <Card className="border-2 border-purple-200 shadow-md">
+              <CardContent className="p-4">
+                <p className="text-sm text-foreground" data-testid="text-primary-question">
+                  {request.primaryQuestion}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Business Problem or Goal</p>
+            <Card className="border-2 border-purple-200 shadow-md">
+              <CardContent className="p-4">
+                <p className="text-sm text-foreground" data-testid="text-business-problem">
+                  {request.businessProblem}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Decision or Action</p>
+            <Card className="border-2 border-purple-200 shadow-md">
+              <CardContent className="p-4">
+                <p className="text-sm text-foreground" data-testid="text-decision-action">
+                  {request.decisionAction}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Impact</p>
+              <Card className="border-2 border-blue-200 shadow-md">
+                <CardContent className="p-4">
+                  <p className="text-sm text-foreground capitalize" data-testid="text-impact">
+                    {request.impact}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Frequency</p>
+              <Card className="border-2 border-blue-200 shadow-md">
+                <CardContent className="p-4">
+                  <p className="text-sm text-foreground" data-testid="text-frequency">
+                    {request.frequency}
+                    {request.frequencyDuration && request.frequencyUnit && 
+                      ` (${request.frequencyDuration} ${request.frequencyUnit})`
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
+
+        {/* Section 4: Dashboard-Specific Details (if applicable) */}
+        {(request.type === "new_dashboard" || request.type === "modify_dashboard") && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Section 4: Dashboard-Specific Details
+            </h4>
+
+            {request.dashboardAudience && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Audience/Users</p>
+                <Card className="border-2 border-green-200 shadow-md">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground" data-testid="text-dashboard-audience">
+                      {request.dashboardAudience}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {request.dashboardRefreshFrequency && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Intended Refresh Frequency</p>
+                <Card className="border-2 border-green-200 shadow-md">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground capitalize" data-testid="text-refresh-frequency">
+                      {request.dashboardRefreshFrequency}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {request.keyMetrics && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Key Metrics/KPIs Needed</p>
+                <Card className="border-2 border-green-200 shadow-md">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground" data-testid="text-key-metrics">
+                      {request.keyMetrics}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {request.filters && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Filters</p>
+                <Card className="border-2 border-green-200 shadow-md">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground" data-testid="text-filters">
+                      {request.filters}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {request.mockups && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Mock-ups, Examples, or Links</p>
+                <Card className="border-2 border-green-200 shadow-md">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground" data-testid="text-mockups">
+                      {request.mockups}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {request.actionPlan && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Action Plan</p>
+                <Card className="border-2 border-green-200 shadow-md">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-foreground" data-testid="text-action-plan">
+                      {request.actionPlan}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Attachments Section */}
         <div>

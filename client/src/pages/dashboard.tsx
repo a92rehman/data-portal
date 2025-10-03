@@ -136,7 +136,8 @@ export default function Dashboard() {
   // Filter requests based on search query
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    request.description.toLowerCase().includes(searchQuery.toLowerCase())
+    request.primaryQuestion.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    request.businessProblem.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getStatusBadge = (status: string) => {
