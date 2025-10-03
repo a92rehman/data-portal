@@ -252,6 +252,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/requests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'data_analyst') {
+        return res.status(403).json({ message: "Only data analysts can delete requests" });
+      }
+
+      await storage.deleteDataRequest(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting request:", error);
+      res.status(500).json({ message: "Failed to delete request" });
+    }
+  });
+
   // Comment routes
   app.post('/api/requests/:id/comments', isAuthenticated, async (req: any, res) => {
     try {
