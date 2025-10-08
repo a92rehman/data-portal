@@ -12,6 +12,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Three-Role Access Control System (October 8, 2025)**: Implemented proper role-based access control for three distinct user roles
+  - **Requester**: Can only see their own submitted requests in "My Requests" view (filtered by requestedById)
+  - **Data & Impact Lead**: Can see all requests across the organization, review pending requests, accept/reject requests, assign to analysts, and set priorities/deadlines
+  - **Analyst**: Can only see requests assigned to them (filtered by assignedToId), add blockers, suggest deadlines, and update request status
+  - All new requests automatically land in "pending_review" status (database default)
+  - Backend enforcement: GET /api/requests filters by role (requesters see own, analysts see assigned, leads see all)
+  - Role checks on routes: accept/reject/assign/priority-deadline restricted to team_lead only; blockers/suggest-deadline restricted to analyst only
+  - Created role-specific pages: Pending Reviews, All Requests (team_lead), My Assignments (analyst), Team Management (team_lead)
+
 - **Analytics Access Control (October 3, 2025)**: Restricted Analytics view to data analysts only
   - Analytics navigation link removed from sidebar for team leads
   - Only data analysts can see and access the Analytics page
@@ -118,11 +127,11 @@ Preferred communication style: Simple, everyday language.
 6. User is redirected to dashboard
 
 **Authorization Model:**
-- Role-based access control (team leads vs data analysts)
-- Team leads can create requests and view only their own requests (filtered by requestedById)
-- Data analysts see all requests across all departments
-- Data analysts can assign requests, update status/priority/deadline, cancel requests, and add completion estimates
-- All authenticated users can view analytics
+- Role-based access control (requesters, Data & Impact Lead, analysts)
+- **Requesters**: Can create requests and view only their own requests (filtered by requestedById)
+- **Data & Impact Lead**: Can see all requests across all departments, accept/reject pending requests, assign requests to analysts, update priority/deadline
+- **Analysts**: Can only see requests assigned to them (filtered by assignedToId), add blockers, suggest deadlines, update status
+- Analytics view is restricted to Data & Impact Lead only
 
 **Data Analyst Accounts:**
 - abdul.rehman@niete.edu.pk (Abdul Rehman)
