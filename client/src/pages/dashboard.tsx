@@ -33,10 +33,10 @@ export default function Dashboard() {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
 
-  // Fetch analysts for filter
+  // Fetch analysts for filter (only for team leads and analysts)
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
-    enabled: isAuthenticated && (user as any)?.role === "data_analyst",
+    enabled: isAuthenticated && ((user as any)?.role === "team_lead" || (user as any)?.role === "analyst"),
   });
 
   // Apply stored role selection after login
@@ -142,9 +142,12 @@ export default function Dashboard() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      submitted: "gradient-badge-submitted",
-      "under_review": "gradient-badge-review",
-      "in_progress": "gradient-badge-progress",
+      pending_review: "gradient-badge-review",
+      accepted: "gradient-badge-progress",
+      rejected: "gradient-badge-cancelled",
+      assigned: "gradient-badge-progress",
+      in_progress: "gradient-badge-progress",
+      blocked: "gradient-badge-cancelled",
       completed: "gradient-badge-completed",
       cancelled: "gradient-badge-cancelled",
     };
@@ -298,10 +301,14 @@ export default function Dashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="submitted">Submitted</SelectItem>
-                      <SelectItem value="under_review">Under Review</SelectItem>
+                      <SelectItem value="pending_review">Pending Review</SelectItem>
+                      <SelectItem value="accepted">Accepted</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="assigned">Assigned</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="blocked">Blocked</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -352,7 +359,7 @@ export default function Dashboard() {
                     </SelectContent>
                   </Select>
 
-                  {(user as any)?.role === "data_analyst" && (
+                  {((user as any)?.role === "team_lead" || (user as any)?.role === "analyst") && (
                     <Select value={filters.assignedToId || "all"} onValueChange={(value) => setFilters({...filters, assignedToId: value === "all" ? "" : value})}>
                       <SelectTrigger className="w-40" data-testid="select-assigned">
                         <SelectValue placeholder="All Analysts" />
@@ -370,14 +377,16 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <Button 
-                  onClick={() => setShowRequestForm(true)} 
-                  data-testid="button-new-request"
-                  className="gradient-button-primary text-white font-semibold"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Request
-                </Button>
+                {((user as any)?.role === "requester" || (user as any)?.role === "team_lead") && (
+                  <Button 
+                    onClick={() => setShowRequestForm(true)} 
+                    data-testid="button-new-request"
+                    className="gradient-button-primary text-white font-semibold"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Request
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

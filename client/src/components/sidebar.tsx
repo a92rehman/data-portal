@@ -8,7 +8,10 @@ import {
   Users, 
   Plus, 
   Settings, 
-  LogOut 
+  LogOut,
+  ClipboardCheck,
+  FileText,
+  UserCheck
 } from "lucide-react";
 
 interface SidebarProps {
@@ -23,10 +26,35 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
     window.location.href = "/api/logout";
   };
 
-  const navItems = [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
-    ...(user?.role === "data_analyst" ? [{ href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" }] : []),
-  ];
+  // Role-specific navigation items
+  const getNavItems = () => {
+    const role = user?.role;
+    
+    if (role === "team_lead") {
+      // Data & Impact Lead - Full access
+      return [
+        { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
+        { href: "/pending-reviews", icon: ClipboardCheck, label: "Pending Reviews", testId: "nav-pending-reviews" },
+        { href: "/all-requests", icon: FileText, label: "All Requests", testId: "nav-all-requests" },
+        { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
+        { href: "/team", icon: Users, label: "Team Management", testId: "nav-team" },
+      ];
+    } else if (role === "analyst") {
+      // Analyst - Moderate access
+      return [
+        { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
+        { href: "/my-assignments", icon: UserCheck, label: "My Assignments", testId: "nav-my-assignments" },
+        { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
+      ];
+    } else {
+      // Requester - Limited access
+      return [
+        { href: "/", icon: LayoutDashboard, label: "My Requests", testId: "nav-dashboard" },
+      ];
+    }
+  };
+
+  const navItems = getNavItems();
 
   return (
     <aside className="w-64 bg-white border-r-2 border-purple-200 min-h-[calc(100vh-73px)] p-4 shadow-md">
@@ -48,22 +76,26 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
           );
         })}
 
-        <Separator className="my-4 bg-purple-200" />
-        
-        <div className="pt-2">
-          <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
-            Quick Actions
-          </p>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start gradient-button-secondary font-medium" 
-            onClick={onNewRequest}
-            data-testid="button-quick-new-request"
-          >
-            <Plus className="w-5 h-5 mr-3" />
-            New Request
-          </Button>
-        </div>
+        {(user?.role === "requester" || user?.role === "team_lead") && (
+          <>
+            <Separator className="my-4 bg-purple-200" />
+            
+            <div className="pt-2">
+              <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
+                Quick Actions
+              </p>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gradient-button-secondary font-medium" 
+                onClick={onNewRequest}
+                data-testid="button-quick-new-request"
+              >
+                <Plus className="w-5 h-5 mr-3" />
+                New Request
+              </Button>
+            </div>
+          </>
+        )}
 
         <Separator className="my-4 bg-purple-200" />
         
