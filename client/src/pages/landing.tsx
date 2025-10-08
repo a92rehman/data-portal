@@ -96,7 +96,7 @@ export default function Landing() {
                     <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
                       <Building2 className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data & Impact Lead</h3>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data Lead</h3>
                     <p className="text-xs text-gray-600 mb-3">Review and assign requests to analysts</p>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
@@ -104,7 +104,7 @@ export default function Landing() {
                       data-testid="button-login-team-lead"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Data & Impact Lead
+                      Data Lead
                     </Button>
                   </CardContent>
                 </Card>
@@ -114,7 +114,7 @@ export default function Landing() {
                     <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
                       <BarChart3 className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2 text-gray-900">Analyst</h3>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data Analyst</h3>
                     <p className="text-xs text-gray-600 mb-3">Work on requests and track blockers</p>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
