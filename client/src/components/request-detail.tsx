@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -629,6 +629,59 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
+        {/* Data & Impact Lead Actions (Accept/Reject) */}
+        {isTeamLead && request.status === "pending_review" && (
+          <Card className="border-2 border-green-300 shadow-md bg-green-50/50">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                Review Request
+              </h4>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => acceptRequestMutation.mutate()}
+                  disabled={acceptRequestMutation.isPending}
+                  data-testid="button-accept-request"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                >
+                  {acceptRequestMutation.isPending ? "Accepting..." : "Accept Request"}
+                </Button>
+                <Button
+                  onClick={() => setShowRejectDialog(true)}
+                  disabled={rejectRequestMutation.isPending}
+                  variant="destructive"
+                  data-testid="button-reject-request"
+                  className="flex-1"
+                >
+                  Reject Request
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Analyst Actions (Add Blocker) */}
+        {isAnalyst && (request.status === "assigned" || request.status === "in_progress") && (
+          <Card className="border-2 border-orange-300 shadow-md bg-orange-50/50">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <CircleAlert className="w-4 h-4 text-orange-600" />
+                Blockers & Issues
+              </h4>
+              <Button
+                onClick={() => setShowBlockerDialog(true)}
+                variant="outline"
+                size="sm"
+                data-testid="button-add-blocker"
+                className="w-full"
+              >
+                <CircleAlert className="w-4 h-4 mr-2" />
+                Add Blocker
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Section 3: Request Details & Business Impact */}
         <div className="space-y-4">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -932,9 +985,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="submitted">Submitted</SelectItem>
-                              <SelectItem value="under_review">Under Review</SelectItem>
+                              <SelectItem value="pending_review">Pending Review</SelectItem>
+                              <SelectItem value="accepted">Accepted</SelectItem>
+                              <SelectItem value="rejected">Rejected</SelectItem>
+                              <SelectItem value="assigned">Assigned</SelectItem>
                               <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="blocked">Blocked</SelectItem>
                               <SelectItem value="completed">Completed</SelectItem>
                               <SelectItem value="cancelled">Cancelled</SelectItem>
                             </SelectContent>
@@ -1056,6 +1112,190 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </div>
       </div>
+
+      {/* Reject Request Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent data-testid="dialog-reject-request">
+          <DialogHeader>
+            <DialogTitle>Reject Request</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this request. This will be shared with the requester.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Enter rejection reason..."
+              className="min-h-[100px]"
+              data-testid="input-rejection-reason"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectDialog(false);
+                setRejectionReason("");
+              }}
+              data-testid="button-cancel-reject"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => rejectRequestMutation.mutate(rejectionReason)}
+              disabled={!rejectionReason.trim() || rejectRequestMutation.isPending}
+              data-testid="button-confirm-reject"
+            >
+              {rejectRequestMutation.isPending ? "Rejecting..." : "Reject Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Blocker Dialog */}
+      <Dialog open={showBlockerDialog} onOpenChange={setShowBlockerDialog}>
+        <DialogContent data-testid="dialog-add-blocker">
+          <DialogHeader>
+            <DialogTitle>Add Blocker</DialogTitle>
+            <DialogDescription>
+              Describe the blocker or issue preventing progress on this request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={blockerDescription}
+              onChange={(e) => setBlockerDescription(e.target.value)}
+              placeholder="Describe the blocker..."
+              className="min-h-[100px]"
+              data-testid="input-blocker-description"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowBlockerDialog(false);
+                setBlockerDescription("");
+              }}
+              data-testid="button-cancel-blocker"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => addBlockerMutation.mutate(blockerDescription)}
+              disabled={!blockerDescription.trim() || addBlockerMutation.isPending}
+              data-testid="button-confirm-blocker"
+              className="gradient-button-primary text-white font-semibold"
+            >
+              {addBlockerMutation.isPending ? "Adding..." : "Add Blocker"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Analyst Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent data-testid="dialog-assign-analyst">
+          <DialogHeader>
+            <DialogTitle>Assign Analyst</DialogTitle>
+            <DialogDescription>
+              Select an analyst and optionally set a deadline for this request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Select Analyst</label>
+              <Select value={assignAnalystId} onValueChange={setAssignAnalystId} data-testid="select-dialog-analyst">
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose analyst..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {analysts.map((analyst) => (
+                    <SelectItem key={analyst.id} value={analyst.id}>
+                      {analyst.firstName} {analyst.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Due Date (Optional)</label>
+              <Input
+                type="date"
+                value={assignDueDate}
+                onChange={(e) => setAssignDueDate(e.target.value)}
+                data-testid="input-dialog-due-date"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAssignDialog(false);
+                setAssignAnalystId("");
+                setAssignDueDate("");
+              }}
+              data-testid="button-cancel-assign"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => assignAnalystMutation.mutate({ 
+                analystId: assignAnalystId, 
+                dueDate: assignDueDate || undefined 
+              })}
+              disabled={!assignAnalystId || assignAnalystMutation.isPending}
+              data-testid="button-confirm-assign"
+              className="gradient-button-primary text-white font-semibold"
+            >
+              {assignAnalystMutation.isPending ? "Assigning..." : "Assign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Suggest Deadline Dialog */}
+      <Dialog open={showSuggestDeadlineDialog} onOpenChange={setShowSuggestDeadlineDialog}>
+        <DialogContent data-testid="dialog-suggest-deadline">
+          <DialogHeader>
+            <DialogTitle>Suggest Deadline</DialogTitle>
+            <DialogDescription>
+              Suggest a realistic deadline for completing this request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="date"
+              value={suggestedDeadlineDate}
+              onChange={(e) => setSuggestedDeadlineDate(e.target.value)}
+              data-testid="input-suggested-deadline"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSuggestDeadlineDialog(false);
+                setSuggestedDeadlineDate("");
+              }}
+              data-testid="button-cancel-suggest"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => suggestDeadlineMutation.mutate(suggestedDeadlineDate)}
+              disabled={!suggestedDeadlineDate || suggestDeadlineMutation.isPending}
+              data-testid="button-confirm-suggest"
+              className="gradient-button-primary text-white font-semibold"
+            >
+              {suggestDeadlineMutation.isPending ? "Suggesting..." : "Suggest Deadline"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
