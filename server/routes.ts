@@ -121,9 +121,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Role-based filtering:
       // - Requesters can only see their own requests
       // - Team leads (Data & Impact Leads) see all requests for review/assignment
-      // - Analysts see requests assigned to them
+      // - Analysts see only requests assigned to them
       if (user?.role === 'requester') {
         filters.requestedById = userId;
+      } else if (user?.role === 'analyst') {
+        filters.assignedToId = userId;
       }
 
       // Remove undefined filters
@@ -178,8 +180,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/assign', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user || user.role !== 'analyst') {
-        return res.status(403).json({ message: "Only analysts can assign requests" });
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data & Impact Lead can assign requests" });
       }
 
       const { analystId } = req.body;
@@ -229,8 +231,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/priority-deadline', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user || user.role !== 'analyst') {
-        return res.status(403).json({ message: "Only analysts can update priority and deadline" });
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data & Impact Lead can update priority and deadline" });
       }
 
       const { priority, dueDate } = req.body;
