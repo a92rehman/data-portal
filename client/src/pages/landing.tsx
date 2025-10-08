@@ -122,7 +122,7 @@ export default function Landing() {
                       data-testid="button-login-analyst"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Analyst
+                      Data Analyst
                     </Button>
                   </CardContent>
                 </Card>
