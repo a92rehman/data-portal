@@ -141,6 +141,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.query.assignedToId) {
           filters.assignedToId = req.query.assignedToId as string;
         }
+      } else {
+        // Security: Deny access to users without a recognized role
+        console.warn(`User ${userId} attempted to access requests with invalid/missing role: ${user.role}`);
+        return res.status(403).json({ 
+          message: "Access denied. Please complete your profile setup or contact an administrator." 
+        });
       }
 
       // Remove undefined/empty filters
