@@ -1098,14 +1098,21 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               />
               <Button 
                 type="submit" 
-                size="sm" 
                 disabled={!newComment.trim() || addCommentMutation.isPending}
                 data-testid="button-add-comment"
+                className="gradient-button-primary text-white font-semibold px-6"
+                style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
               >
                 {addCommentMutation.isPending ? (
-                  <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Sending...
+                  </>
                 ) : (
-                  <Send className="w-4 h-4" />
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Send
+                  </>
                 )}
               </Button>
             </form>
