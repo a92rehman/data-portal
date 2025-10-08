@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ChartLine, Sparkles, TrendingUp, Users, BarChart3, Building2 } from "lucide-react";
 
 export default function Landing() {
-  const handleRoleSelection = (role: "data_analyst" | "team_lead") => {
+  const handleRoleSelection = (role: "requester" | "team_lead" | "analyst") => {
     localStorage.setItem("selected_role", role);
     window.location.href = "/api/login";
   };
@@ -72,39 +72,57 @@ export default function Landing() {
                 <p className="text-gray-600">Select your role to continue</p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card className="border-2 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("data_analyst")}>
-                  <CardContent className="p-8 text-center">
-                    <div className="w-16 h-16 mx-auto rounded-2xl mb-4 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-                      <BarChart3 className="w-8 h-8 text-white" />
+              <div className="grid md:grid-cols-3 gap-6">
+                <Card className="border-2 border-green-300 hover:border-green-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("requester")}>
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 71%, 45%) 100%)'}}>
+                      <Users className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold mb-2 text-gray-900">Data Analyst</h3>
-                    <p className="text-sm text-gray-600 mb-4">Access all requests, manage priorities, and assign tasks</p>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Requester</h3>
+                    <p className="text-xs text-gray-600 mb-3">Submit data requests and track their status</p>
                     <Button 
-                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
-                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                      data-testid="button-login-analyst"
+                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
+                      style={{background: 'linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 71%, 45%) 100%)'}}
+                      data-testid="button-login-requester"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Continue as Analyst
+                      Requester
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card className="border-2 border-blue-300 hover:border-blue-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("team_lead")}>
-                  <CardContent className="p-8 text-center">
-                    <div className="w-16 h-16 mx-auto rounded-2xl mb-4 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
-                      <Building2 className="w-8 h-8 text-white" />
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                      <Building2 className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold mb-2 text-gray-900">Other Teams</h3>
-                    <p className="text-sm text-gray-600 mb-4">Submit data requests and track progress</p>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Team Lead</h3>
+                    <p className="text-xs text-gray-600 mb-3">Review and assign requests to analysts</p>
                     <Button 
-                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
                       style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}
-                      data-testid="button-login-team"
+                      data-testid="button-login-team-lead"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Continue as Team Member
+                      Team Lead
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("analyst")}>
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                      <BarChart3 className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Analyst</h3>
+                    <p className="text-xs text-gray-600 mb-3">Work on requests and track blockers</p>
+                    <Button 
+                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
+                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                      data-testid="button-login-analyst"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Analyst
                     </Button>
                   </CardContent>
                 </Card>

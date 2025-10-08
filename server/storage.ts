@@ -82,7 +82,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDataAnalysts(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, 'data_analyst'));
+    return await db.select().from(users).where(eq(users.role, 'analyst'));
   }
 
   async createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest> {

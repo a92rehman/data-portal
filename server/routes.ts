@@ -38,7 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { role } = req.body;
       
-      if (!role || (role !== 'data_analyst' && role !== 'team_lead')) {
+      if (!role || !['requester', 'team_lead', 'analyst'].includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
 
@@ -49,8 +49,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.upsertUser({
         ...user,
-        role: role as "data_analyst" | "team_lead",
-        department: user.department || "engineering",
+        role: role as "requester" | "team_lead" | "analyst",
+        department: user.department || null,
       });
 
       res.json({ success: true });

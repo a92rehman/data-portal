@@ -24,6 +24,14 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// User role enum
+export const userRoleEnum = pgEnum("user_role", [
+  "requester",
+  "team_lead",
+  "analyst",
+  "data_analyst"  // Legacy - will migrate to analyst
+]);
+
 // User storage table.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -31,7 +39,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").notNull().default("team_lead"), // team_lead, data_analyst
+  role: userRoleEnum("role").notNull().default("requester"), // requester, team_lead, analyst
   department: varchar("department"), // Program, P&C, Product, LP, Training, ERP, Finance, Leadership, Strategy, Other
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -39,9 +47,14 @@ export const users = pgTable("users", {
 
 // Request status enum
 export const requestStatusEnum = pgEnum("request_status", [
-  "submitted",
-  "under_review", 
-  "in_progress",
+  "submitted",         // Legacy - will migrate to pending_review
+  "under_review",      // Legacy - will migrate to pending_review
+  "pending_review",    // Waiting for team lead to review
+  "rejected",          // Rejected by team lead
+  "accepted",          // Accepted by team lead, waiting for assignment
+  "assigned",          // Assigned to analyst
+  "in_progress",       // Analyst working on it
+  "blocked",           // Has blockers
   "completed",
   "cancelled"
 ]);
@@ -70,12 +83,18 @@ export const dataRequests = pgTable("data_requests", {
   title: varchar("title").notNull(),
   type: requestTypeEnum("type").notNull(),
   priority: requestPriorityEnum("priority").notNull(),
-  status: requestStatusEnum("status").notNull().default("submitted"),
+  status: requestStatusEnum("status").notNull().default("pending_review"),
   department: varchar("department").notNull(),
   requestedById: varchar("requested_by_id").notNull().references(() => users.id),
-  assignedToId: varchar("assigned_to_id").references(() => users.id),
+  reviewedById: varchar("reviewed_by_id").references(() => users.id), // Team lead who reviewed
+  assignedToId: varchar("assigned_to_id").references(() => users.id), // Analyst assigned
   dueDate: timestamp("due_date").notNull(),
+  suggestedDeadline: timestamp("suggested_deadline"), // Analyst's suggested deadline
   estimatedCompletionDays: integer("estimated_completion_days"),
+  
+  // Review fields
+  reviewedAt: timestamp("reviewed_at"),
+  rejectionReason: text("rejection_reason"),
   
   primaryQuestion: text("primary_question").notNull(),
   businessProblem: text("business_problem").notNull(),
@@ -117,11 +136,24 @@ export const attachments = pgTable("attachments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Blockers table for tracking issues/blockers by analysts
+export const blockers = pgTable("blockers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  requestId: varchar("request_id").notNull().references(() => dataRequests.id, { onDelete: 'cascade' }),
+  description: text("description").notNull(),
+  reportedById: varchar("reported_by_id").notNull().references(() => users.id),
+  resolved: varchar("resolved").notNull().default("false"), // "true" or "false"
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   requestedDataRequests: many(dataRequests, { relationName: "requestedBy" }),
+  reviewedDataRequests: many(dataRequests, { relationName: "reviewedBy" }),
   assignedDataRequests: many(dataRequests, { relationName: "assignedTo" }),
   comments: many(comments),
+  blockers: many(blockers),
 }));
 
 export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => ({
@@ -130,6 +162,11 @@ export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => 
     references: [users.id],
     relationName: "requestedBy",
   }),
+  reviewedBy: one(users, {
+    fields: [dataRequests.reviewedById],
+    references: [users.id],
+    relationName: "reviewedBy",
+  }),
   assignedTo: one(users, {
     fields: [dataRequests.assignedToId],
     references: [users.id],
@@ -137,6 +174,7 @@ export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => 
   }),
   comments: many(comments),
   attachments: many(attachments),
+  blockers: many(blockers),
 }));
 
 export const commentsRelations = relations(comments, ({ one }) => ({
@@ -157,6 +195,17 @@ export const attachmentsRelations = relations(attachments, ({ one }) => ({
   }),
   uploadedBy: one(users, {
     fields: [attachments.uploadedById],
+    references: [users.id],
+  }),
+}));
+
+export const blockersRelations = relations(blockers, ({ one }) => ({
+  request: one(dataRequests, {
+    fields: [blockers.requestId],
+    references: [dataRequests.id],
+  }),
+  reportedBy: one(users, {
+    fields: [blockers.reportedById],
     references: [users.id],
   }),
 }));
@@ -183,6 +232,11 @@ export const insertAttachmentSchema = createInsertSchema(attachments).omit({
   createdAt: true,
   uploadedById: true 
 });
+export const insertBlockerSchema = createInsertSchema(blockers).omit({ 
+  id: true, 
+  createdAt: true,
+  reportedById: true 
+});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -193,11 +247,15 @@ export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Comment = typeof comments.$inferSelect;
 export type InsertAttachment = z.infer<typeof insertAttachmentSchema>;
 export type Attachment = typeof attachments.$inferSelect;
+export type InsertBlocker = z.infer<typeof insertBlockerSchema>;
+export type Blocker = typeof blockers.$inferSelect;
 
 // Extended types for API responses
 export type DataRequestWithDetails = DataRequest & {
   requestedBy: User;
+  reviewedBy: User | null;
   assignedTo: User | null;
   comments: (Comment & { user: User })[];
   attachments: (Attachment & { uploadedBy: User })[];
+  blockers: (Blocker & { reportedBy: User })[];
 };
