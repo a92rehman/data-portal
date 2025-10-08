@@ -536,7 +536,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics routes
   app.get('/api/analytics/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const stats = await storage.getRequestStats();
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // Role-based stats filtering:
+      // - Requesters see stats for their own requests only
+      // - Analysts see stats for requests assigned to them only
+      // - Team leads see stats for all requests
+      const stats = await storage.getRequestStats(userId, user?.role);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);

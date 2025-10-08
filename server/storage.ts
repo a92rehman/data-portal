@@ -62,7 +62,7 @@ export interface IStorage {
   getAttachmentByFilePath(filePath: string): Promise<Attachment | undefined>;
   
   // Analytics operations
-  getRequestStats(): Promise<{
+  getRequestStats(userId: string, role?: string): Promise<{
     totalRequests: number;
     inProgress: number;
     completed: number;
@@ -293,22 +293,43 @@ export class DatabaseStorage implements IStorage {
     return attachment;
   }
 
-  async getRequestStats(): Promise<{
+  async getRequestStats(userId: string, role?: string): Promise<{
     totalRequests: number;
     inProgress: number;
     completed: number;
     avgCompletionDays: number;
   }> {
-    const [totalResult] = await db.select({ count: count() }).from(dataRequests);
-    const [inProgressResult] = await db.select({ count: count() }).from(dataRequests).where(eq(dataRequests.status, 'in_progress'));
-    const [completedResult] = await db.select({ count: count() }).from(dataRequests).where(eq(dataRequests.status, 'completed'));
+    // Build base filter based on role
+    const filters = [];
+    if (role === 'requester') {
+      filters.push(eq(dataRequests.requestedById, userId));
+    } else if (role === 'analyst') {
+      filters.push(eq(dataRequests.assignedToId, userId));
+    }
+    // team_lead sees all requests (no filter)
+
+    const baseFilter = filters.length > 0 ? and(...filters) : undefined;
+
+    const [totalResult] = baseFilter
+      ? await db.select({ count: count() }).from(dataRequests).where(baseFilter)
+      : await db.select({ count: count() }).from(dataRequests);
+
+    const inProgressFilter = baseFilter
+      ? and(baseFilter, eq(dataRequests.status, 'in_progress'))
+      : eq(dataRequests.status, 'in_progress');
+    const [inProgressResult] = await db.select({ count: count() }).from(dataRequests).where(inProgressFilter);
+
+    const completedFilter = baseFilter
+      ? and(baseFilter, eq(dataRequests.status, 'completed'))
+      : eq(dataRequests.status, 'completed');
+    const [completedResult] = await db.select({ count: count() }).from(dataRequests).where(completedFilter);
     
     const [avgResult] = await db
       .select({ 
         avg: sql<number>`AVG(${dataRequests.estimatedCompletionDays})` 
       })
       .from(dataRequests)
-      .where(eq(dataRequests.status, 'completed'));
+      .where(completedFilter);
 
     return {
       totalRequests: totalResult.count,
