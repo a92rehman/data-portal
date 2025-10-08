@@ -52,7 +52,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
-    enabled: (user as any)?.role === "data_analyst",
+    enabled: (user as any)?.role === "team_lead" || (user as any)?.role === "analyst",
   });
 
   const analystForm = useForm({
@@ -265,6 +265,129 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     }
   };
 
+  // New three-role workflow mutations
+  const acceptRequestMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/accept`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request accepted successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to accept request",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  
+  const rejectRequestMutation = useMutation({
+    mutationFn: async (reason: string) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/reject`, { rejectionReason: reason });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request rejected",
+      });
+      setShowRejectDialog(false);
+      setRejectionReason("");
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reject request",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [assignAnalystId, setAssignAnalystId] = useState("");
+  const [assignDueDate, setAssignDueDate] = useState("");
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+
+  const assignAnalystMutation = useMutation({
+    mutationFn: async (data: { analystId: string; dueDate?: string }) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/assign-analyst`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request assigned to analyst successfully",
+      });
+      setShowAssignDialog(false);
+      setAssignAnalystId("");
+      setAssignDueDate("");
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign analyst",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [blockerDescription, setBlockerDescription] = useState("");
+  const [showBlockerDialog, setShowBlockerDialog] = useState(false);
+
+  const addBlockerMutation = useMutation({
+    mutationFn: async (description: string) => {
+      return await apiRequest("POST", `/api/requests/${request.id}/blockers`, { description });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Blocker added successfully",
+      });
+      setShowBlockerDialog(false);
+      setBlockerDescription("");
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add blocker",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const [suggestedDeadlineDate, setSuggestedDeadlineDate] = useState("");
+  const [showSuggestDeadlineDialog, setShowSuggestDeadlineDialog] = useState(false);
+
+  const suggestDeadlineMutation = useMutation({
+    mutationFn: async (suggestedDeadline: string) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/suggest-deadline`, { suggestedDeadline });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Deadline suggestion submitted successfully",
+      });
+      setShowSuggestDeadlineDialog(false);
+      setSuggestedDeadlineDate("");
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to suggest deadline",
+        variant: "destructive",
+      });
+    },
+  });
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -372,7 +495,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     }
   };
 
-  const isAnalyst = (user as any)?.role === "data_analyst";
+  const isAnalyst = (user as any)?.role === "analyst";
+  const isTeamLead = (user as any)?.role === "team_lead";
+  const isRequester = (user as any)?.role === "requester";
 
   return (
     <>

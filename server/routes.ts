@@ -118,8 +118,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         assignedToId: req.query.assignedToId as string,
       };
 
-      // If user is a team lead, they can only see their own requests
-      if (user?.role === 'team_lead') {
+      // Role-based filtering:
+      // - Requesters can only see their own requests
+      // - Team leads (Data & Impact Leads) see all requests for review/assignment
+      // - Analysts see requests assigned to them
+      if (user?.role === 'requester') {
         filters.requestedById = userId;
       }
 
@@ -154,8 +157,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/status', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user || user.role !== 'data_analyst') {
-        return res.status(403).json({ message: "Only data analysts can update request status" });
+      if (!user || user.role !== 'analyst') {
+        return res.status(403).json({ message: "Only analysts can update request status" });
       }
 
       const { status, estimatedDays } = req.body;
@@ -175,8 +178,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/assign', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user || user.role !== 'data_analyst') {
-        return res.status(403).json({ message: "Only data analysts can assign requests" });
+      if (!user || user.role !== 'analyst') {
+        return res.status(403).json({ message: "Only analysts can assign requests" });
       }
 
       const { analystId } = req.body;
@@ -202,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             assigneeName: `${assignedAnalyst.firstName || ''} ${assignedAnalyst.lastName || ''}`.trim() || assignedAnalyst.email,
             assigneeEmail: assignedAnalyst.email,
             taskTitle: request.title,
-            taskDescription: request.description,
+            taskDescription: request.primaryQuestion || request.title,
             taskId: request.id,
             dueDate: dueDateString,
             priority: request.priority,
@@ -226,8 +229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/priority-deadline', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user || user.role !== 'data_analyst') {
-        return res.status(403).json({ message: "Only data analysts can update priority and deadline" });
+      if (!user || user.role !== 'analyst') {
+        return res.status(403).json({ message: "Only analysts can update priority and deadline" });
       }
 
       const { priority, dueDate } = req.body;
@@ -255,8 +258,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/requests/:id', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user || user.role !== 'data_analyst') {
-        return res.status(403).json({ message: "Only data analysts can delete requests" });
+      if (!user || user.role !== 'analyst') {
+        return res.status(403).json({ message: "Only analysts can delete requests" });
       }
 
       await storage.deleteDataRequest(req.params.id);
@@ -264,6 +267,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting request:", error);
       res.status(500).json({ message: "Failed to delete request" });
+    }
+  });
+
+  // New workflow routes for three-role system
+  app.patch('/api/requests/:id/accept', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data & Impact Leads can accept requests" });
+      }
+
+      const request = await storage.acceptRequest(req.params.id, user.id);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      res.status(500).json({ message: "Failed to accept request" });
+    }
+  });
+
+  app.patch('/api/requests/:id/reject', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data & Impact Leads can reject requests" });
+      }
+
+      const { rejectionReason } = req.body;
+      if (!rejectionReason) {
+        return res.status(400).json({ message: "Rejection reason is required" });
+      }
+
+      const request = await storage.rejectRequest(req.params.id, user.id, rejectionReason);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      res.status(500).json({ message: "Failed to reject request" });
+    }
+  });
+
+  app.patch('/api/requests/:id/assign-analyst', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data & Impact Leads can assign analysts" });
+      }
+
+      const { analystId, dueDate } = req.body;
+      if (!analystId) {
+        return res.status(400).json({ message: "Analyst ID is required" });
+      }
+
+      const request = await storage.assignToAnalyst(req.params.id, analystId, dueDate ? new Date(dueDate) : undefined);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      // Send email notification to assigned analyst
+      try {
+        const assignedAnalyst = await storage.getUser(analystId);
+        if (assignedAnalyst && assignedAnalyst.email) {
+          const dueDateString = request.dueDate 
+            ? new Date(request.dueDate).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              }) 
+            : 'Not set';
+          
+          await sendAssignmentEmail({
+            assigneeName: `${assignedAnalyst.firstName || ''} ${assignedAnalyst.lastName || ''}`.trim() || assignedAnalyst.email,
+            assigneeEmail: assignedAnalyst.email,
+            taskTitle: request.title,
+            taskDescription: request.primaryQuestion || '',
+            taskId: request.id,
+            dueDate: dueDateString,
+            priority: request.priority,
+            assignerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '',
+            department: request.department,
+          });
+          console.log(`[email] Assignment notification sent to ${assignedAnalyst.email}`);
+        }
+      } catch (emailError) {
+        console.error("[email] Failed to send assignment notification:", emailError);
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error assigning analyst:", error);
+      res.status(500).json({ message: "Failed to assign analyst" });
+    }
+  });
+
+  app.post('/api/requests/:id/blockers', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'analyst') {
+        return res.status(403).json({ message: "Only analysts can add blockers" });
+      }
+
+      const { description } = req.body;
+      if (!description) {
+        return res.status(400).json({ message: "Blocker description is required" });
+      }
+
+      const blocker = await storage.addBlocker(req.params.id, description, user.id);
+      
+      if (!blocker) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      res.status(201).json(blocker);
+    } catch (error) {
+      console.error("Error adding blocker:", error);
+      res.status(500).json({ message: "Failed to add blocker" });
+    }
+  });
+
+  app.patch('/api/requests/:id/suggest-deadline', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.claims.sub);
+      if (!user || user.role !== 'analyst') {
+        return res.status(403).json({ message: "Only analysts can suggest deadlines" });
+      }
+
+      const { suggestedDeadline } = req.body;
+      if (!suggestedDeadline) {
+        return res.status(400).json({ message: "Suggested deadline is required" });
+      }
+
+      const request = await storage.suggestDeadline(req.params.id, new Date(suggestedDeadline));
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error suggesting deadline:", error);
+      res.status(500).json({ message: "Failed to suggest deadline" });
     }
   });
 

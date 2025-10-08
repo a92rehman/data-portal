@@ -3,6 +3,7 @@ import {
   dataRequests,
   comments,
   attachments,
+  blockers,
   type User,
   type UpsertUser,
   type DataRequest,
@@ -11,6 +12,8 @@ import {
   type InsertComment,
   type Attachment,
   type InsertAttachment,
+  type Blocker,
+  type InsertBlocker,
   type DataRequestWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
@@ -38,6 +41,16 @@ export interface IStorage {
   updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined>;
   deleteDataRequest(id: string): Promise<void>;
   purgeAllRequests(): Promise<{ deleted: number }>;
+  
+  // New three-role workflow operations
+  acceptRequest(id: string, reviewerId: string): Promise<DataRequest | undefined>;
+  rejectRequest(id: string, reviewerId: string, rejectionReason: string): Promise<DataRequest | undefined>;
+  assignToAnalyst(id: string, analystId: string, dueDate?: Date): Promise<DataRequest | undefined>;
+  suggestDeadline(id: string, suggestedDeadline: Date): Promise<DataRequest | undefined>;
+  
+  // Blocker operations
+  addBlocker(requestId: string, description: string, reportedById: string): Promise<Blocker>;
+  getRequestBlockers(requestId: string): Promise<Blocker[]>;
   
   // Comment operations
   addComment(comment: InsertComment, userId: string): Promise<Comment>;
@@ -222,7 +235,7 @@ export class DatabaseStorage implements IStorage {
   async updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined> {
     const [updated] = await db
       .update(dataRequests)
-      .set({ priority: priority as "low" | "medium" | "high", dueDate, updatedAt: new Date() })
+      .set({ priority: priority as "p0_critical" | "p1_high" | "p2_medium" | "p3_low", dueDate, updatedAt: new Date() })
       .where(eq(dataRequests.id, id))
       .returning();
     return updated;
@@ -354,6 +367,87 @@ export class DatabaseStorage implements IStorage {
     await db.delete(dataRequests);
     
     return { deleted: total };
+  }
+
+  // New three-role workflow implementations
+  async acceptRequest(id: string, reviewerId: string): Promise<DataRequest | undefined> {
+    const [request] = await db
+      .update(dataRequests)
+      .set({
+        status: 'accepted',
+        reviewedById: reviewerId,
+        reviewedAt: new Date(),
+      })
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async rejectRequest(id: string, reviewerId: string, rejectionReason: string): Promise<DataRequest | undefined> {
+    const [request] = await db
+      .update(dataRequests)
+      .set({
+        status: 'rejected',
+        reviewedById: reviewerId,
+        reviewedAt: new Date(),
+        rejectionReason,
+      })
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async assignToAnalyst(id: string, analystId: string, dueDate?: Date): Promise<DataRequest | undefined> {
+    const [request] = await db
+      .update(dataRequests)
+      .set({
+        status: 'assigned',
+        assignedToId: analystId,
+        dueDate: dueDate || undefined,
+      })
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async suggestDeadline(id: string, suggestedDeadline: Date): Promise<DataRequest | undefined> {
+    const [request] = await db
+      .update(dataRequests)
+      .set({
+        suggestedDeadline,
+      })
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  // Blocker operations
+  async addBlocker(requestId: string, description: string, reportedById: string): Promise<Blocker> {
+    const [blocker] = await db
+      .insert(blockers)
+      .values({
+        requestId,
+        description,
+        reportedById,
+        resolved: 'false',
+      })
+      .returning();
+    
+    // Update request status to blocked
+    await db
+      .update(dataRequests)
+      .set({ status: 'blocked' })
+      .where(eq(dataRequests.id, requestId));
+    
+    return blocker;
+  }
+
+  async getRequestBlockers(requestId: string): Promise<Blocker[]> {
+    return await db
+      .select()
+      .from(blockers)
+      .where(eq(blockers.requestId, requestId))
+      .orderBy(desc(blockers.createdAt));
   }
 }
 
