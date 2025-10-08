@@ -109,28 +109,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Start with query filters (for status, department, priority, type only)
       const filters = {
         status: req.query.status as string,
         department: req.query.department as string,
         priority: req.query.priority as string,
         type: req.query.type as string,
-        requestedById: req.query.requestedById as string,
-        assignedToId: req.query.assignedToId as string,
+        requestedById: undefined as string | undefined,
+        assignedToId: undefined as string | undefined,
       };
 
-      // Role-based filtering:
-      // - Requesters can only see their own requests
-      // - Team leads (Data Leads) see all requests for review/assignment
-      // - Analysts see only requests assigned to them
-      if (user?.role === 'requester') {
+      // CRITICAL: Role-based filtering - ALWAYS enforce based on user role
+      // Ignore any requestedById/assignedToId from query params - we set them based on role
+      if (user.role === 'requester') {
+        // Requesters can ONLY see their own requests
         filters.requestedById = userId;
-      } else if (user?.role === 'analyst') {
+        filters.assignedToId = undefined; // Clear any passed assignedToId
+      } else if (user.role === 'analyst') {
+        // Analysts can ONLY see requests assigned to them
         filters.assignedToId = userId;
+        filters.requestedById = undefined; // Clear any passed requestedById
+      } else if (user.role === 'team_lead') {
+        // Team leads see all requests - allow optional filters from query
+        if (req.query.requestedById) {
+          filters.requestedById = req.query.requestedById as string;
+        }
+        if (req.query.assignedToId) {
+          filters.assignedToId = req.query.assignedToId as string;
+        }
       }
 
-      // Remove undefined filters
+      // Remove undefined/empty filters
       Object.keys(filters).forEach(key => {
-        if (!filters[key as keyof typeof filters]) {
+        const value = filters[key as keyof typeof filters];
+        if (!value || value === '') {
           delete filters[key as keyof typeof filters];
         }
       });
