@@ -84,6 +84,16 @@ export const authEventTypeEnum = pgEnum("auth_event_type", [
   "signout"
 ]);
 
+// Notification type enum
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "request_accepted",
+  "request_rejected",
+  "request_assigned",
+  "analyst_rejected_request",
+  "comment_added",
+  "blocker_added"
+]);
+
 // Data requests table
 export const dataRequests = pgTable("data_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -164,6 +174,18 @@ export const authLogs = pgTable("auth_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Notifications table for in-portal notifications
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: notificationTypeEnum("type").notNull(),
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  requestId: varchar("request_id").references(() => dataRequests.id, { onDelete: 'cascade' }),
+  read: varchar("read").notNull().default("false"), // "true" or "false"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   requestedDataRequests: many(dataRequests, { relationName: "requestedBy" }),
@@ -172,6 +194,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   blockers: many(blockers),
   authLogs: many(authLogs),
+  notifications: many(notifications),
 }));
 
 export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => ({
@@ -235,6 +258,17 @@ export const authLogsRelations = relations(authLogs, ({ one }) => ({
   }),
 }));
 
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  request: one(dataRequests, {
+    fields: [notifications.requestId],
+    references: [dataRequests.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertDataRequestSchema = createInsertSchema(dataRequests).omit({ 
@@ -266,6 +300,10 @@ export const insertAuthLogSchema = createInsertSchema(authLogs).omit({
   id: true, 
   createdAt: true 
 });
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ 
+  id: true, 
+  createdAt: true 
+});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -280,6 +318,8 @@ export type InsertBlocker = z.infer<typeof insertBlockerSchema>;
 export type Blocker = typeof blockers.$inferSelect;
 export type InsertAuthLog = z.infer<typeof insertAuthLogSchema>;
 export type AuthLog = typeof authLogs.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
 
 // Extended types for API responses
 export type DataRequestWithDetails = DataRequest & {
