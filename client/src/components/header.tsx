@@ -2,8 +2,14 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Search, ChartLine } from "lucide-react";
-import type { User } from "@shared/schema";
+import { Bell, Search, ChartLine, X, Check } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "wouter";
+import { formatDistanceToNow } from "date-fns";
+import type { User, Notification } from "@shared/schema";
 
 interface HeaderProps {
   user: User | null;
@@ -11,6 +17,42 @@ interface HeaderProps {
 
 export default function Header({ user }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  const { data: notifications = [] } = useQuery<Notification[]>({
+    queryKey: ['/api/notifications'],
+    enabled: !!user,
+    refetchInterval: 30000, // Poll every 30 seconds
+  });
+
+  const unreadCount = notifications.filter(n => n.read === 'false').length;
+
+  const markAsReadMutation = useMutation({
+    mutationFn: (notificationId: string) => 
+      apiRequest('PATCH', `/api/notifications/${notificationId}/read`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    },
+  });
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => 
+      apiRequest('PATCH', '/api/notifications/read-all', {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+    },
+  });
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (notification.read === 'false') {
+      markAsReadMutation.mutate(notification.id);
+    }
+    setIsNotificationOpen(false);
+  };
+
+  const handleMarkAllRead = () => {
+    markAllAsReadMutation.mutate();
+  };
 
   const getInitials = (firstName?: string, lastName?: string) => {
     if (!firstName && !lastName) return "U";
@@ -47,10 +89,82 @@ export default function Header({ user }: HeaderProps) {
             />
           </div>
 
-          <Button variant="ghost" size="sm" className="relative border-2 border-transparent hover:border-purple-300 rounded-lg transition-all" data-testid="button-notifications">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-          </Button>
+          <Popover open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="relative border-2 border-transparent hover:border-purple-300 rounded-lg transition-all" 
+                data-testid="button-notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-0" align="end" data-testid="popover-notifications">
+              <div className="border-b px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50">
+                <h3 className="font-semibold text-lg">Notifications</h3>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-purple-600 hover:text-purple-800"
+                    data-testid="button-mark-all-read"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Mark all read
+                  </Button>
+                )}
+              </div>
+              <ScrollArea className="h-[400px]">
+                {notifications.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Bell className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p>No notifications yet</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {notifications.map((notification) => (
+                      <Link
+                        key={notification.id}
+                        href={notification.requestId ? `/request/${notification.requestId}` : '#'}
+                        onClick={() => handleNotificationClick(notification)}
+                      >
+                        <div
+                          className={`p-4 cursor-pointer transition-colors hover:bg-purple-50 ${
+                            notification.read === 'false' ? 'bg-blue-50' : 'bg-white'
+                          }`}
+                          data-testid={`notification-${notification.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900' : 'text-gray-700'}`}>
+                                {notification.title}
+                              </p>
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-400 mt-2">
+                                {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                            {notification.read === 'false' && (
+                              <div className="w-2 h-2 bg-purple-600 rounded-full mt-1 flex-shrink-0" />
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
 
           <div className="flex items-center gap-3 pl-4 border-l-2 border-purple-200">
             <div className="text-right">

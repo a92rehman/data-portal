@@ -5,6 +5,7 @@ import {
   attachments,
   blockers,
   authLogs,
+  notifications,
   type User,
   type UpsertUser,
   type DataRequest,
@@ -17,6 +18,8 @@ import {
   type InsertBlocker,
   type AuthLog,
   type InsertAuthLog,
+  type Notification,
+  type InsertNotification,
   type DataRequestWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
@@ -78,6 +81,12 @@ export interface IStorage {
   // Auth logging operations
   logAuthEvent(userId: string, eventType: 'signup' | 'signin' | 'signout', ipAddress?: string, userAgent?: string): Promise<AuthLog>;
   getRecentAuthLogs(limit?: number): Promise<(AuthLog & { user: User })[]>;
+  
+  // Notification operations
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: string, unreadOnly?: boolean): Promise<Notification[]>;
+  markNotificationAsRead(id: string): Promise<Notification | undefined>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -512,6 +521,44 @@ export class DatabaseStorage implements IStorage {
       ...r.log,
       user: r.user!,
     }));
+  }
+
+  // Notification operations
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [notif] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+    return notif;
+  }
+
+  async getUserNotifications(userId: string, unreadOnly: boolean = false): Promise<Notification[]> {
+    const conditions = unreadOnly 
+      ? and(eq(notifications.userId, userId), eq(notifications.read, 'false'))
+      : eq(notifications.userId, userId);
+    
+    return await db
+      .select()
+      .from(notifications)
+      .where(conditions)
+      .orderBy(desc(notifications.createdAt))
+      .limit(50);
+  }
+
+  async markNotificationAsRead(id: string): Promise<Notification | undefined> {
+    const [notification] = await db
+      .update(notifications)
+      .set({ read: 'true' })
+      .where(eq(notifications.id, id))
+      .returning();
+    return notification;
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: 'true' })
+      .where(and(eq(notifications.userId, userId), eq(notifications.read, 'false')));
   }
 }
 

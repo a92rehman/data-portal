@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { sendAssignmentEmail } from "./emailService";
+import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail } from "./emailService";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -296,8 +296,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/reject', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.claims.sub);
-      if (!user || user.role !== 'team_lead') {
-        return res.status(403).json({ message: "Only Data Lead can reject requests" });
+      
+      // Both Data Lead and Analyst can reject requests
+      if (!user || !['team_lead', 'analyst'].includes(user.role)) {
+        return res.status(403).json({ message: "Unauthorized" });
       }
 
       const { rejectionReason } = req.body;
@@ -305,10 +307,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Rejection reason is required" });
       }
 
+      // For analysts, verify they're assigned to this request
+      if (user.role === 'analyst') {
+        const requestDetails = await storage.getDataRequest(req.params.id);
+        if (!requestDetails || requestDetails.assignedToId !== user.id) {
+          return res.status(403).json({ message: "You can only reject requests assigned to you" });
+        }
+      }
+
       const request = await storage.rejectRequest(req.params.id, user.id, rejectionReason);
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
+      }
+
+      // Get requester details for email and notification
+      const requester = await storage.getUser(request.requestedById);
+      
+      // Send email to requester
+      if (requester && requester.email) {
+        try {
+          await sendRequestRejectedEmail({
+            requesterName: `${requester.firstName || ''} ${requester.lastName || ''}`.trim() || requester.email,
+            requesterEmail: requester.email,
+            taskTitle: request.title,
+            rejectionReason,
+            rejectedBy: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '',
+            department: request.department,
+          });
+        } catch (emailError) {
+          console.error('[email] Failed to send rejection email:', emailError);
+        }
+      }
+
+      // Create notification for requester
+      if (requester) {
+        try {
+          await storage.createNotification({
+            userId: requester.id,
+            type: 'request_rejected',
+            title: 'Request Update Required',
+            message: `Your request "${request.title}" requires modifications. Feedback: ${rejectionReason}`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (notifError) {
+          console.error('[notification] Failed to create notification:', notifError);
+        }
+      }
+
+      // If analyst rejected, notify Data Lead
+      if (user.role === 'analyst' && request.reviewedById) {
+        try {
+          const dataLead = await storage.getUser(request.reviewedById);
+          if (dataLead) {
+            await storage.createNotification({
+              userId: dataLead.id,
+              type: 'analyst_rejected_request',
+              title: 'Analyst Rejected Request',
+              message: `${user.firstName || user.email} rejected request "${request.title}". Reason: ${rejectionReason}`,
+              requestId: request.id,
+              read: 'false',
+            });
+          }
+        } catch (notifError) {
+          console.error('[notification] Failed to create Data Lead notification:', notifError);
+        }
       }
 
       res.json(request);
@@ -336,18 +400,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
+      const assignedAnalyst = await storage.getUser(analystId);
+      const requester = await storage.getUser(request.requestedById);
+      
+      const dueDateString = request.dueDate 
+        ? new Date(request.dueDate).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          }) 
+        : 'Not set';
+
       // Send email notification to assigned analyst
-      try {
-        const assignedAnalyst = await storage.getUser(analystId);
-        if (assignedAnalyst && assignedAnalyst.email) {
-          const dueDateString = request.dueDate 
-            ? new Date(request.dueDate).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              }) 
-            : 'Not set';
-          
+      if (assignedAnalyst && assignedAnalyst.email) {
+        try {
           await sendAssignmentEmail({
             assigneeName: `${assignedAnalyst.firstName || ''} ${assignedAnalyst.lastName || ''}`.trim() || assignedAnalyst.email,
             assigneeEmail: assignedAnalyst.email,
@@ -360,9 +426,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
             department: request.department,
           });
           console.log(`[email] Assignment notification sent to ${assignedAnalyst.email}`);
+        } catch (emailError) {
+          console.error("[email] Failed to send assignment notification:", emailError);
         }
-      } catch (emailError) {
-        console.error("[email] Failed to send assignment notification:", emailError);
+
+        // Create notification for analyst
+        try {
+          await storage.createNotification({
+            userId: assignedAnalyst.id,
+            type: 'request_assigned',
+            title: 'New Task Assignment',
+            message: `You have been assigned to work on "${request.title}"`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (notifError) {
+          console.error('[notification] Failed to create analyst notification:', notifError);
+        }
+      }
+
+      // Send email notification to requester
+      if (requester && requester.email) {
+        try {
+          await sendRequestAcceptedEmail({
+            requesterName: `${requester.firstName || ''} ${requester.lastName || ''}`.trim() || requester.email,
+            requesterEmail: requester.email,
+            taskTitle: request.title,
+            analystName: `${assignedAnalyst?.firstName || ''} ${assignedAnalyst?.lastName || ''}`.trim() || assignedAnalyst?.email || 'an analyst',
+            dueDate: dueDateString,
+            priority: request.priority,
+            department: request.department,
+          });
+          console.log(`[email] Acceptance notification sent to ${requester.email}`);
+        } catch (emailError) {
+          console.error("[email] Failed to send acceptance notification:", emailError);
+        }
+
+        // Create notification for requester
+        try {
+          await storage.createNotification({
+            userId: requester.id,
+            type: 'request_accepted',
+            title: 'Request Accepted',
+            message: `Your request "${request.title}" has been accepted and assigned to ${assignedAnalyst?.firstName || assignedAnalyst?.email || 'an analyst'}`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (notifError) {
+          console.error('[notification] Failed to create requester notification:', notifError);
+        }
       }
 
       res.json(request);
@@ -597,6 +709,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching auth logs:", error);
       res.status(500).json({ message: "Failed to fetch auth logs" });
+    }
+  });
+
+  // Notification routes
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const unreadOnly = req.query.unreadOnly === 'true';
+      
+      const notifications = await storage.getUserNotifications(userId, unreadOnly);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch('/api/notifications/:id/read', isAuthenticated, async (req: any, res) => {
+    try {
+      const notification = await storage.markNotificationAsRead(req.params.id);
+      
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      res.json(notification);
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.patch('/api/notifications/read-all', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.markAllNotificationsAsRead(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
     }
   });
 
