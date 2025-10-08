@@ -36,11 +36,11 @@ export default function Team() {
   const formatRole = (role: string) => {
     switch (role) {
       case "team_lead":
-        return "Data & Impact Lead";
+        return "Data Lead";
       case "analyst":
-        return "Analyst";
+        return "Data Analyst";
       case "requester":
-        return "Requester";
+        return "Data Requester";
       default:
         return role;
     }

@@ -120,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Role-based filtering:
       // - Requesters can only see their own requests
-      // - Team leads (Data & Impact Leads) see all requests for review/assignment
+      // - Team leads (Data Leads) see all requests for review/assignment
       // - Analysts see only requests assigned to them
       if (user?.role === 'requester') {
         filters.requestedById = userId;
@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user || user.role !== 'team_lead') {
-        return res.status(403).json({ message: "Only Data & Impact Lead can assign requests" });
+        return res.status(403).json({ message: "Only Data Lead can assign requests" });
       }
 
       const { analystId } = req.body;
@@ -232,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user || user.role !== 'team_lead') {
-        return res.status(403).json({ message: "Only Data & Impact Lead can update priority and deadline" });
+        return res.status(403).json({ message: "Only Data Lead can update priority and deadline" });
       }
 
       const { priority, dueDate } = req.body;
@@ -277,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user || user.role !== 'team_lead') {
-        return res.status(403).json({ message: "Only Data & Impact Leads can accept requests" });
+        return res.status(403).json({ message: "Only Data Lead can accept requests" });
       }
 
       const request = await storage.acceptRequest(req.params.id, user.id);
@@ -297,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user || user.role !== 'team_lead') {
-        return res.status(403).json({ message: "Only Data & Impact Leads can reject requests" });
+        return res.status(403).json({ message: "Only Data Lead can reject requests" });
       }
 
       const { rejectionReason } = req.body;
@@ -322,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.claims.sub);
       if (!user || user.role !== 'team_lead') {
-        return res.status(403).json({ message: "Only Data & Impact Leads can assign analysts" });
+        return res.status(403).json({ message: "Only Data Lead can assign analysts" });
       }
 
       const { analystId, dueDate } = req.body;
@@ -581,14 +581,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth logs - restricted to Data & Impact Lead only
+  // Auth logs - restricted to Data Lead only
   app.get('/api/auth-logs', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       
       if (user?.role !== 'team_lead') {
-        return res.status(403).json({ message: "Access denied. Only Data & Impact Lead can view auth logs." });
+        return res.status(403).json({ message: "Access denied. Only Data Lead can view auth logs." });
       }
       
       const limit = parseInt(req.query.limit as string) || 100;

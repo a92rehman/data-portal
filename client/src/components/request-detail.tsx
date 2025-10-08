@@ -582,7 +582,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </div>
 
-        {/* Edit Priority and Deadline buttons for Data & Impact Lead */}
+        {/* Edit Priority and Deadline buttons for Data Lead */}
         {isTeamLead && (
           <div className="flex justify-end gap-2 -mt-2">
             {isEditingPriorityDeadline ? (
@@ -629,7 +629,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-        {/* Data & Impact Lead Actions (Accept/Reject) */}
+        {/* Data Lead Actions (Accept/Reject) */}
         {isTeamLead && request.status === "pending_review" && (
           <Card className="border-2 border-green-300 shadow-md bg-green-50/50">
             <CardContent className="p-4">
@@ -920,7 +920,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-        {/* Assignment Section for Data & Impact Lead */}
+        {/* Assignment Section for Data Lead */}
         {isTeamLead && (
           <Card className="border-2 border-blue-300 shadow-md bg-blue-50/50">
             <CardContent className="p-4">

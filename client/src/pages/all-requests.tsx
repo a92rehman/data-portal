@@ -25,7 +25,7 @@ export default function AllRequests() {
     type: "",
   });
 
-  // Fetch all requests (Data & Impact Lead can see all)
+  // Fetch all requests (Data Lead can see all)
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", filters],
     staleTime: Infinity,

@@ -31,7 +31,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
     const role = user?.role;
     
     if (role === "team_lead") {
-      // Data & Impact Lead - Full access
+      // Data Lead - Full access
       return [
         { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
         { href: "/pending-reviews", icon: ClipboardCheck, label: "Pending Reviews", testId: "nav-pending-reviews" },

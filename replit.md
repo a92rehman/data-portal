@@ -18,11 +18,11 @@ Preferred communication style: Simple, everyday language.
   - Non-blocking logging: authentication flow continues even if logging fails (wrapped in try-catch)
   - Fixed concurrency bug by using passReqToCallback: true for proper request scoping
   - API endpoint GET /api/auth-logs (team_lead only) to view recent authentication activity
-  - **Data Retention Policy**: Auth logs contain personal data (IP addresses, user agents). Access restricted to Data & Impact Lead only. Logs should be reviewed periodically and retention policies implemented based on organizational requirements.
+  - **Data Retention Policy**: Auth logs contain personal data (IP addresses, user agents). Access restricted to Data Lead only. Logs should be reviewed periodically and retention policies implemented based on organizational requirements.
 
 - **Three-Role Access Control System (October 8, 2025)**: Implemented proper role-based access control for three distinct user roles
   - **Requester**: Can only see their own submitted requests in "My Requests" view (filtered by requestedById)
-  - **Data & Impact Lead**: Can see all requests across the organization, review pending requests, accept/reject requests, assign to analysts, and set priorities/deadlines
+  - **Data Lead**: Can see all requests across the organization, review pending requests, accept/reject requests, assign to analysts, and set priorities/deadlines
   - **Analyst**: Can only see requests assigned to them (filtered by assignedToId), add blockers, suggest deadlines, and update request status
   - All new requests automatically land in "pending_review" status (database default)
   - Backend enforcement: GET /api/requests filters by role (requesters see own, analysts see assigned, leads see all)
@@ -137,11 +137,11 @@ Preferred communication style: Simple, everyday language.
 6. User is redirected to dashboard
 
 **Authorization Model:**
-- Role-based access control (requesters, Data & Impact Lead, analysts)
+- Role-based access control (requesters, Data Lead, analysts)
 - **Requesters**: Can create requests and view only their own requests (filtered by requestedById)
-- **Data & Impact Lead**: Can see all requests across all departments, accept/reject pending requests, assign requests to analysts, update priority/deadline
+- **Data Lead**: Can see all requests across all departments, accept/reject pending requests, assign requests to analysts, update priority/deadline
 - **Analysts**: Can only see requests assigned to them (filtered by assignedToId), add blockers, suggest deadlines, update status
-- Analytics view is restricted to Data & Impact Lead only
+- Analytics view is restricted to Data Lead only
 
 **Data Analyst Accounts:**
 - abdul.rehman@niete.edu.pk (Abdul Rehman)
