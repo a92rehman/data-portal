@@ -8,6 +8,10 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
 import ProfileSetup from "@/pages/profile-setup";
+import PendingReviews from "@/pages/pending-reviews";
+import AllRequests from "@/pages/all-requests";
+import MyAssignments from "@/pages/my-assignments";
+import Team from "@/pages/team";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +24,10 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Dashboard} />
+          <Route path="/pending-reviews" component={PendingReviews} />
+          <Route path="/all-requests" component={AllRequests} />
+          <Route path="/my-assignments" component={MyAssignments} />
+          <Route path="/team" component={Team} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/profile-setup" component={ProfileSetup} />
         </>
