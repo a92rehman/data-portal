@@ -524,7 +524,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Priority</p>
-              {isAnalyst && isEditingPriorityDeadline ? (
+              {isTeamLead && isEditingPriorityDeadline ? (
                 <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -566,7 +566,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Due Date</p>
-              {isAnalyst && isEditingPriorityDeadline ? (
+              {isTeamLead && isEditingPriorityDeadline ? (
                 <Input 
                   type="date" 
                   value={editedDueDate}
@@ -582,8 +582,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </div>
 
-        {/* Edit Priority and Deadline buttons for Analysts */}
-        {isAnalyst && (
+        {/* Edit Priority and Deadline buttons for Data & Impact Lead */}
+        {isTeamLead && (
           <div className="flex justify-end gap-2 -mt-2">
             {isEditingPriorityDeadline ? (
               <>
@@ -920,8 +920,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-        {/* Assignment Section for Analysts */}
-        {isAnalyst && (
+        {/* Assignment Section for Data & Impact Lead */}
+        {isTeamLead && (
           <Card className="border-2 border-blue-300 shadow-md bg-blue-50/50">
             <CardContent className="p-4">
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
