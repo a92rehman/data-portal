@@ -64,14 +64,14 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
           const isActive = location === item.href;
           
           return (
-            <Link key={item.href} href={item.href}>
-              <a 
-                className={`sidebar-link ${isActive ? "gradient-button-primary text-white" : "text-gray-600 hover:bg-purple-50"}`}
-                data-testid={item.testId}
-              >
-                <Icon className="w-5 h-5" />
-                <span>{item.label}</span>
-              </a>
+            <Link 
+              key={item.href} 
+              href={item.href}
+              className={`sidebar-link ${isActive ? "gradient-button-primary text-white" : "text-gray-600 hover:bg-purple-50"}`}
+              data-testid={item.testId}
+            >
+              <Icon className="w-5 h-5" />
+              <span>{item.label}</span>
             </Link>
           );
         })}
