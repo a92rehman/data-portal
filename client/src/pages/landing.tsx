@@ -78,7 +78,7 @@ export default function Landing() {
                     <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 71%, 45%) 100%)'}}>
                       <Users className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2 text-gray-900">Requester</h3>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data Requester</h3>
                     <p className="text-xs text-gray-600 mb-3">Submit data requests and track their status</p>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
@@ -86,7 +86,7 @@ export default function Landing() {
                       data-testid="button-login-requester"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Requester
+                      Data Requester
                     </Button>
                   </CardContent>
                 </Card>
