@@ -12,6 +12,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Authentication Logging System (October 8, 2025)**: Implemented comprehensive user authentication tracking
+  - Added auth_logs table to track all signin, signup, and signout events
+  - Captures IP address and user agent for security auditing (with proper data governance)
+  - Non-blocking logging: authentication flow continues even if logging fails (wrapped in try-catch)
+  - Fixed concurrency bug by using passReqToCallback: true for proper request scoping
+  - API endpoint GET /api/auth-logs (team_lead only) to view recent authentication activity
+  - **Data Retention Policy**: Auth logs contain personal data (IP addresses, user agents). Access restricted to Data & Impact Lead only. Logs should be reviewed periodically and retention policies implemented based on organizational requirements.
+
 - **Three-Role Access Control System (October 8, 2025)**: Implemented proper role-based access control for three distinct user roles
   - **Requester**: Can only see their own submitted requests in "My Requests" view (filtered by requestedById)
   - **Data & Impact Lead**: Can see all requests across the organization, review pending requests, accept/reject requests, assign to analysts, and set priorities/deadlines
@@ -93,6 +101,8 @@ Preferred communication style: Simple, everyday language.
 - **dataRequests**: Tracks data requests with title, description, type, priority, status, requester, assignee, and timestamps
 - **attachments**: Stores file attachment metadata with fileName, filePath, fileSize, mimeType, requestId (foreign key), uploadedById (foreign key), uploadedAt timestamp
 - **comments**: Allows threaded discussions on requests with user associations
+- **blockers**: Tracks blockers/issues on requests reported by analysts
+- **auth_logs**: Tracks authentication events (signin, signup, signout) with IP address and user agent for security auditing
 - **sessions**: PostgreSQL-backed session storage for authentication
 
 **Key Relationships:**
@@ -157,6 +167,7 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/requests/:id/comments` - Get request comments
 - `POST /api/objects/upload` - Generate pre-signed URL for object storage upload
 - `GET /api/analytics/*` - Various analytics endpoints for dashboards
+- `GET /api/auth-logs` - View recent authentication events (team_lead only)
 
 **API Design Patterns:**
 - Authentication middleware (`isAuthenticated`) protects all API routes

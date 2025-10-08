@@ -4,6 +4,7 @@ import {
   comments,
   attachments,
   blockers,
+  authLogs,
   type User,
   type UpsertUser,
   type DataRequest,
@@ -14,6 +15,8 @@ import {
   type InsertAttachment,
   type Blocker,
   type InsertBlocker,
+  type AuthLog,
+  type InsertAuthLog,
   type DataRequestWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
@@ -71,6 +74,10 @@ export interface IStorage {
   getDepartmentStats(): Promise<{ department: string; count: number }[]>;
   getTypeStats(): Promise<{ type: string; count: number }[]>;
   getPriorityStats(): Promise<{ priority: string; count: number }[]>;
+  
+  // Auth logging operations
+  logAuthEvent(userId: string, eventType: 'signup' | 'signin' | 'signout', ipAddress?: string, userAgent?: string): Promise<AuthLog>;
+  getRecentAuthLogs(limit?: number): Promise<(AuthLog & { user: User })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -469,6 +476,42 @@ export class DatabaseStorage implements IStorage {
       .from(blockers)
       .where(eq(blockers.requestId, requestId))
       .orderBy(desc(blockers.createdAt));
+  }
+
+  // Auth logging operations
+  async logAuthEvent(
+    userId: string, 
+    eventType: 'signup' | 'signin' | 'signout', 
+    ipAddress?: string, 
+    userAgent?: string
+  ): Promise<AuthLog> {
+    const [log] = await db
+      .insert(authLogs)
+      .values({
+        userId,
+        eventType,
+        ipAddress,
+        userAgent,
+      })
+      .returning();
+    return log;
+  }
+
+  async getRecentAuthLogs(limit: number = 100): Promise<(AuthLog & { user: User })[]> {
+    const results = await db
+      .select({
+        log: authLogs,
+        user: users,
+      })
+      .from(authLogs)
+      .leftJoin(users, eq(authLogs.userId, users.id))
+      .orderBy(desc(authLogs.createdAt))
+      .limit(limit);
+
+    return results.map(r => ({
+      ...r.log,
+      user: r.user!,
+    }));
   }
 }
 

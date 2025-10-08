@@ -77,6 +77,13 @@ export const requestTypeEnum = pgEnum("request_type", [
   "other"
 ]);
 
+// Auth logs enum for tracking login/signup events
+export const authEventTypeEnum = pgEnum("auth_event_type", [
+  "signup",
+  "signin",
+  "signout"
+]);
+
 // Data requests table
 export const dataRequests = pgTable("data_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -147,6 +154,16 @@ export const blockers = pgTable("blockers", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Auth logs table for tracking user authentication events
+export const authLogs = pgTable("auth_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  eventType: authEventTypeEnum("event_type").notNull(),
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   requestedDataRequests: many(dataRequests, { relationName: "requestedBy" }),
@@ -154,6 +171,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignedDataRequests: many(dataRequests, { relationName: "assignedTo" }),
   comments: many(comments),
   blockers: many(blockers),
+  authLogs: many(authLogs),
 }));
 
 export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => ({
@@ -210,6 +228,13 @@ export const blockersRelations = relations(blockers, ({ one }) => ({
   }),
 }));
 
+export const authLogsRelations = relations(authLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [authLogs.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertDataRequestSchema = createInsertSchema(dataRequests).omit({ 
@@ -237,6 +262,10 @@ export const insertBlockerSchema = createInsertSchema(blockers).omit({
   createdAt: true,
   reportedById: true 
 });
+export const insertAuthLogSchema = createInsertSchema(authLogs).omit({ 
+  id: true, 
+  createdAt: true 
+});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -249,6 +278,8 @@ export type InsertAttachment = z.infer<typeof insertAttachmentSchema>;
 export type Attachment = typeof attachments.$inferSelect;
 export type InsertBlocker = z.infer<typeof insertBlockerSchema>;
 export type Blocker = typeof blockers.$inferSelect;
+export type InsertAuthLog = z.infer<typeof insertAuthLogSchema>;
+export type AuthLog = typeof authLogs.$inferSelect;
 
 // Extended types for API responses
 export type DataRequestWithDetails = DataRequest & {

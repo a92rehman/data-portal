@@ -581,6 +581,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auth logs - restricted to Data & Impact Lead only
+  app.get('/api/auth-logs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead') {
+        return res.status(403).json({ message: "Access denied. Only Data & Impact Lead can view auth logs." });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logs = await storage.getRecentAuthLogs(limit);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching auth logs:", error);
+      res.status(500).json({ message: "Failed to fetch auth logs" });
+    }
+  });
+
   // Admin route to purge all requests
   app.post('/api/admin/purge-requests', isAuthenticated, async (req: any, res) => {
     try {

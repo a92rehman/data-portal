@@ -56,10 +56,16 @@ function updateUserSession(
 
 async function upsertUser(
   claims: any,
+  req?: any,
 ) {
   console.log("[AUTH] OIDC Claims received:", JSON.stringify(claims, null, 2));
+  
+  const userId = claims["sub"];
+  const existingUser = await storage.getUser(userId);
+  const isNewUser = !existingUser;
+  
   const userData = {
-    id: claims["sub"],
+    id: userId,
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
@@ -69,6 +75,19 @@ async function upsertUser(
   };
   console.log("[AUTH] Upserting user with data:", JSON.stringify(userData, null, 2));
   await storage.upsertUser(userData);
+  
+  // Log auth event (non-blocking - continue auth flow even if logging fails)
+  try {
+    const eventType = isNewUser ? 'signup' : 'signin';
+    const ipAddress = req?.ip || req?.headers?.['x-forwarded-for'] || req?.connection?.remoteAddress;
+    const userAgent = req?.headers?.['user-agent'];
+    
+    await storage.logAuthEvent(userId, eventType, ipAddress, userAgent);
+    console.log(`[AUTH] Logged ${eventType} event for user ${userId}`);
+  } catch (error) {
+    console.error(`[AUTH] Failed to log ${isNewUser ? 'signup' : 'signin'} event:`, error);
+    // Continue auth flow even if logging fails
+  }
 }
 
 export async function setupAuth(app: Express) {
@@ -79,13 +98,14 @@ export async function setupAuth(app: Express) {
 
   const config = await getOidcConfig();
 
-  const verify: VerifyFunction = async (
+  const verify = async (
+    req: any,
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
     const user = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    await upsertUser(tokens.claims(), req);
     verified(null, user);
   };
 
@@ -97,8 +117,9 @@ export async function setupAuth(app: Express) {
         config,
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`,
+        passReqToCallback: true,
       },
-      verify,
+      verify as any,
     );
     passport.use(strategy);
   }
@@ -120,7 +141,22 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
+  app.get("/api/logout", async (req, res) => {
+    const user = req.user as any;
+    
+    // Log signout event (non-blocking - continue logout even if logging fails)
+    if (user?.claims?.sub) {
+      try {
+        const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+        const userAgent = req.headers['user-agent'];
+        await storage.logAuthEvent(user.claims.sub, 'signout', ipAddress as string, userAgent);
+        console.log(`[AUTH] Logged signout event for user ${user.claims.sub}`);
+      } catch (error) {
+        console.error('[AUTH] Failed to log signout event:', error);
+        // Continue logout flow even if logging fails
+      }
+    }
+    
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
