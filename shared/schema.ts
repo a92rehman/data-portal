@@ -35,12 +35,15 @@ export const userRoleEnum = pgEnum("user_role", [
 // User storage table.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
+  email: varchar("email").unique().notNull(),
+  password: varchar("password"), // Hashed password for email/password auth (null for invited users who haven't set password)
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: userRoleEnum("role").notNull().default("requester"), // requester, team_lead, analyst
+  role: userRoleEnum("role"), // requester, team_lead, analyst (null for new signups before role selection)
   department: varchar("department"), // Program, P&C, Product, LP, Training, ERP, Finance, Leadership, Strategy, Other
+  passwordResetToken: varchar("password_reset_token"), // Token for password reset
+  passwordResetExpires: timestamp("password_reset_expires"), // Expiry time for reset token
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
