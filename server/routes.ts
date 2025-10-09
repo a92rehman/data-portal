@@ -142,6 +142,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid email or role" });
       }
 
+      // SECURITY: Protect primary data lead - cannot invite or change via this endpoint
+      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      if (email.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
+        return res.status(403).json({ 
+          message: "Primary Data Lead role cannot be changed" 
+        });
+      }
+
       // Email validation: Requesters must use company email
       if (role === 'requester') {
         const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
