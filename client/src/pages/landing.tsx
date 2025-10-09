@@ -144,7 +144,7 @@ export default function Landing() {
                   Access restricted to authorized team members
                 </p>
                 <p className="text-xs text-gray-500">
-                  Note: Data Leads can manage team members from the Team Management page
+                  Note: Data Leads can manage team members (Data Analysts) from the Team Management page
                 </p>
               </div>
             </div>
