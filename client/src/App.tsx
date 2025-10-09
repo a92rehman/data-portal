@@ -18,13 +18,17 @@ import Team from "@/pages/team";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  console.log("Router state:", { isAuthenticated, isLoading, user });
 
   if (isLoading) {
+    console.log("Router: showing loading state");
     return <Landing />;
   }
 
   if (!isAuthenticated) {
+    console.log("Router: user not authenticated, showing landing");
     return (
       <Switch>
         <Route path="/" component={Landing} />
@@ -35,17 +39,18 @@ function Router() {
     );
   }
 
+  console.log("Router: user authenticated, showing dashboard routes");
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/requester-signup" component={RequesterSignup} />
-      <Route path="/pending-reviews" component={PendingReviews} />
-      <Route path="/all-requests" component={AllRequests} />
-      <Route path="/my-assignments" component={MyAssignments} />
-      <Route path="/team" component={Team} />
-      <Route path="/analytics" component={Analytics} />
-      <Route path="/profile-setup" component={ProfileSetup} />
-      <Route component={NotFound} />
+      <Route path="/">{() => <Dashboard />}</Route>
+      <Route path="/requester-signup">{() => <RequesterSignup />}</Route>
+      <Route path="/pending-reviews">{() => <PendingReviews />}</Route>
+      <Route path="/all-requests">{() => <AllRequests />}</Route>
+      <Route path="/my-assignments">{() => <MyAssignments />}</Route>
+      <Route path="/team">{() => <Team />}</Route>
+      <Route path="/analytics">{() => <Analytics />}</Route>
+      <Route path="/profile-setup">{() => <ProfileSetup />}</Route>
+      <Route>{() => <NotFound />}</Route>
     </Switch>
   );
 }
