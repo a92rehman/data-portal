@@ -137,17 +137,23 @@ export default function Auth() {
             >
               Login
             </Button>
-            {isRequester && (
-              <Button
-                variant={!isLogin ? "default" : "outline"}
-                className="flex-1"
-                onClick={() => setIsLogin(false)}
-                data-testid="button-switch-signup"
-              >
-                Sign Up
-              </Button>
-            )}
+            <Button
+              variant={!isLogin ? "default" : "outline"}
+              className="flex-1"
+              onClick={() => setIsLogin(false)}
+              data-testid="button-switch-signup"
+            >
+              Sign Up
+            </Button>
           </div>
+          
+          {!isLogin && !isRequester && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
+              <p className="text-sm text-amber-800">
+                <strong>Note:</strong> {selectedRole === "analyst" ? "Data Analysts" : "Data Leads"} cannot self-register. Please use Login if you've been invited, or contact your Data Lead.
+              </p>
+            </div>
+          )}
 
           {isLogin ? (
             <Form {...loginForm}>
@@ -316,7 +322,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isSigningUp}
+                  disabled={isSigningUp || !isRequester}
                   data-testid="button-submit-signup"
                 >
                   {isSigningUp ? (
@@ -324,6 +330,8 @@ export default function Auth() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating account...
                     </>
+                  ) : !isRequester ? (
+                    "Sign Up Not Available"
                   ) : (
                     "Create Account"
                   )}
