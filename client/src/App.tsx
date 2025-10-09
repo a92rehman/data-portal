@@ -8,6 +8,7 @@ import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
 import ProfileSetup from "@/pages/profile-setup";
+import RequesterSignup from "@/pages/requester-signup";
 import PendingReviews from "@/pages/pending-reviews";
 import AllRequests from "@/pages/all-requests";
 import MyAssignments from "@/pages/my-assignments";
@@ -24,6 +25,7 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Dashboard} />
+          <Route path="/requester-signup" component={RequesterSignup} />
           <Route path="/pending-reviews" component={PendingReviews} />
           <Route path="/all-requests" component={AllRequests} />
           <Route path="/my-assignments" component={MyAssignments} />

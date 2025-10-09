@@ -51,31 +51,60 @@ export default function Dashboard() {
     enabled: isAuthenticated && ((user as any)?.role === "team_lead" || (user as any)?.role === "analyst"),
   });
 
-  // Apply stored role selection after login (only if user has no role yet)
+  // Handle authenticated users without a role (reliable, not dependent on localStorage)
   useEffect(() => {
-    const applyRoleSelection = async () => {
+    if (!isLoading && isAuthenticated && user && !(user as any)?.role) {
       const selectedRole = localStorage.getItem("selected_role");
-      // Only apply role if user doesn't have one yet
-      if (selectedRole && isAuthenticated && user && !(user as any)?.role) {
-        try {
-          await apiRequest("PATCH", "/api/auth/user/role", { role: selectedRole });
-          localStorage.removeItem("selected_role");
-          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        } catch (error) {
-          console.error("Error applying role:", error);
-          // Clear the selected role from localStorage on error to prevent retry loops
-          localStorage.removeItem("selected_role");
+      const email = (user as any)?.email || "";
+      const isCompanyEmail = email.endsWith("@taleemabad.com") || email.endsWith("@niete.edu.pk");
+      
+      // If they have a selected role from landing page, process it
+      if (selectedRole) {
+        const applyRoleSelection = async () => {
+          // If requester, redirect to signup form to collect additional info
+          if (selectedRole === "requester") {
+            setLocation("/requester-signup");
+            return;
+          }
+          
+          // For other roles (analyst, team_lead), apply role directly
+          try {
+            await apiRequest("PATCH", "/api/auth/user/role", { role: selectedRole });
+            localStorage.removeItem("selected_role");
+            queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+          } catch (error) {
+            console.error("Error applying role:", error);
+            localStorage.removeItem("selected_role");
+          }
+        };
+        applyRoleSelection();
+      } else {
+        // No selected_role in localStorage (cleared, new device, etc.)
+        // Automatically redirect based on email domain
+        if (isCompanyEmail) {
+          // Company email → likely a requester, send to signup
+          localStorage.setItem("selected_role", "requester");
+          setLocation("/requester-signup");
+        } else {
+          // Non-company email → must be added by admin
+          toast({
+            title: "Access Restricted",
+            description: "Please contact your Data Lead to get access. Only team leads with company emails can self-register.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = "/api/logout";
+          }, 3000);
         }
-      } else if (selectedRole && isAuthenticated && user && (user as any)?.role) {
-        // User already has a role, clear the selected_role from localStorage
+      }
+    } else if (isAuthenticated && user && (user as any)?.role) {
+      // User already has a role, clear any lingering selected_role from localStorage
+      const selectedRole = localStorage.getItem("selected_role");
+      if (selectedRole) {
         localStorage.removeItem("selected_role");
       }
-    };
-    
-    if (isAuthenticated && user) {
-      applyRoleSelection();
     }
-  }, [isAuthenticated, user, queryClient]);
+  }, [isAuthenticated, isLoading, user, queryClient, setLocation, toast]);
 
   // Redirect to profile setup if team lead without department
   useEffect(() => {
