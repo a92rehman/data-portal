@@ -143,6 +143,13 @@ export default function Team() {
     }
   };
 
+  // Primary Data Lead - cannot have role changed
+  const PRIMARY_DATA_LEAD_EMAIL = "abdur.rehman@taleemabad.com";
+  
+  const isPrimaryDataLead = (member: User) => {
+    return member.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL;
+  };
+
   const handleChangeRole = (user: User) => {
     setSelectedUser(user);
     setSelectedRole(user.role || "");
@@ -357,6 +364,8 @@ export default function Team() {
                                 onClick={() => handleChangeRole(member)}
                                 data-testid={`button-change-role-${member.id}`}
                                 className="flex-1"
+                                disabled={isPrimaryDataLead(member)}
+                                title={isPrimaryDataLead(member) ? "Primary Data Lead role cannot be changed" : ""}
                               >
                                 <Settings className="w-3 h-3 mr-1" />
                                 Change Role
@@ -366,7 +375,8 @@ export default function Team() {
                                 variant="destructive"
                                 onClick={() => handleRemoveUser(member)}
                                 data-testid={`button-remove-${member.id}`}
-                                disabled={member.id === (user as any)?.id}
+                                disabled={member.id === (user as any)?.id || isPrimaryDataLead(member)}
+                                title={isPrimaryDataLead(member) ? "Primary Data Lead cannot be removed" : ""}
                               >
                                 <UserMinus className="w-3 h-3" />
                               </Button>
