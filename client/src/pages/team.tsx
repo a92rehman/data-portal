@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ export default function Team() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
@@ -162,7 +164,7 @@ export default function Team() {
       <div className="min-h-screen">
         <Header user={user as any} />
         <div className="flex">
-          <Sidebar onNewRequest={() => {}} user={user as any} />
+          <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
           <main className="flex-1 p-6 flex items-center justify-center">
             <Card className="max-w-md">
               <CardContent className="p-6 text-center">
@@ -180,7 +182,7 @@ export default function Team() {
       <Header user={user as any} />
       
       <div className="flex">
-        <Sidebar onNewRequest={() => {}} user={user as any} />
+        <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
         
         <main className="flex-1 p-6">
           <div className="mb-6">

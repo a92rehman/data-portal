@@ -100,14 +100,19 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         <Separator className="my-4 bg-purple-200" />
         
         <div className="pt-2 space-y-1">
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-gray-600 hover:bg-purple-50 border-2 border-transparent hover:border-purple-200 transition-all" 
-            data-testid="button-settings"
-          >
-            <Settings className="w-5 h-5 mr-3" />
-            Settings
-          </Button>
+          <Link href="/profile-setup" className="block">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-gray-600 hover:bg-purple-50 border-2 border-transparent hover:border-purple-200 transition-all" 
+              data-testid="button-settings"
+              asChild
+            >
+              <span className="flex items-center">
+                <Settings className="w-5 h-5 mr-3" />
+                Settings
+              </span>
+            </Button>
+          </Link>
           <Button 
             variant="ghost" 
             className="w-full justify-start text-gray-600 hover:bg-red-50 border-2 border-transparent hover:border-red-200 transition-all" 

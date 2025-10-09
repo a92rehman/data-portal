@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
@@ -11,6 +12,7 @@ import { BarChart3, PieChart, TrendingUp } from "lucide-react";
 export default function Analytics() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function Analytics() {
     }
 
     // Redirect team leads to dashboard
-    if (!isLoading && isAuthenticated && user?.role !== "data_analyst") {
+    if (!isLoading && isAuthenticated && (user as any)?.role !== "data_analyst") {
       toast({
         title: "Access Denied",
         description: "Analytics is only available for data analysts",
@@ -124,7 +126,7 @@ export default function Analytics() {
       <Header user={user as any} />
       
       <div className="flex">
-        <Sidebar onNewRequest={() => {}} user={user as any} />
+        <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
         
         <main className="flex-1 p-6">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">Analytics & Insights</h2>
