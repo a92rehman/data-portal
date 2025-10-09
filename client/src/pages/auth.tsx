@@ -128,23 +128,33 @@ export default function Auth() {
         </CardHeader>
 
         <CardContent>
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <Button
-              variant={isLogin ? "default" : "outline"}
-              className="w-full"
+          <div className="flex w-full rounded-lg border border-gray-200 p-1 mb-6" role="tablist">
+            <button
+              type="button"
+              role="tab"
               onClick={() => setIsLogin(true)}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                isLogin 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
               data-testid="button-switch-login"
             >
               Login
-            </Button>
-            <Button
-              variant={!isLogin ? "default" : "outline"}
-              className="w-full"
+            </button>
+            <button
+              type="button"
+              role="tab"
               onClick={() => setIsLogin(false)}
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+                !isLogin 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
               data-testid="button-switch-signup"
             >
               Sign Up
-            </Button>
+            </button>
           </div>
           
           {!isLogin && !isRequester && (
