@@ -171,10 +171,14 @@ export default function Auth() {
             <Form {...loginForm}>
               <form 
                 key="login-form" 
-                onSubmit={loginForm.handleSubmit(
-                  handleLogin,
-                  (errors) => console.log("Login form validation errors:", errors)
-                )} 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  console.log("Form onSubmit triggered");
+                  loginForm.handleSubmit(
+                    handleLogin,
+                    (errors) => console.log("Login form validation errors:", errors)
+                  )(e);
+                }} 
                 className="space-y-4"
               >
                 <FormField
