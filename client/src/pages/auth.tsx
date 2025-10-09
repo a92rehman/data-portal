@@ -128,15 +128,14 @@ export default function Auth() {
         </CardHeader>
 
         <CardContent>
-          <div className="flex w-full rounded-lg border border-gray-200 p-1 mb-6" role="tablist">
+          <div className="grid grid-cols-2 gap-3 mb-6">
             <button
               type="button"
-              role="tab"
               onClick={() => setIsLogin(true)}
-              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+              className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
                 isLogin 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
+                  : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
               }`}
               data-testid="button-switch-login"
             >
@@ -144,12 +143,11 @@ export default function Auth() {
             </button>
             <button
               type="button"
-              role="tab"
               onClick={() => setIsLogin(false)}
-              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-all ${
+              className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
                 !isLogin 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
+                  : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700'
               }`}
               data-testid="button-switch-signup"
             >
