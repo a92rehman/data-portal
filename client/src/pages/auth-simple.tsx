@@ -28,7 +28,7 @@ export default function AuthSimple() {
         title: "Welcome back!",
         description: "You've successfully logged in.",
       });
-      setLocation("/dashboard");
+      setLocation("/");
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
@@ -49,7 +49,7 @@ export default function AuthSimple() {
         <div className="absolute bottom-20 left-40 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
       </div>
 
-      <Card className="w-full max-w-md relative z-10 shadow-2xl border-2 border-gray-200 bg-white/90 backdrop-blur-sm">
+      <Card className="w-full max-w-md relative z-10 shadow-2xl border-2 border-gray-200 bg-white/90 backdrop-blur-sm min-h-[500px]">
         <CardHeader className="text-center pb-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 mx-auto shadow-2xl" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
             <ChartLine className="w-8 h-8 text-white" />
