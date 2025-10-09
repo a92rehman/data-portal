@@ -128,10 +128,10 @@ export default function Auth() {
         </CardHeader>
 
         <CardContent>
-          <div className="flex gap-2 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-6">
             <Button
               variant={isLogin ? "default" : "outline"}
-              className="flex-1"
+              className="w-full"
               onClick={() => setIsLogin(true)}
               data-testid="button-switch-login"
             >
@@ -139,7 +139,7 @@ export default function Auth() {
             </Button>
             <Button
               variant={!isLogin ? "default" : "outline"}
-              className="flex-1"
+              className="w-full"
               onClick={() => setIsLogin(false)}
               data-testid="button-switch-signup"
             >
