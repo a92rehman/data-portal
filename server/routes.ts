@@ -187,20 +187,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // SECURITY: Only allow role selection if user has NO role yet
-      // This prevents privilege escalation attacks
-      if (user.role) {
-        // User already has a role - must be changed by Data Lead
+      // SECURITY: Prevent privilege escalation
+      // If user already has a role, they can only re-select the SAME role (re-authentication)
+      if (user.role && user.role !== role) {
+        // Trying to change to a different role - must be changed by Data Lead
         return res.status(403).json({ 
           message: "You have already been assigned a role. Contact Data Lead to change it." 
         });
       }
 
-      // SECURITY: Restrict team_lead role - can only be assigned by existing Data Lead
+      // If user already has their role, just confirm it (re-authentication flow)
+      if (user.role === role) {
+        return res.json({ success: true });
+      }
+
+      // SECURITY: Bootstrap Data Lead - only abdur.rehman@taleemabad.com can self-select team_lead
+      // Others can only become team_lead through team management
       if (role === 'team_lead') {
-        return res.status(403).json({ 
-          message: "Team Lead role can only be assigned by an existing Data Lead. Please contact support or sign in as Data Requester." 
-        });
+        const isBootstrapEmail = user.email?.toLowerCase() === 'abdur.rehman@taleemabad.com';
+        
+        if (!isBootstrapEmail) {
+          return res.status(403).json({ 
+            message: "Team Lead role can only be assigned by an existing Data Lead. Please contact support or sign in as Data Requester." 
+          });
+        }
       }
 
       // Email validation: Requesters can only use company email

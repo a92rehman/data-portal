@@ -72,7 +72,7 @@ export default function Landing() {
                 <p className="text-gray-600">Select your role to continue</p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 <Card className="border-2 border-green-300 hover:border-green-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("requester")}>
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 71%, 45%) 100%)'}}>
@@ -91,6 +91,28 @@ export default function Landing() {
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
                       Data Requester
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-blue-300 hover:border-blue-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("team_lead")}>
+                  <CardContent className="p-6 text-center">
+                    <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                      <Building2 className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data Lead</h3>
+                    <p className="text-xs text-gray-600 mb-3">Manage requests, assign tasks, and oversee team</p>
+                    <div className="mb-3 p-2 bg-blue-50 rounded-md border border-blue-200">
+                      <p className="text-xs text-blue-700 font-medium">Bootstrap access only</p>
+                      <p className="text-xs text-blue-600">abdur.rehman@taleemabad.com</p>
+                    </div>
+                    <Button 
+                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
+                      style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}
+                      data-testid="button-login-team-lead"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Data Lead
                     </Button>
                   </CardContent>
                 </Card>
