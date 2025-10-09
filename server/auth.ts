@@ -87,7 +87,7 @@ export function setupAuth(app: Express) {
   // Register endpoint - only for requesters with valid company emails
   app.post("/api/register", async (req, res, next) => {
     try {
-      const { email, password, firstName, lastName } = req.body;
+      const { email, password, name, firstName, lastName, role, department } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
@@ -106,14 +106,23 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Create user with hashed password - no role yet (will be set during requester signup flow)
+      // Handle name splitting if full name provided
+      let userFirstName = firstName;
+      let userLastName = lastName;
+      if (name && !firstName && !lastName) {
+        const nameParts = name.trim().split(/\s+/);
+        userFirstName = nameParts[0];
+        userLastName = nameParts.slice(1).join(' ') || null;
+      }
+
+      // Create user with hashed password
       const user = await storage.createUser({
         email,
         password: await hashPassword(password),
-        firstName: firstName || null,
-        lastName: lastName || null,
-        role: null, // Role will be set during the requester signup flow
-        department: null,
+        firstName: userFirstName || null,
+        lastName: userLastName || null,
+        role: role === "requester" ? "requester" : null, // Set role if provided and valid
+        department: department || null,
         profileImageUrl: null,
       });
 
