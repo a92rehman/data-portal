@@ -63,6 +63,7 @@ export default function Auth() {
   });
 
   const handleLogin = async (data: z.infer<typeof loginSchema>) => {
+    console.log("Login form submitted with data:", data);
     try {
       await login({ email: data.email, password: data.password });
       toast({
@@ -71,6 +72,7 @@ export default function Auth() {
       });
       setLocation("/dashboard");
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Login failed",
@@ -167,7 +169,14 @@ export default function Auth() {
 
           {isLogin ? (
             <Form {...loginForm}>
-              <form key="login-form" onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+              <form 
+                key="login-form" 
+                onSubmit={loginForm.handleSubmit(
+                  handleLogin,
+                  (errors) => console.log("Login form validation errors:", errors)
+                )} 
+                className="space-y-4"
+              >
                 <FormField
                   control={loginForm.control}
                   name="email"
