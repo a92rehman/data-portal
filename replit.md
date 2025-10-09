@@ -77,9 +77,13 @@ Preferred communication style: Simple, everyday language.
 
 **Authorization Model:**
 - **Role-based access control**:
-  - **Requester**: View own requests.
-  - **Data Lead**: View all requests, accept/reject, assign, set priority/deadline.
+  - **Requester**: View own requests. **Requires company email** (@taleemabad.com or @taleemabad.org).
+  - **Data Lead**: View all requests, accept/reject, **exclusively assign/unassign analysts**, set priority/deadline.
   - **Analyst**: View assigned requests, add blockers, suggest deadlines, update status.
+- **Security Enforcements**:
+  - Only Data Lead can assign or remove analysts from requests (backend validation on `/api/requests/:id/assign` and `/api/requests/:id/assign-analyst`).
+  - Requester role restricted to company email domains (validated on role selection).
+  - Frontend assignment UI only visible to Data Lead role.
 - Analytics view restricted to Data Lead only.
 
 ### API Structure
