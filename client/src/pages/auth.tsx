@@ -240,6 +240,11 @@ export default function Auth() {
                   type="submit"
                   className="w-full"
                   disabled={isLoggingIn}
+                  onClick={(e) => {
+                    console.log("Login button clicked!");
+                    console.log("Form values:", loginForm.getValues());
+                    console.log("Form errors:", loginForm.formState.errors);
+                  }}
                   data-testid="button-submit-login"
                 >
                   {isLoggingIn ? (
