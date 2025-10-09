@@ -147,6 +147,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(userId: string): Promise<void> {
+    // Handle foreign key constraints before deleting user
+    
+    // 1. Check if user has created any requests (cannot delete if they have)
+    const createdRequests = await db
+      .select()
+      .from(dataRequests)
+      .where(eq(dataRequests.requestedById, userId))
+      .limit(1);
+    
+    if (createdRequests.length > 0) {
+      throw new Error("Cannot delete user who has created data requests. Please reassign or delete their requests first.");
+    }
+    
+    // 2. Remove user assignments from requests (set to NULL)
+    await db
+      .update(dataRequests)
+      .set({ assignedToId: null })
+      .where(eq(dataRequests.assignedToId, userId));
+    
+    // 3. Remove user as reviewer from requests (set to NULL)
+    await db
+      .update(dataRequests)
+      .set({ reviewedById: null })
+      .where(eq(dataRequests.reviewedById, userId));
+    
+    // 4. Delete user's auth logs (historical data, safe to delete)
+    await db.delete(authLogs).where(eq(authLogs.userId, userId));
+    
+    // 5. Delete user's notifications (safe to delete)
+    await db.delete(notifications).where(eq(notifications.userId, userId));
+    
+    // 6. Delete user's comments (they have non-nullable foreign key)
+    await db.delete(comments).where(eq(comments.userId, userId));
+    
+    // 7. Delete user's attachments (they have non-nullable foreign key)
+    await db.delete(attachments).where(eq(attachments.uploadedById, userId));
+    
+    // 8. Delete user's blockers (they have non-nullable foreign key)
+    await db.delete(blockers).where(eq(blockers.reportedById, userId));
+    
+    // 9. Finally, delete the user
     await db.delete(users).where(eq(users.id, userId));
   }
 
