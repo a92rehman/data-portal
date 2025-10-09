@@ -104,7 +104,6 @@ export default function Landing() {
                     <p className="text-xs text-gray-600 mb-3">Manage requests, assign tasks, and oversee team</p>
                     <div className="mb-3 p-2 bg-blue-50 rounded-md border border-blue-200">
                       <p className="text-xs text-blue-700 font-medium">Bootstrap access only</p>
-                      <p className="text-xs text-blue-600">abdur.rehman@taleemabad.com</p>
                     </div>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
