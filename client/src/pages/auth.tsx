@@ -132,10 +132,10 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => setIsLogin(true)}
-              className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+              className={`px-4 py-2.5 rounded-lg font-medium text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white transition-all duration-200 ${
                 isLogin 
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md hover:shadow-lg hover:scale-105' 
-                  : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700 hover:shadow-sm'
+                  ? 'opacity-100 shadow-md hover:shadow-lg hover:scale-105' 
+                  : 'opacity-50 hover:opacity-75 hover:shadow-sm'
               }`}
               data-testid="button-switch-login"
             >
@@ -144,10 +144,10 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => setIsLogin(false)}
-              className={`px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+              className={`px-4 py-2.5 rounded-lg font-medium text-sm bg-gradient-to-r from-purple-600 to-blue-600 text-white transition-all duration-200 ${
                 !isLogin 
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md hover:shadow-lg hover:scale-105' 
-                  : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-purple-500 hover:bg-purple-50 hover:text-purple-700 hover:shadow-sm'
+                  ? 'opacity-100 shadow-md hover:shadow-lg hover:scale-105' 
+                  : 'opacity-50 hover:opacity-75 hover:shadow-sm'
               }`}
               data-testid="button-switch-signup"
             >
