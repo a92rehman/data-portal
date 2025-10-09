@@ -1,7 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth } from "./auth";
+
+// Middleware to check if user is authenticated
+function isAuthenticated(req: any, res: any, next: any) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+}
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail } from "./emailService";
@@ -9,12 +17,12 @@ import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
+  setupAuth(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -35,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/users', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can view all users" });
       }
@@ -50,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/users/:userId/role', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUser = await storage.getUser(req.user.claims.sub);
+      const currentUser = await storage.getUser(req.user.id);
       if (!currentUser || currentUser.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can update user roles" });
       }
@@ -102,13 +110,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/users/:userId', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUser = await storage.getUser(req.user.claims.sub);
+      const currentUser = await storage.getUser(req.user.id);
       if (!currentUser || currentUser.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can remove users" });
       }
 
       // Prevent self-deletion
-      if (req.params.userId === req.user.claims.sub) {
+      if (req.params.userId === req.user.id) {
         return res.status(400).json({ message: "Cannot remove yourself" });
       }
 
@@ -131,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/users/invite', isAuthenticated, async (req: any, res) => {
     try {
-      const currentUser = await storage.getUser(req.user.claims.sub);
+      const currentUser = await storage.getUser(req.user.id);
       if (!currentUser || currentUser.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can invite team members" });
       }
@@ -200,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/auth/user/role', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { role } = req.body;
       
       if (!role || !['requester', 'team_lead', 'analyst'].includes(role)) {
@@ -273,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/auth/user/department', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { department } = req.body;
       
       if (!department) {
@@ -300,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Data request routes
   app.post('/api/requests', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertDataRequestSchema.parse(req.body);
       
       const request = await storage.createDataRequest(validatedData, userId);
@@ -317,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/requests', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -391,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/requests/:id/status', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'analyst') {
         return res.status(403).json({ message: "Only analysts can update request status" });
       }
@@ -412,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/requests/:id/assign', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can assign requests" });
       }
@@ -463,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/requests/:id/priority-deadline', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can update priority and deadline" });
       }
@@ -492,7 +500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/requests/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'analyst') {
         return res.status(403).json({ message: "Only analysts can delete requests" });
       }
@@ -508,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New workflow routes for three-role system
   app.patch('/api/requests/:id/accept', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can accept requests" });
       }
@@ -528,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/requests/:id/reject', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       
       // Both Data Lead and Analyst can reject requests
       if (!user || !['team_lead', 'analyst'].includes(user.role)) {
@@ -617,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/requests/:id/assign-analyst', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'team_lead') {
         return res.status(403).json({ message: "Only Data Lead can assign analysts" });
       }
@@ -719,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/requests/:id/blockers', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'analyst') {
         return res.status(403).json({ message: "Only analysts can add blockers" });
       }
@@ -744,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/requests/:id/suggest-deadline', isAuthenticated, async (req: any, res) => {
     try {
-      const user = await storage.getUser(req.user.claims.sub);
+      const user = await storage.getUser(req.user.id);
       if (!user || user.role !== 'analyst') {
         return res.status(403).json({ message: "Only analysts can suggest deadlines" });
       }
@@ -770,7 +778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comment routes
   app.post('/api/requests/:id/comments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertCommentSchema.parse({
         ...req.body,
         requestId: req.params.id,
@@ -791,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Object storage routes
   app.post('/api/objects/upload', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const requestId = req.body.requestId;
       
       if (!requestId) {
@@ -809,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/requests/:id/attachments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const requestId = req.params.id;
       const uploadToken = req.body.uploadToken;
       
@@ -844,7 +852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/objects/:objectPath(*)', isAuthenticated, async (req: any, res) => {
     const objectStorageService = new ObjectStorageService();
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     try {
       const objectPath = req.path;
@@ -881,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics routes
   app.get('/api/analytics/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       // Role-based stats filtering:
@@ -929,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth logs - restricted to Data Lead only
   app.get('/api/auth-logs', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (user?.role !== 'team_lead') {
@@ -948,7 +956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notification routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const unreadOnly = req.query.unreadOnly === 'true';
       
       const notifications = await storage.getUserNotifications(userId, unreadOnly);
@@ -976,7 +984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/notifications/read-all', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       await storage.markAllNotificationsAsRead(userId);
       res.json({ success: true });
     } catch (error) {
@@ -988,7 +996,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin route to purge all requests
   app.post('/api/admin/purge-requests', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user || user.role !== 'data_analyst') {
