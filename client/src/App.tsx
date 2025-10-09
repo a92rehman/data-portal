@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
-import Auth from "@/pages/auth";
+import AuthSimple from "@/pages/auth-simple";
 import SetupPassword from "@/pages/setup-password";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
@@ -28,7 +28,7 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
-        <Route path="/auth" component={Auth} />
+        <Route path="/auth" component={AuthSimple} />
         <Route path="/setup-password" component={SetupPassword} />
         <Route component={Landing} />
       </Switch>
