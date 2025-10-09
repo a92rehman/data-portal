@@ -109,7 +109,16 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ pool, createTableIfMissing: true });
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true,
+      // Suppress errors for already existing tables/indexes
+      errorLog: (error: any) => {
+        if (!error.message?.includes('already exists')) {
+          console.error('[session-store]', error);
+        }
+      }
+    });
   }
 
   async getUser(id: string): Promise<User | undefined> {
