@@ -43,6 +43,7 @@ export interface IStorage {
   updateUserRole(userId: string, role: string, department?: string): Promise<User | undefined>;
   deleteUser(userId: string): Promise<void>;
   createInvitedUser(email: string, role: string, department?: string): Promise<User>;
+  updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void>;
   
   // Data request operations
   createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest>;
@@ -226,6 +227,16 @@ export class DatabaseStorage implements IStorage {
 
     const [user] = await db.insert(users).values(userData).returning();
     return user;
+  }
+
+  async updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        passwordResetToken: token,
+        passwordResetExpires: expires,
+      })
+      .where(eq(users.id, userId));
   }
 
   async createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest> {

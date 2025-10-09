@@ -380,6 +380,14 @@ interface TeamMemberInviteEmailData {
   inviterName: string;
 }
 
+interface AnalystPasswordSetupEmailData {
+  analystName: string;
+  analystEmail: string;
+  setupToken: string;
+  inviterName: string;
+  appUrl: string;
+}
+
 export async function sendTeamMemberInviteEmail(data: TeamMemberInviteEmailData) {
   try {
     const { inviteeName, inviteeEmail, role, department, inviterName } = data;
@@ -487,6 +495,122 @@ export async function sendTeamMemberInviteEmail(data: TeamMemberInviteEmailData)
     return result;
   } catch (error) {
     console.error('[email] Failed to send invitation email:', error);
+    throw error;
+  }
+}
+
+export async function sendAnalystPasswordSetupEmail(data: AnalystPasswordSetupEmailData) {
+  try {
+    const { analystName, analystEmail, setupToken, inviterName, appUrl } = data;
+
+    const setupUrl = `${appUrl}/setup-password?token=${setupToken}`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Welcome to the Team!</h1>
+                    <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 16px;">DataHub Data Analytics</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px; color: #1f2937; font-size: 16px; line-height: 1.5;">
+                      Hi <strong>${analystName}</strong>,
+                    </p>
+                    
+                    <p style="margin: 0 0 30px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                      ${inviterName} has invited you to join the DataHub Data Request Management System as a <strong>Data Analyst</strong>. To get started, please set up your password by clicking the button below.
+                    </p>
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 30px;">
+                      <tr>
+                        <td align="center" style="padding: 20px 0;">
+                          <a href="${setupUrl}" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                            Set Up Password
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; border: 2px solid #e5e7eb; margin-bottom: 30px;">
+                      <tr>
+                        <td style="padding: 24px;">
+                          <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px; font-weight: 600;">Your Account Details</h2>
+                          
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #6b7280; font-size: 14px;">Email:</span>
+                                <span style="color: #111827; font-size: 14px; font-weight: 500; margin-left: 8px;">${analystEmail}</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #6b7280; font-size: 14px;">Role:</span>
+                                <span style="color: #111827; font-size: 14px; font-weight: 500; margin-left: 8px;">Data Analyst</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin: 0 0 15px; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                      If the button doesn't work, you can copy and paste this link into your browser:
+                    </p>
+                    <p style="margin: 0 0 30px; color: #6366f1; font-size: 14px; word-break: break-all;">
+                      ${setupUrl}
+                    </p>
+
+                    <p style="margin: 0 0 10px; color: #ef4444; font-size: 14px; font-weight: 500;">
+                      ⚠️ This link will expire in 24 hours for security reasons.
+                    </p>
+                    
+                    <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                      If you have any questions, please don't hesitate to reach out to ${inviterName} or the Data Team.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
+                      DataHub Data Analytics Team
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      This is an automated notification. Please do not reply to this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.to = [{ email: analystEmail, name: analystName }];
+    sendSmtpEmail.sender = { email: SENDER_EMAIL, name: SENDER_NAME };
+    sendSmtpEmail.subject = 'Welcome to DataHub - Set Up Your Password';
+    sendSmtpEmail.htmlContent = htmlContent;
+
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`[email] Password setup email sent successfully to ${analystEmail}:`, result);
+    return result;
+  } catch (error) {
+    console.error('[email] Failed to send password setup email:', error);
     throw error;
   }
 }

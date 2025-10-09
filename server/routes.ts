@@ -12,7 +12,8 @@ function isAuthenticated(req: any, res: any, next: any) {
 }
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail } from "./emailService";
+import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail } from "./emailService";
+import { randomBytes } from "crypto";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -182,21 +183,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resultUser = await storage.createInvitedUser(email, role, department);
       }
 
-      // Send invitation email
-      try {
-        const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Data Lead';
-        
-        await sendTeamMemberInviteEmail({
-          inviteeName: email.split('@')[0], // Use email username as name placeholder
-          inviteeEmail: email,
-          role,
-          department: department || 'Not specified',
-          inviterName,
-        });
-        console.log(`[email] Invitation email sent successfully to ${email}`);
-      } catch (emailError) {
-        console.error("[email] Failed to send invitation email:", emailError);
-        // Don't fail the request if email fails
+      // For analysts, generate password setup token and send setup email
+      if (role === 'analyst' && !existingUser) {
+        try {
+          const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Data Lead';
+          
+          // Generate password reset token
+          const resetToken = randomBytes(32).toString('hex');
+          const resetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+          
+          // Store token in user record
+          await storage.updatePasswordResetToken(resultUser.id, resetToken, resetExpires);
+          
+          // Get app URL from environment or construct from request
+          const appUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
+            ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+            : `${req.protocol}://${req.get('host')}`;
+          
+          // Send password setup email
+          await sendAnalystPasswordSetupEmail({
+            analystName: email.split('@')[0], // Use email username as name placeholder
+            analystEmail: email,
+            setupToken: resetToken,
+            inviterName,
+            appUrl,
+          });
+          console.log(`[email] Password setup email sent successfully to ${email}`);
+        } catch (emailError) {
+          console.error("[email] Failed to send password setup email:", emailError);
+          // Don't fail the request if email fails
+        }
+      } else {
+        // For requesters and team leads, send regular invitation email
+        try {
+          const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Data Lead';
+          
+          await sendTeamMemberInviteEmail({
+            inviteeName: email.split('@')[0], // Use email username as name placeholder
+            inviteeEmail: email,
+            role,
+            department: department || 'Not specified',
+            inviterName,
+          });
+          console.log(`[email] Invitation email sent successfully to ${email}`);
+        } catch (emailError) {
+          console.error("[email] Failed to send invitation email:", emailError);
+          // Don't fail the request if email fails
+        }
       }
 
       res.status(existingUser ? 200 : 201).json(resultUser);
