@@ -68,23 +68,29 @@ Preferred communication style: Simple, everyday language.
 - Cookie-based sessions.
 
 **Onboarding Flow:**
-1. Role selection on landing page ("Data Requester" or "Data Lead"). Note: Data Analysts are added by Data Leads only.
+1. Role selection on landing page ("Data Requester" or "Data Analyst"). **Data Lead option hidden** - Team Leads can only be added by existing Data Leads.
 2. Replit Auth (OIDC) login.
-3. Role applied to user profile with email validation.
+3. Role applied to user profile with email validation (only if user has no role yet).
 4. Team leads without department redirected to profile setup.
 5. Department selection for requesters (team leads).
 6. Redirection to dashboard.
 
 **Authorization Model:**
 - **Role-based access control**:
-  - **Requester**: View own requests. **Requires company email** (@taleemabad.com or @niete.edu.pk).
-  - **Data Lead**: View all requests, accept/reject, **exclusively assign/unassign analysts**, set priority/deadline, manage team members (add/remove users, change roles).
-  - **Analyst**: View assigned requests, add blockers, suggest deadlines, update status. **Added by Data Lead only** (no self-signup).
+  - **Requester**: View own requests only (filtered by requestedById). **Requires company email** (@taleemabad.com or @niete.edu.pk).
+  - **Data Lead**: View ALL requests, accept/reject, **exclusively assign/unassign analysts**, set priority/deadline, manage team members (add/remove users, change roles).
+  - **Analyst**: View assigned requests only (filtered by assignedToId), add blockers, suggest deadlines, update status. **Added by Data Lead only** (no self-signup).
 - **Security Enforcements**:
-  - Only Data Lead can assign or remove analysts from requests (backend validation on `/api/requests/:id/assign` and `/api/requests/:id/assign-analyst`).
-  - Requester role restricted to company email domains: @taleemabad.com and @niete.edu.pk (validated on role selection).
-  - Frontend assignment UI only visible to Data Lead role.
-  - Analyst role can only be assigned by Data Lead via team management.
+  - **Role Preservation**: Existing users' roles preserved on re-authentication; new users start with undefined role
+  - **Privilege Escalation Prevention**: 
+    - Team Lead role cannot be self-selected from landing page (only assigned by existing Data Leads)
+    - Users with roles cannot change their own role (must be changed by Data Lead)
+  - **Request Filtering**: 
+    - Requesters see ONLY their own requests (backend enforces requestedById filter)
+    - Analysts see ONLY assigned requests (backend enforces assignedToId filter)
+    - Team Leads see ALL requests (no filtering applied)
+  - **Email Validation**: Requester role restricted to company email domains (@taleemabad.com and @niete.edu.pk)
+  - **Role Assignment**: Only Data Lead can assign/modify user roles via team management interface
 - Analytics view restricted to Data Lead only.
 
 ### API Structure

@@ -51,25 +51,31 @@ export default function Dashboard() {
     enabled: isAuthenticated && ((user as any)?.role === "team_lead" || (user as any)?.role === "analyst"),
   });
 
-  // Apply stored role selection after login
+  // Apply stored role selection after login (only if user has no role yet)
   useEffect(() => {
     const applyRoleSelection = async () => {
       const selectedRole = localStorage.getItem("selected_role");
-      if (selectedRole && isAuthenticated) {
+      // Only apply role if user doesn't have one yet
+      if (selectedRole && isAuthenticated && user && !(user as any)?.role) {
         try {
           await apiRequest("PATCH", "/api/auth/user/role", { role: selectedRole });
           localStorage.removeItem("selected_role");
           queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         } catch (error) {
           console.error("Error applying role:", error);
+          // Clear the selected role from localStorage on error to prevent retry loops
+          localStorage.removeItem("selected_role");
         }
+      } else if (selectedRole && isAuthenticated && user && (user as any)?.role) {
+        // User already has a role, clear the selected_role from localStorage
+        localStorage.removeItem("selected_role");
       }
     };
     
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       applyRoleSelection();
     }
-  }, [isAuthenticated, queryClient]);
+  }, [isAuthenticated, user, queryClient]);
 
   // Redirect to profile setup if team lead without department
   useEffect(() => {

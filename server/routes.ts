@@ -187,16 +187,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Check if user was pre-invited (has a role already)
-      if (user.role && user.role !== role) {
-        // For analysts, allow sign-in if they were invited
-        if (role === 'analyst' && user.role === 'analyst') {
-          res.json({ success: true });
-          return;
-        }
-        
+      // SECURITY: Only allow role selection if user has NO role yet
+      // This prevents privilege escalation attacks
+      if (user.role) {
+        // User already has a role - must be changed by Data Lead
         return res.status(403).json({ 
           message: "You have already been assigned a role. Contact Data Lead to change it." 
+        });
+      }
+
+      // SECURITY: Restrict team_lead role - can only be assigned by existing Data Lead
+      if (role === 'team_lead') {
+        return res.status(403).json({ 
+          message: "Team Lead role can only be assigned by an existing Data Lead. Please contact support or sign in as Data Requester." 
         });
       }
 
