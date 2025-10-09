@@ -70,8 +70,8 @@ async function upsertUser(
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
-    role: claims["role"] || "team_lead",
-    department: claims["department"] || "engineering",
+    role: existingUser?.role || undefined,
+    department: existingUser?.department || undefined,
   };
   console.log("[AUTH] Upserting user with data:", JSON.stringify(userData, null, 2));
   await storage.upsertUser(userData);

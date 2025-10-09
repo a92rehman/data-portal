@@ -28,11 +28,13 @@ import { eq, desc, and, count, sql } from "drizzle-orm";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getDataAnalysts(): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: string, role: string, department?: string): Promise<User | undefined>;
   deleteUser(userId: string): Promise<void>;
+  createInvitedUser(email: string, role: string, department?: string): Promise<User>;
   
   // Data request operations
   createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest>;
@@ -98,6 +100,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -141,6 +148,21 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(userId: string): Promise<void> {
     await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async createInvitedUser(email: string, role: string, department?: string): Promise<User> {
+    const userData: UpsertUser = {
+      id: `invited-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      email,
+      role: role as "requester" | "team_lead" | "analyst",
+      department: department || null,
+      firstName: null,
+      lastName: null,
+      profileImageUrl: null,
+    };
+
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
   }
 
   async createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest> {
