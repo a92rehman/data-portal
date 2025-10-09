@@ -29,7 +29,7 @@ export default function Landing() {
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-2">Data Request Management System</p>
           <div className="flex items-center justify-center gap-2 text-purple-600 dark:text-purple-400">
             <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">Streamline Your Data Analytics Workflow</span>
+            <span className="text-sm font-medium">Streamline Your Data Requests</span>
             <Sparkles className="w-4 h-4" />
           </div>
         </div>
