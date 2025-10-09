@@ -3,6 +3,11 @@ import * as brevo from '@getbrevo/brevo';
 const apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY || '');
 
+// Use environment variable for sender email, fallback to default
+// IMPORTANT: This email must be verified in your Brevo account
+const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'noreply@taleemabad.com';
+const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'DataHub Data Requests';
+
 interface AssignmentEmailData {
   assigneeName: string;
   assigneeEmail: string;
@@ -148,7 +153,7 @@ export async function sendAssignmentEmail(data: AssignmentEmailData) {
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: assigneeEmail, name: assigneeName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
+    sendSmtpEmail.sender = { email: SENDER_EMAIL, name: SENDER_NAME };
     sendSmtpEmail.subject = `New Task Assignment: ${taskTitle}`;
     sendSmtpEmail.htmlContent = htmlContent;
 
@@ -262,7 +267,7 @@ export async function sendRequestAcceptedEmail(data: RequestAcceptedEmailData) {
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: requesterEmail, name: requesterName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
+    sendSmtpEmail.sender = { email: SENDER_EMAIL, name: SENDER_NAME };
     sendSmtpEmail.subject = `Request Accepted: ${taskTitle}`;
     sendSmtpEmail.htmlContent = htmlContent;
 
@@ -354,7 +359,7 @@ export async function sendRequestRejectedEmail(data: RequestRejectedEmailData) {
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: requesterEmail, name: requesterName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
+    sendSmtpEmail.sender = { email: SENDER_EMAIL, name: SENDER_NAME };
     sendSmtpEmail.subject = `Request Update Required: ${taskTitle}`;
     sendSmtpEmail.htmlContent = htmlContent;
 
@@ -473,7 +478,7 @@ export async function sendTeamMemberInviteEmail(data: TeamMemberInviteEmailData)
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: inviteeEmail, name: inviteeName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
+    sendSmtpEmail.sender = { email: SENDER_EMAIL, name: SENDER_NAME };
     sendSmtpEmail.subject = `Welcome to DataHub Data Request System - ${roleName}`;
     sendSmtpEmail.htmlContent = htmlContent;
 

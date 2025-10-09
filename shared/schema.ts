@@ -113,11 +113,11 @@ export const dataRequests = pgTable("data_requests", {
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
   
-  primaryQuestion: text("primary_question").notNull(),
-  businessProblem: text("business_problem").notNull(),
-  decisionAction: text("decision_action").notNull(),
-  impact: varchar("impact").notNull(),
-  frequency: varchar("frequency").notNull(),
+  primaryQuestion: text("primary_question"),
+  businessProblem: text("business_problem"),
+  decisionAction: text("decision_action"),
+  impact: varchar("impact"),
+  frequency: varchar("frequency"),
   frequencyDuration: integer("frequency_duration"),
   frequencyUnit: varchar("frequency_unit"),
   
