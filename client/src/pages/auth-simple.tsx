@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 import { ChartLine, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
 
 export default function AuthSimple() {
@@ -24,6 +25,8 @@ export default function AuthSimple() {
     
     try {
       await login({ email, password });
+      // Wait for auth query to refetch before redirecting
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome back!",
         description: "You've successfully logged in.",
