@@ -80,6 +80,10 @@ export default function Landing() {
                     </div>
                     <h3 className="text-lg font-bold mb-2 text-gray-900">Data Requester</h3>
                     <p className="text-xs text-gray-600 mb-3">Submit data requests and track their status</p>
+                    <div className="mb-3 p-2 bg-green-50 rounded-md border border-green-200">
+                      <p className="text-xs text-green-700 font-medium">Requires company email</p>
+                      <p className="text-xs text-green-600">@taleemabad.com or @taleemabad.org</p>
+                    </div>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
                       style={{background: 'linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 71%, 45%) 100%)'}}
