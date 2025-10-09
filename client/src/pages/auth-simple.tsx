@@ -13,18 +13,11 @@ export default function AuthSimple() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [_, setLocation] = useLocation();
-  const { login, isLoggingIn, isAuthenticated, user } = useAuth();
+  const { login, isLoggingIn } = useAuth();
   const { toast } = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    console.log("AuthSimple: User already authenticated, redirecting to /");
-    setLocation("/");
-    return null;
-  }
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
