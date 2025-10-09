@@ -72,7 +72,7 @@ export default function Landing() {
                 <p className="text-gray-600">Select your role to continue</p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
                 <Card className="border-2 border-green-300 hover:border-green-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("requester")}>
                   <CardContent className="p-6 text-center">
                     <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 71%, 45%) 100%)'}}>
@@ -82,7 +82,7 @@ export default function Landing() {
                     <p className="text-xs text-gray-600 mb-3">Submit data requests and track their status</p>
                     <div className="mb-3 p-2 bg-green-50 rounded-md border border-green-200">
                       <p className="text-xs text-green-700 font-medium">Requires company email</p>
-                      <p className="text-xs text-green-600">@taleemabad.com or @taleemabad.org</p>
+                      <p className="text-xs text-green-600">@taleemabad.com or @niete.edu.pk</p>
                     </div>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
@@ -101,7 +101,7 @@ export default function Landing() {
                       <Building2 className="w-7 h-7 text-white" />
                     </div>
                     <h3 className="text-lg font-bold mb-2 text-gray-900">Data Lead</h3>
-                    <p className="text-xs text-gray-600 mb-3">Review and assign requests to analysts</p>
+                    <p className="text-xs text-gray-600 mb-3">Review, assign requests, and manage team members</p>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
                       style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}
@@ -112,29 +112,16 @@ export default function Landing() {
                     </Button>
                   </CardContent>
                 </Card>
-
-                <Card className="border-2 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("analyst")}>
-                  <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-                      <BarChart3 className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data Analyst</h3>
-                    <p className="text-xs text-gray-600 mb-3">Work on requests and track blockers</p>
-                    <Button 
-                      className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
-                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                      data-testid="button-login-analyst"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Data Analyst
-                    </Button>
-                  </CardContent>
-                </Card>
               </div>
 
-              <p className="text-xs text-gray-500 mt-4">
-                Access restricted to Taleemabad team members
-              </p>
+              <div className="mt-4 space-y-2">
+                <p className="text-xs text-gray-500">
+                  Access restricted to Taleemabad team members
+                </p>
+                <p className="text-xs text-gray-500">
+                  Note: Data Analysts are added by Data Leads
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

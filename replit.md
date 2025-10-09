@@ -68,22 +68,23 @@ Preferred communication style: Simple, everyday language.
 - Cookie-based sessions.
 
 **Onboarding Flow:**
-1. Role selection ("Data Analyst" or "Other Teams").
-2. Replit Auth.
-3. Role applied to user profile.
+1. Role selection on landing page ("Data Requester" or "Data Lead"). Note: Data Analysts are added by Data Leads only.
+2. Replit Auth (OIDC) login.
+3. Role applied to user profile with email validation.
 4. Team leads without department redirected to profile setup.
-5. Department selection for team leads.
+5. Department selection for requesters (team leads).
 6. Redirection to dashboard.
 
 **Authorization Model:**
 - **Role-based access control**:
-  - **Requester**: View own requests. **Requires company email** (@taleemabad.com or @taleemabad.org).
-  - **Data Lead**: View all requests, accept/reject, **exclusively assign/unassign analysts**, set priority/deadline.
-  - **Analyst**: View assigned requests, add blockers, suggest deadlines, update status.
+  - **Requester**: View own requests. **Requires company email** (@taleemabad.com or @niete.edu.pk).
+  - **Data Lead**: View all requests, accept/reject, **exclusively assign/unassign analysts**, set priority/deadline, manage team members (add/remove users, change roles).
+  - **Analyst**: View assigned requests, add blockers, suggest deadlines, update status. **Added by Data Lead only** (no self-signup).
 - **Security Enforcements**:
   - Only Data Lead can assign or remove analysts from requests (backend validation on `/api/requests/:id/assign` and `/api/requests/:id/assign-analyst`).
-  - Requester role restricted to company email domains (validated on role selection).
+  - Requester role restricted to company email domains: @taleemabad.com and @niete.edu.pk (validated on role selection).
   - Frontend assignment UI only visible to Data Lead role.
+  - Analyst role can only be assigned by Data Lead via team management.
 - Analytics view restricted to Data Lead only.
 
 ### API Structure

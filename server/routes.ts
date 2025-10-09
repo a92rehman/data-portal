@@ -69,12 +69,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const email = targetUser.email || '';
-        const allowedDomains = ['@taleemabad.com', '@taleemabad.org'];
+        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
         const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
         
         if (!hasValidDomain) {
           return res.status(403).json({ 
-            message: "Requesters must use a company email address (@taleemabad.com or @taleemabad.org)" 
+            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });
         }
       }
@@ -126,15 +126,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Email validation: Requesters can only use company email (@taleemabad.com)
+      // Email validation: Requesters can only use company email
       if (role === 'requester') {
         const email = user.email || '';
-        const allowedDomains = ['@taleemabad.com', '@taleemabad.org'];
+        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
         const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
         
         if (!hasValidDomain) {
           return res.status(403).json({ 
-            message: "Requesters must use a company email address (@taleemabad.com or @taleemabad.org)" 
+            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });
         }
       }
