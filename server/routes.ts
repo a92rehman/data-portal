@@ -66,6 +66,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // SECURITY: Protect primary data lead - role cannot be changed
+      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      if (targetUser.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
+        return res.status(403).json({ 
+          message: "Primary Data Lead role cannot be changed" 
+        });
+      }
+
       // Email validation: Requesters can only use company email
       if (role === 'requester') {
         const email = targetUser.email || '';
@@ -102,6 +110,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Prevent self-deletion
       if (req.params.userId === req.user.claims.sub) {
         return res.status(400).json({ message: "Cannot remove yourself" });
+      }
+
+      // SECURITY: Protect primary data lead - cannot be removed
+      const targetUser = await storage.getUser(req.params.userId);
+      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      if (targetUser?.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
+        return res.status(403).json({ 
+          message: "Primary Data Lead cannot be removed" 
+        });
       }
 
       await storage.deleteUser(req.params.userId);
