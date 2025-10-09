@@ -5,7 +5,7 @@ import { ChartLine, Sparkles, TrendingUp, Users, BarChart3, Building2 } from "lu
 export default function Landing() {
   const handleRoleSelection = (role: "requester" | "team_lead" | "analyst") => {
     localStorage.setItem("selected_role", role);
-    window.location.href = "/api/login";
+    window.location.href = "/auth";
   };
 
   return (

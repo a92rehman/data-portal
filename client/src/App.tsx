@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
+import Auth from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
 import ProfileSetup from "@/pages/profile-setup";
@@ -18,22 +19,30 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  if (isLoading) {
+    return <Landing />;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/auth" component={Auth} />
+        <Route component={Landing} />
+      </Switch>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/requester-signup" component={RequesterSignup} />
-          <Route path="/pending-reviews" component={PendingReviews} />
-          <Route path="/all-requests" component={AllRequests} />
-          <Route path="/my-assignments" component={MyAssignments} />
-          <Route path="/team" component={Team} />
-          <Route path="/analytics" component={Analytics} />
-          <Route path="/profile-setup" component={ProfileSetup} />
-        </>
-      )}
+      <Route path="/" component={Dashboard} />
+      <Route path="/requester-signup" component={RequesterSignup} />
+      <Route path="/pending-reviews" component={PendingReviews} />
+      <Route path="/all-requests" component={AllRequests} />
+      <Route path="/my-assignments" component={MyAssignments} />
+      <Route path="/team" component={Team} />
+      <Route path="/analytics" component={Analytics} />
+      <Route path="/profile-setup" component={ProfileSetup} />
       <Route component={NotFound} />
     </Switch>
   );
