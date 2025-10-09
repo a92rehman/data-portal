@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack data request management system for managing data requests and analytics workflows. It enables team leads to submit data requests and data analysts to manage, review, and complete them. The system provides request tracking with status management, commenting, authentication via Replit Auth, and analytics dashboards. It is built with React, shadcn/ui, Express, and PostgreSQL, focusing on a modern, responsive user experience. The business vision is to streamline data request workflows, improve transparency, and provide actionable insights into data operations.
+This is a full-stack data request management system for managing data requests and analytics workflows. It enables team leads to submit data requests and data analysts to manage, review, and complete them. The system provides request tracking with status management, commenting, email/password authentication, and analytics dashboards. It is built with React, shadcn/ui, Express, and PostgreSQL, focusing on a modern, responsive user experience. The business vision is to streamline data request workflows, improve transparency, and provide actionable insights into data operations.
 
 ## User Preferences
 
@@ -32,8 +32,9 @@ Preferred communication style: Simple, everyday language.
 - **Runtime**: Node.js with TypeScript
 - **Framework**: Express.js
 - **Database ORM**: Drizzle ORM with Neon serverless PostgreSQL
-- **Authentication**: Replit Auth with OpenID Connect (OIDC)
+- **Authentication**: Passport.js with Local Strategy (email/password)
 - **Session Management**: express-session with connect-pg-simple
+- **Password Hashing**: Node.js scrypt with per-user salts
 
 **Design Decisions:**
 - **Modular Route Structure**: Centralized API routes with authentication middleware.
@@ -62,18 +63,30 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication & Authorization
 
-**Replit Auth Integration:**
-- OpenID Connect (OIDC) with Passport.js strategy.
-- User information stored in PostgreSQL.
-- Cookie-based sessions.
+**Email/Password Authentication:**
+- Passport.js with Local Strategy for email/password authentication.
+- Password hashing using Node.js scrypt with per-user salts.
+- User information and credentials stored in PostgreSQL.
+- Cookie-based sessions with express-session.
 
 **Onboarding Flow:**
-1. Role selection on landing page ("Data Requester" or "Data Analyst"). **Data Lead option hidden** - Team Leads can only be added by existing Data Leads.
-2. Replit Auth (OIDC) login.
-3. Role applied to user profile with email validation (only if user has no role yet).
-4. Team leads without department redirected to profile setup.
-5. Department selection for requesters (team leads).
-6. Redirection to dashboard.
+1. **For Requesters (self-signup)**:
+   - Role selection on landing page ("Data Requester")
+   - Email/password signup with company email validation (@taleemabad.com, @niete.edu.pk, @niete.pk)
+   - Department selection
+   - Auto-login and redirection to dashboard
+
+2. **For Analysts (invitation-only)**:
+   - Data Lead invites analyst via team management interface
+   - System sends password setup email with secure 24-hour token
+   - Analyst clicks link, sets password and name
+   - Auto-login and redirection to dashboard
+   - Cannot self-signup (invitation required)
+
+3. **For Data Leads (bootstrap)**:
+   - Primary Data Lead (abdur.rehman@taleemabad.com) is protected
+   - Additional Data Leads can only be added by existing Data Leads
+   - Cannot self-select role from landing page
 
 **Authorization Model:**
 - **Role-based access control**:
@@ -117,8 +130,6 @@ Preferred communication style: Simple, everyday language.
 - **Connection Pooling**: `@neondatabase/serverless` with `pg.Pool`.
 - **Migration Strategy**: Drizzle Kit.
 
-**Authentication Service:**
-- **Replit Auth**: OIDC-based authentication.
 
 **UI Component Library:**
 - **shadcn/ui**: Accessible components built on Radix UI.
