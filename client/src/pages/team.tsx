@@ -351,6 +351,11 @@ export default function Team() {
                               <Badge className={`text-xs ${getRoleBadgeColor(member.role || '')}`}>
                                 {formatRole(member.role || '')}
                               </Badge>
+                              {isPrimaryDataLead(member) && (
+                                <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200">
+                                  Primary Lead
+                                </Badge>
+                              )}
                               {member.department && (
                                 <Badge variant="outline" className="text-xs capitalize">
                                   {member.department}
