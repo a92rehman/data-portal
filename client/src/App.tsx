@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Auth from "@/pages/auth";
+import SetupPassword from "@/pages/setup-password";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
 import ProfileSetup from "@/pages/profile-setup";
@@ -28,6 +29,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/auth" component={Auth} />
+        <Route path="/setup-password" component={SetupPassword} />
         <Route component={Landing} />
       </Switch>
     );

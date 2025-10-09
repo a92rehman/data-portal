@@ -36,6 +36,7 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByPasswordResetToken(token: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   createUser(userData: Partial<User>): Promise<User>;
   getDataAnalysts(): Promise<User[]>;
@@ -44,6 +45,7 @@ export interface IStorage {
   deleteUser(userId: string): Promise<void>;
   createInvitedUser(email: string, role: string, department?: string): Promise<User>;
   updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void>;
+  updateUserPasswordAndName(userId: string, password: string, name: string): Promise<void>;
   
   // Data request operations
   createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest>;
@@ -235,6 +237,32 @@ export class DatabaseStorage implements IStorage {
       .set({
         passwordResetToken: token,
         passwordResetExpires: expires,
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserByPasswordResetToken(token: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.passwordResetToken, token));
+    return user;
+  }
+
+  async updateUserPasswordAndName(userId: string, password: string, name: string): Promise<void> {
+    // Split name into first and last name (simple split by space)
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0] || name;
+    const lastName = nameParts.slice(1).join(' ') || null;
+
+    await db
+      .update(users)
+      .set({
+        password,
+        firstName,
+        lastName,
+        passwordResetToken: null,
+        passwordResetExpires: null,
       })
       .where(eq(users.id, userId));
   }

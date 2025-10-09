@@ -183,4 +183,48 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
+
+  // Password setup endpoint for invited analysts
+  app.post("/api/auth/setup-password", async (req, res, next) => {
+    try {
+      const { token, password, name } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({ message: "Name is required" });
+      }
+
+      // Find user by reset token
+      const user = await storage.getUserByPasswordResetToken(token);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired setup link" });
+      }
+
+      // Check if token has expired
+      if (user.passwordResetExpires && new Date() > new Date(user.passwordResetExpires)) {
+        return res.status(400).json({ message: "Setup link has expired. Please request a new invitation." });
+      }
+
+      // Update user with password and name, clear reset token
+      await storage.updateUserPasswordAndName(user.id, await hashPassword(password), name);
+
+      // Fetch updated user record
+      const updatedUser = await storage.getUser(user.id);
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to retrieve updated user" });
+      }
+
+      // Auto login after password setup
+      req.login(updatedUser, (err) => {
+        if (err) return next(err);
+        res.status(200).json({ message: "Password set successfully", user: updatedUser });
+      });
+    } catch (error: any) {
+      console.error('[auth] Password setup error:', error);
+      res.status(500).json({ message: error.message || "Password setup failed" });
+    }
+  });
 }
