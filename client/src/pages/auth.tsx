@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -165,7 +165,7 @@ export default function Auth() {
 
           {isLogin ? (
             <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+              <form key="login-form" onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                 <FormField
                   control={loginForm.control}
                   name="email"
@@ -223,7 +223,7 @@ export default function Auth() {
             </Form>
           ) : (
             <Form {...signupForm}>
-              <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
+              <form key="signup-form" onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
                 <FormField
                   control={signupForm.control}
                   name="name"
@@ -232,8 +232,13 @@ export default function Auth() {
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
                         <Input
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                           placeholder="John Doe"
-                          {...field}
+                          autoComplete="name"
                           data-testid="input-name"
                         />
                       </FormControl>
@@ -250,9 +255,14 @@ export default function Auth() {
                       <FormLabel>Company Email</FormLabel>
                       <FormControl>
                         <Input
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                           type="email"
                           placeholder="you@taleemabad.com"
-                          {...field}
+                          autoComplete="email"
                           data-testid="input-email"
                         />
                       </FormControl>
