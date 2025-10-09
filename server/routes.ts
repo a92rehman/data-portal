@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail } from "./emailService";
+import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail } from "./emailService";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -61,13 +61,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid role" });
       }
 
+      const targetUser = await storage.getUser(req.params.userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       // Email validation: Requesters can only use company email
       if (role === 'requester') {
-        const targetUser = await storage.getUser(req.params.userId);
-        if (!targetUser) {
-          return res.status(404).json({ message: "User not found" });
-        }
-
         const email = targetUser.email || '';
         const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
         const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
@@ -112,6 +112,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/users/invite', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser || currentUser.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can invite team members" });
+      }
+
+      const { email, role, department } = req.body;
+      
+      if (!email || !role || !['requester', 'team_lead', 'analyst'].includes(role)) {
+        return res.status(400).json({ message: "Invalid email or role" });
+      }
+
+      // Email validation: Requesters must use company email
+      if (role === 'requester') {
+        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
+        const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
+        
+        if (!hasValidDomain) {
+          return res.status(403).json({ 
+            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
+          });
+        }
+      }
+
+      // Create or update user with the invited role
+      const existingUser = await storage.getUserByEmail(email);
+      
+      let resultUser;
+      if (existingUser) {
+        // Update existing user's role
+        resultUser = await storage.updateUserRole(existingUser.id, role, department);
+      } else {
+        // Create placeholder user that will be populated on first login
+        resultUser = await storage.createInvitedUser(email, role, department);
+      }
+
+      // Send invitation email
+      try {
+        const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Data Lead';
+        
+        await sendTeamMemberInviteEmail({
+          inviteeName: email.split('@')[0], // Use email username as name placeholder
+          inviteeEmail: email,
+          role,
+          department: department || 'Not specified',
+          inviterName,
+        });
+        console.log(`[email] Invitation email sent successfully to ${email}`);
+      } catch (emailError) {
+        console.error("[email] Failed to send invitation email:", emailError);
+        // Don't fail the request if email fails
+      }
+
+      res.status(existingUser ? 200 : 201).json(resultUser);
+    } catch (error) {
+      console.error("Error inviting team member:", error);
+      res.status(500).json({ message: "Failed to invite team member" });
+    }
+  });
+
   app.patch('/api/auth/user/role', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -126,6 +187,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Check if user was pre-invited (has a role already)
+      if (user.role && user.role !== role) {
+        // For analysts, allow sign-in if they were invited
+        if (role === 'analyst' && user.role === 'analyst') {
+          res.json({ success: true });
+          return;
+        }
+        
+        return res.status(403).json({ 
+          message: "You have already been assigned a role. Contact Data Lead to change it." 
+        });
+      }
+
       // Email validation: Requesters can only use company email
       if (role === 'requester') {
         const email = user.email || '';
@@ -137,6 +211,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });
         }
+      }
+
+      // For analysts signing in, they must have been invited first
+      if (role === 'analyst' && !user.role) {
+        return res.status(403).json({ 
+          message: "Data Analysts must be invited by a Data Lead before signing in." 
+        });
       }
 
       await storage.upsertUser({

@@ -95,20 +95,24 @@ export default function Landing() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-2 border-blue-300 hover:border-blue-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("team_lead")}>
+                <Card className="border-2 border-purple-300 hover:border-purple-500 transition-all cursor-pointer group shadow-lg hover:shadow-xl" onClick={() => handleRoleSelection("analyst")}>
                   <CardContent className="p-6 text-center">
-                    <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
-                      <Building2 className="w-7 h-7 text-white" />
+                    <div className="w-14 h-14 mx-auto rounded-2xl mb-3 flex items-center justify-center group-hover:scale-110 transition-transform" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                      <BarChart3 className="w-7 h-7 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data Lead</h3>
-                    <p className="text-xs text-gray-600 mb-3">Review, assign requests, and manage team members</p>
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">Data Analyst</h3>
+                    <p className="text-xs text-gray-600 mb-3">Sign in with email invitation from Data Lead</p>
+                    <div className="mb-3 p-2 bg-purple-50 rounded-md border border-purple-200">
+                      <p className="text-xs text-purple-700 font-medium">Requires invitation</p>
+                      <p className="text-xs text-purple-600">Contact Data Lead to get started</p>
+                    </div>
                     <Button 
                       className="w-full font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-sm"
-                      style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}
-                      data-testid="button-login-team-lead"
+                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                      data-testid="button-login-analyst"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Data Lead
+                      Data Analyst
                     </Button>
                   </CardContent>
                 </Card>
@@ -119,7 +123,7 @@ export default function Landing() {
                   Access restricted to Taleemabad team members
                 </p>
                 <p className="text-xs text-gray-500">
-                  Note: Data Analysts are added by Data Leads
+                  Note: Data Leads can manage team members from the Team Management page
                 </p>
               </div>
             </div>

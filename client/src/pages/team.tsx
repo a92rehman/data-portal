@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
-import { Users, Mail, UserCog, UserMinus, Settings } from "lucide-react";
+import { Users, Mail, UserCog, UserMinus, Settings, UserPlus } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function Team() {
@@ -24,8 +25,12 @@ export default function Team() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState("");
+  const [newMemberDepartment, setNewMemberDepartment] = useState("");
 
   const isDataLead = (user as any)?.role === "team_lead";
 
@@ -78,6 +83,30 @@ export default function Team() {
       toast({
         title: "Error",
         description: error.message || "Failed to remove user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addMemberMutation = useMutation({
+    mutationFn: async (data: { email: string; role: string; department?: string }) => {
+      return await apiRequest("POST", "/api/users/invite", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "Team member invited successfully. They can now sign in.",
+      });
+      setShowAddMemberDialog(false);
+      setNewMemberEmail("");
+      setNewMemberRole("");
+      setNewMemberDepartment("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to invite team member",
         variant: "destructive",
       });
     },
@@ -142,6 +171,20 @@ export default function Team() {
     }
   };
 
+  const handleAddMember = () => {
+    setShowAddMemberDialog(true);
+  };
+
+  const submitAddMember = () => {
+    if (newMemberEmail && newMemberRole) {
+      addMemberMutation.mutate({
+        email: newMemberEmail,
+        role: newMemberRole,
+        department: newMemberDepartment || undefined,
+      });
+    }
+  };
+
   // Group users by role
   const analysts = allUsers.filter(u => u.role === 'analyst');
   const teamLeads = allUsers.filter(u => u.role === 'team_lead');
@@ -185,13 +228,24 @@ export default function Team() {
         <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
         
         <main className="flex-1 p-6">
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-2">
-              Team Management
-            </h2>
-            <p className="text-muted-foreground">
-              Manage team members, roles, and permissions
-            </p>
+          <div className="mb-6 flex justify-between items-start">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                Team Management
+              </h2>
+              <p className="text-muted-foreground">
+                Manage team members, roles, and permissions
+              </p>
+            </div>
+            <Button
+              onClick={handleAddMember}
+              className="font-semibold"
+              style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+              data-testid="button-add-member"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add Team Member
+            </Button>
           </div>
 
           {/* Team Stats */}
@@ -415,6 +469,75 @@ export default function Team() {
               data-testid="button-confirm-remove"
             >
               {removeUserMutation.isPending ? "Removing..." : "Remove User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Team Member Dialog */}
+      <Dialog open={showAddMemberDialog} onOpenChange={setShowAddMemberDialog}>
+        <DialogContent data-testid="dialog-add-member">
+          <DialogHeader>
+            <DialogTitle>Add Team Member</DialogTitle>
+            <DialogDescription>
+              Invite a new team member. They will be able to sign in after being added.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label className="text-sm font-medium text-foreground mb-2 block">Email Address</Label>
+              <Input
+                type="email"
+                value={newMemberEmail}
+                onChange={(e) => setNewMemberEmail(e.target.value)}
+                placeholder="email@taleemabad.com"
+                data-testid="input-member-email"
+              />
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-foreground mb-2 block">Role</Label>
+              <Select value={newMemberRole} onValueChange={setNewMemberRole} data-testid="select-member-role">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="requester">Data Requester</SelectItem>
+                  <SelectItem value="team_lead">Data Lead</SelectItem>
+                  <SelectItem value="analyst">Data Analyst</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-foreground mb-2 block">Department (Optional)</Label>
+              <Input
+                value={newMemberDepartment}
+                onChange={(e) => setNewMemberDepartment(e.target.value)}
+                placeholder="e.g., Marketing, Engineering..."
+                data-testid="input-member-department"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddMemberDialog(false);
+                setNewMemberEmail("");
+                setNewMemberRole("");
+                setNewMemberDepartment("");
+              }}
+              data-testid="button-cancel-add-member"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitAddMember}
+              disabled={!newMemberEmail || !newMemberRole || addMemberMutation.isPending}
+              data-testid="button-confirm-add-member"
+              className="gradient-button-primary text-white font-semibold"
+              style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+            >
+              {addMemberMutation.isPending ? "Adding..." : "Add Member"}
             </Button>
           </DialogFooter>
         </DialogContent>
