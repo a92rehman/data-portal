@@ -71,7 +71,7 @@ export default function Header({ user }: HeaderProps) {
             <ChartLine className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Taleemabad Data Requests</h1>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">DataHub</h1>
             <p className="text-xs text-gray-500">Request Management System</p>
           </div>
         </div>

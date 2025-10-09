@@ -63,7 +63,7 @@ export async function sendAssignmentEmail(data: AssignmentEmailData) {
                 <tr>
                   <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px 30px; text-align: center;">
                     <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">New Task Assignment</h1>
-                    <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 16px;">Taleemabad Data Request</p>
+                    <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 16px;">DataHub Data Request</p>
                   </td>
                 </tr>
 
@@ -131,7 +131,7 @@ export async function sendAssignmentEmail(data: AssignmentEmailData) {
                 <tr>
                   <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                     <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
-                      Taleemabad Data Analytics Team
+                      DataHub Data Analytics Team
                     </p>
                     <p style="margin: 0; color: #9ca3af; font-size: 12px;">
                       This is an automated notification. Please do not reply to this email.
@@ -148,7 +148,7 @@ export async function sendAssignmentEmail(data: AssignmentEmailData) {
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: assigneeEmail, name: assigneeName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'Taleemabad Data Requests' };
+    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
     sendSmtpEmail.subject = `New Task Assignment: ${taskTitle}`;
     sendSmtpEmail.htmlContent = htmlContent;
 
@@ -189,7 +189,7 @@ export async function sendRequestAcceptedEmail(data: RequestAcceptedEmailData) {
                 <tr>
                   <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
                     <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Request Accepted</h1>
-                    <p style="margin: 10px 0 0; color: #d1fae5; font-size: 16px;">Taleemabad Data Request</p>
+                    <p style="margin: 10px 0 0; color: #d1fae5; font-size: 16px;">DataHub Data Request</p>
                   </td>
                 </tr>
                 <tr>
@@ -245,7 +245,7 @@ export async function sendRequestAcceptedEmail(data: RequestAcceptedEmailData) {
                 <tr>
                   <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                     <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
-                      Taleemabad Data Analytics Team
+                      DataHub Data Analytics Team
                     </p>
                     <p style="margin: 0; color: #9ca3af; font-size: 12px;">
                       This is an automated notification. Please do not reply to this email.
@@ -262,7 +262,7 @@ export async function sendRequestAcceptedEmail(data: RequestAcceptedEmailData) {
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: requesterEmail, name: requesterName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'Taleemabad Data Requests' };
+    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
     sendSmtpEmail.subject = `Request Accepted: ${taskTitle}`;
     sendSmtpEmail.htmlContent = htmlContent;
 
@@ -294,7 +294,7 @@ export async function sendRequestRejectedEmail(data: RequestRejectedEmailData) {
                 <tr>
                   <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px 30px; text-align: center;">
                     <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Request Update</h1>
-                    <p style="margin: 10px 0 0; color: #fee2e2; font-size: 16px;">Taleemabad Data Request</p>
+                    <p style="margin: 10px 0 0; color: #fee2e2; font-size: 16px;">DataHub Data Request</p>
                   </td>
                 </tr>
                 <tr>
@@ -337,7 +337,7 @@ export async function sendRequestRejectedEmail(data: RequestRejectedEmailData) {
                 <tr>
                   <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                     <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
-                      Taleemabad Data Analytics Team
+                      DataHub Data Analytics Team
                     </p>
                     <p style="margin: 0; color: #9ca3af; font-size: 12px;">
                       This is an automated notification. Please do not reply to this email.
@@ -354,7 +354,7 @@ export async function sendRequestRejectedEmail(data: RequestRejectedEmailData) {
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: requesterEmail, name: requesterName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'Taleemabad Data Requests' };
+    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
     sendSmtpEmail.subject = `Request Update Required: ${taskTitle}`;
     sendSmtpEmail.htmlContent = htmlContent;
 
@@ -402,7 +402,7 @@ export async function sendTeamMemberInviteEmail(data: TeamMemberInviteEmailData)
                 <tr>
                   <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px 30px; text-align: center;">
                     <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Welcome to the Team!</h1>
-                    <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 16px;">Taleemabad Data Request System</p>
+                    <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 16px;">DataHub Data Request System</p>
                   </td>
                 </tr>
                 <tr>
@@ -412,7 +412,7 @@ export async function sendTeamMemberInviteEmail(data: TeamMemberInviteEmailData)
                     </p>
                     
                     <p style="margin: 0 0 30px; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                      ${inviterName} has invited you to join the Taleemabad Data Request Management System as a <strong>${roleName}</strong>.
+                      ${inviterName} has invited you to join the DataHub Data Request Management System as a <strong>${roleName}</strong>.
                     </p>
 
                     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; border: 2px solid #e5e7eb; margin-bottom: 30px;">
@@ -456,7 +456,7 @@ export async function sendTeamMemberInviteEmail(data: TeamMemberInviteEmailData)
                 <tr>
                   <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                     <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
-                      Taleemabad Data Analytics Team
+                      DataHub Data Analytics Team
                     </p>
                     <p style="margin: 0; color: #9ca3af; font-size: 12px;">
                       This is an automated notification. Please do not reply to this email.
@@ -473,8 +473,8 @@ export async function sendTeamMemberInviteEmail(data: TeamMemberInviteEmailData)
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.to = [{ email: inviteeEmail, name: inviteeName }];
-    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'Taleemabad Data Requests' };
-    sendSmtpEmail.subject = `Welcome to Taleemabad Data Request System - ${roleName}`;
+    sendSmtpEmail.sender = { email: 'noreply@taleemabad.com', name: 'DataHub Data Requests' };
+    sendSmtpEmail.subject = `Welcome to DataHub Data Request System - ${roleName}`;
     sendSmtpEmail.htmlContent = htmlContent;
 
     const result = await apiInstance.sendTransacEmail(sendSmtpEmail);

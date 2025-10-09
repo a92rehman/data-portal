@@ -24,7 +24,7 @@ export default function Landing() {
             <ChartLine className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
-            Taleemabad
+            DataHub
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-2">Data Request Management System</p>
           <div className="flex items-center justify-center gap-2 text-purple-600 dark:text-purple-400">
@@ -142,7 +142,7 @@ export default function Landing() {
 
               <div className="mt-4 space-y-2">
                 <p className="text-xs text-gray-500">
-                  Access restricted to Taleemabad team members
+                  Access restricted to authorized team members
                 </p>
                 <p className="text-xs text-gray-500">
                   Note: Data Leads can manage team members from the Team Management page
