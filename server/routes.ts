@@ -47,6 +47,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Email validation: Requesters can only use company email (@taleemabad.com)
+      if (role === 'requester') {
+        const email = user.email || '';
+        const allowedDomains = ['@taleemabad.com', '@taleemabad.org'];
+        const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
+        
+        if (!hasValidDomain) {
+          return res.status(403).json({ 
+            message: "Requesters must use a company email address (@taleemabad.com or @taleemabad.org)" 
+          });
+        }
+      }
+
       await storage.upsertUser({
         ...user,
         role: role as "requester" | "team_lead" | "analyst",
