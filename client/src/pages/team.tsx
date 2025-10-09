@@ -1,18 +1,84 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
-import { Users, Mail } from "lucide-react";
+import { Users, Mail, UserCog, UserMinus, Settings } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function Team() {
   const { user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
+  const [selectedRole, setSelectedRole] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
-  const { data: analysts = [], isLoading } = useQuery<User[]>({
-    queryKey: ["/api/users/analysts"],
+  const isDataLead = (user as any)?.role === "team_lead";
+
+  const { data: allUsers = [], isLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: isDataLead,
+  });
+
+  const updateRoleMutation = useMutation({
+    mutationFn: async (data: { userId: string; role: string; department?: string }) => {
+      return await apiRequest("PATCH", `/api/users/${data.userId}/role`, { 
+        role: data.role, 
+        department: data.department 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+      setShowRoleDialog(false);
+      setSelectedUser(null);
+      setSelectedRole("");
+      setSelectedDepartment("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user role",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest("DELETE", `/api/users/${userId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Success",
+        description: "User removed successfully",
+      });
+      setShowRemoveDialog(false);
+      setSelectedUser(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove user",
+        variant: "destructive",
+      });
+    },
   });
 
   const getInitials = (firstName?: string, lastName?: string) => {
@@ -42,9 +108,43 @@ export default function Team() {
       case "requester":
         return "Data Requester";
       default:
-        return role;
+        return role || "No Role";
     }
   };
+
+  const handleChangeRole = (user: User) => {
+    setSelectedUser(user);
+    setSelectedRole(user.role || "");
+    setSelectedDepartment(user.department || "");
+    setShowRoleDialog(true);
+  };
+
+  const handleRemoveUser = (user: User) => {
+    setSelectedUser(user);
+    setShowRemoveDialog(true);
+  };
+
+  const submitRoleChange = () => {
+    if (selectedUser && selectedRole) {
+      updateRoleMutation.mutate({
+        userId: selectedUser.id,
+        role: selectedRole,
+        department: selectedDepartment || undefined,
+      });
+    }
+  };
+
+  const submitRemoveUser = () => {
+    if (selectedUser) {
+      removeUserMutation.mutate(selectedUser.id);
+    }
+  };
+
+  // Group users by role
+  const analysts = allUsers.filter(u => u.role === 'analyst');
+  const teamLeads = allUsers.filter(u => u.role === 'team_lead');
+  const requesters = allUsers.filter(u => u.role === 'requester');
+  const noRole = allUsers.filter(u => !u.role);
 
   if (authLoading || isLoading) {
     return (
@@ -52,6 +152,24 @@ export default function Team() {
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isDataLead) {
+    return (
+      <div className="min-h-screen">
+        <Header user={user as any} />
+        <div className="flex">
+          <Sidebar onNewRequest={() => {}} user={user as any} />
+          <main className="flex-1 p-6 flex items-center justify-center">
+            <Card className="max-w-md">
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground">Only Data Leads can access team management.</p>
+              </CardContent>
+            </Card>
+          </main>
         </div>
       </div>
     );
@@ -70,17 +188,45 @@ export default function Team() {
               Team Management
             </h2>
             <p className="text-muted-foreground">
-              View and manage your data analytics team
+              Manage team members, roles, and permissions
             </p>
           </div>
 
           {/* Team Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <Card className="border-2 border-purple-200 shadow-md">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Total Analysts</p>
+                    <p className="text-sm text-muted-foreground mb-1">Total Members</p>
+                    <p className="text-3xl font-bold text-foreground">{allUsers.length}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-blue-200 shadow-md">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Data Leads</p>
+                    <p className="text-3xl font-bold text-foreground">{teamLeads.length}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                    <UserCog className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-purple-200 shadow-md">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Analysts</p>
                     <p className="text-3xl font-bold text-foreground">{analysts.length}</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
@@ -89,49 +235,86 @@ export default function Team() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="border-2 border-green-200 shadow-md">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Requesters</p>
+                    <p className="text-3xl font-bold text-foreground">{requesters.length}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(142, 76%, 36%) 0%, hsl(142, 71%, 45%) 100%)'}}>
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Analysts Grid */}
+          {/* All Team Members */}
           <Card className="border-2 border-gray-200 shadow-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Data Analysts
+                All Team Members
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {analysts.length === 0 ? (
+              {allUsers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No analysts found
+                  No team members found
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {analysts.map((analyst) => (
-                    <Card key={analyst.id} className="border-2 border-purple-100 hover:border-purple-300 transition-all hover:shadow-lg">
+                  {allUsers.map((member) => (
+                    <Card key={member.id} className="border-2 border-gray-100 hover:border-gray-300 transition-all hover:shadow-lg">
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <Avatar className="w-12 h-12">
-                            <AvatarImage src={analyst.profileImageUrl ?? ""} />
+                            <AvatarImage src={member.profileImageUrl ?? ""} />
                             <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
-                              {getInitials(analyst.firstName ?? undefined, analyst.lastName ?? undefined)}
+                              {getInitials(member.firstName ?? undefined, member.lastName ?? undefined)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-foreground truncate">
-                              {analyst.firstName} {analyst.lastName}
+                              {member.firstName} {member.lastName}
                             </h3>
                             <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                               <Mail className="w-3 h-3" />
-                              <span className="truncate">{analyst.email}</span>
+                              <span className="truncate">{member.email}</span>
                             </div>
-                            <Badge className={`text-xs ${getRoleBadgeColor(analyst.role || 'analyst')}`}>
-                              {formatRole(analyst.role || 'analyst')}
-                            </Badge>
-                            {analyst.department && (
-                              <Badge variant="outline" className="text-xs ml-2 capitalize">
-                                {analyst.department}
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              <Badge className={`text-xs ${getRoleBadgeColor(member.role || '')}`}>
+                                {formatRole(member.role || '')}
                               </Badge>
-                            )}
+                              {member.department && (
+                                <Badge variant="outline" className="text-xs capitalize">
+                                  {member.department}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleChangeRole(member)}
+                                data-testid={`button-change-role-${member.id}`}
+                                className="flex-1"
+                              >
+                                <Settings className="w-3 h-3 mr-1" />
+                                Change Role
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRemoveUser(member)}
+                                data-testid={`button-remove-${member.id}`}
+                                disabled={member.id === (user as any)?.id}
+                              >
+                                <UserMinus className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -143,6 +326,97 @@ export default function Team() {
           </Card>
         </main>
       </div>
+
+      {/* Change Role Dialog */}
+      <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
+        <DialogContent data-testid="dialog-change-role">
+          <DialogHeader>
+            <DialogTitle>Change User Role</DialogTitle>
+            <DialogDescription>
+              Update the role and department for {selectedUser?.firstName} {selectedUser?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Role</label>
+              <Select value={selectedRole} onValueChange={setSelectedRole} data-testid="select-new-role">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="requester">Data Requester</SelectItem>
+                  <SelectItem value="team_lead">Data Lead</SelectItem>
+                  <SelectItem value="analyst">Data Analyst</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">Department (Optional)</label>
+              <Input
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                placeholder="e.g., Marketing, Engineering..."
+                data-testid="input-department"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRoleDialog(false);
+                setSelectedUser(null);
+                setSelectedRole("");
+                setSelectedDepartment("");
+              }}
+              data-testid="button-cancel-role-change"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitRoleChange}
+              disabled={!selectedRole || updateRoleMutation.isPending}
+              data-testid="button-confirm-role-change"
+              className="gradient-button-primary text-white font-semibold"
+              style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+            >
+              {updateRoleMutation.isPending ? "Updating..." : "Update Role"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove User Dialog */}
+      <Dialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <DialogContent data-testid="dialog-remove-user">
+          <DialogHeader>
+            <DialogTitle>Remove Team Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove {selectedUser?.firstName} {selectedUser?.lastName} from the team? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRemoveDialog(false);
+                setSelectedUser(null);
+              }}
+              data-testid="button-cancel-remove"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={submitRemoveUser}
+              disabled={removeUserMutation.isPending}
+              data-testid="button-confirm-remove"
+            >
+              {removeUserMutation.isPending ? "Removing..." : "Remove User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

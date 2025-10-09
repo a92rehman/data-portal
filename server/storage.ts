@@ -30,6 +30,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getDataAnalysts(): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
+  updateUserRole(userId: string, role: string, department?: string): Promise<User | undefined>;
+  deleteUser(userId: string): Promise<void>;
   
   // Data request operations
   createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest>;
@@ -112,6 +115,32 @@ export class DatabaseStorage implements IStorage {
 
   async getDataAnalysts(): Promise<User[]> {
     return await db.select().from(users).where(eq(users.role, 'analyst'));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUserRole(userId: string, role: string, department?: string): Promise<User | undefined> {
+    const updateData: any = { 
+      role: role as "requester" | "team_lead" | "analyst",
+      updatedAt: new Date() 
+    };
+    if (department) {
+      updateData.department = department;
+    }
+    
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest> {
