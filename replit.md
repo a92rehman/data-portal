@@ -23,8 +23,9 @@ Preferred communication style: Simple, everyday language.
 **Design Decisions:**
 - **Component Architecture**: Reusable UI components and domain-specific custom components.
 - **State Management Pattern**: Server state managed via React Query with aggressive caching; queries invalidated on mutations.
-- **Authentication Flow**: Role selection on landing page, Replit Auth login, role application, and profile setup for team leads without a department.
+- **Authentication Flow**: Email/password authentication with role-based access. Authenticated users redirected from /auth to dashboard to prevent 404 errors.
 - **Form Validation**: Zod schemas for consistent client and server-side validation.
+- **Routing**: Wouter-based routing with authenticated/unauthenticated route separation and proper redirect handling.
 
 ### Backend Architecture
 

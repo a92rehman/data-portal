@@ -20,15 +20,11 @@ import NotFound from "@/pages/not-found";
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  console.log("Router state:", { isAuthenticated, isLoading, user });
-
   if (isLoading) {
-    console.log("Router: showing loading state");
     return <Landing />;
   }
 
   if (!isAuthenticated) {
-    console.log("Router: user not authenticated, showing landing");
     return (
       <Switch>
         <Route path="/" component={Landing} />
@@ -39,7 +35,6 @@ function Router() {
     );
   }
 
-  console.log("Router: user authenticated, showing dashboard routes");
   return (
     <Switch>
       <Route path="/">{() => <Dashboard />}</Route>

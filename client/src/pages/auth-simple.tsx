@@ -21,7 +21,6 @@ export default function AuthSimple() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login submit triggered with:", { email, password });
     
     try {
       await login({ email, password });
@@ -33,7 +32,6 @@ export default function AuthSimple() {
       });
       setLocation("/");
     } catch (error: any) {
-      console.error("Login error:", error);
       toast({
         variant: "destructive",
         title: "Login failed",
