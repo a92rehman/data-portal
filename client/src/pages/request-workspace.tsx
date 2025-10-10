@@ -76,6 +76,7 @@ export default function RequestWorkspace() {
       type: undefined,
       priority: undefined,
       department: "",
+      team: "",
       dueDate: "",
       assignedToId: undefined,
       primaryQuestion: "",
@@ -91,6 +92,20 @@ export default function RequestWorkspace() {
       filters: "",
       mockups: "",
       actionPlan: "",
+      bqEmail: "",
+      bqDatasets: "",
+      bqPurpose: "",
+      bugDescription: "",
+      bugLocation: "",
+      trackingEvent: "",
+      trackingPlatform: "",
+      trackingDetails: "",
+      metricName: "",
+      metricChangeType: "",
+      metricReason: "",
+      pipelineName: "",
+      pipelineChangeType: "",
+      pipelineDetails: "",
     },
   });
 
@@ -102,6 +117,7 @@ export default function RequestWorkspace() {
         type: request.type || undefined,
         priority: request.priority || undefined,
         department: request.department || "",
+        team: request.team || "",
         dueDate: request.dueDate ? new Date(request.dueDate).toISOString().split('T')[0] : "",
         assignedToId: request.assignedToId || undefined,
         primaryQuestion: request.primaryQuestion || "",
@@ -117,6 +133,20 @@ export default function RequestWorkspace() {
         filters: request.filters || "",
         mockups: request.mockups || "",
         actionPlan: request.actionPlan || "",
+        bqEmail: request.bqEmail || "",
+        bqDatasets: request.bqDatasets || "",
+        bqPurpose: request.bqPurpose || "",
+        bugDescription: request.bugDescription || "",
+        bugLocation: request.bugLocation || "",
+        trackingEvent: request.trackingEvent || "",
+        trackingPlatform: request.trackingPlatform || "",
+        trackingDetails: request.trackingDetails || "",
+        metricName: request.metricName || "",
+        metricChangeType: request.metricChangeType || "",
+        metricReason: request.metricReason || "",
+        pipelineName: request.pipelineName || "",
+        pipelineChangeType: request.pipelineChangeType || "",
+        pipelineDetails: request.pipelineDetails || "",
       });
       setSelectedType(request.type || "");
     }
@@ -281,7 +311,7 @@ export default function RequestWorkspace() {
                   name="department"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Department/Team <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>Department <span className="text-red-500">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} data-testid="select-department">
                         <FormControl>
                           <SelectTrigger>
@@ -301,6 +331,25 @@ export default function RequestWorkspace() {
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="team"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your team name if applicable..."
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="input-team"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -401,6 +450,11 @@ export default function RequestWorkspace() {
                           <SelectItem value="adhoc_analysis">Ad-hoc Data Analysis</SelectItem>
                           <SelectItem value="data_extraction">One-time Data Extraction (CSV/Excel)</SelectItem>
                           <SelectItem value="data_bug">Data Bug / Data Quality Issue</SelectItem>
+                          <SelectItem value="bq_access">BigQuery Access Request</SelectItem>
+                          <SelectItem value="tracking">Event Tracking Request</SelectItem>
+                          <SelectItem value="metric_change">Metric Definition Change</SelectItem>
+                          <SelectItem value="pipeline_change">Data Pipeline Change</SelectItem>
+                          <SelectItem value="recurring_report">Recurring Report Setup</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
