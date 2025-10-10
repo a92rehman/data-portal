@@ -11,24 +11,14 @@ import { ChartLine, Building2, Mail, User as UserIcon, Loader2 } from "lucide-re
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
-
-const DEPARTMENTS = [
-  { value: "Program", label: "Program" },
-  { value: "P&C", label: "P&C (People & Culture)" },
-  { value: "Product", label: "Product" },
-  { value: "LP", label: "LP (Learning Platform)" },
-  { value: "Training", label: "Training" },
-  { value: "ERP", label: "ERP" },
-  { value: "Finance", label: "Finance" },
-  { value: "Leadership", label: "Leadership" },
-  { value: "Strategy", label: "Strategy" },
-  { value: "Other", label: "Other" },
-];
+import { DEPARTMENTS, TEAM_OPTIONS } from "@shared/constants";
 
 export default function RequesterSignup() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [department, setDepartment] = useState<string>("");
+  const [team, setTeam] = useState<string>("");
+  const [teamOther, setTeamOther] = useState<string>("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -211,8 +201,8 @@ export default function RequesterSignup() {
                   </SelectTrigger>
                   <SelectContent>
                     {DEPARTMENTS.map((dept) => (
-                      <SelectItem key={dept.value} value={dept.value}>
-                        {dept.label}
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -222,6 +212,52 @@ export default function RequesterSignup() {
                 This helps us route your data requests to the right team
               </p>
             </div>
+
+            {/* Team selection - conditionally shown based on department */}
+            {department && TEAM_OPTIONS[department] && (
+              <div>
+                <Label htmlFor="team" className="text-sm font-medium uppercase tracking-wide text-gray-700 dark:text-gray-300">
+                  Team <span className="text-red-500">*</span>
+                </Label>
+                <div className="mt-2">
+                  <Select value={team} onValueChange={setTeam} required>
+                    <SelectTrigger 
+                      className="h-12 border-2 focus:border-indigo-500 transition-colors"
+                      data-testid="select-team"
+                    >
+                      <SelectValue placeholder="Select your team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEAM_OPTIONS[department].map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* Team Other field - conditionally shown when "Other" is selected */}
+            {team === 'Other' && (
+              <div>
+                <Label htmlFor="teamOther" className="text-sm font-medium uppercase tracking-wide text-gray-700 dark:text-gray-300">
+                  Specify Team <span className="text-red-500">*</span>
+                </Label>
+                <div className="mt-2">
+                  <Input
+                    id="teamOther"
+                    type="text"
+                    value={teamOther}
+                    onChange={(e) => setTeamOther(e.target.value)}
+                    placeholder="Enter team name"
+                    className="h-12 border-2 focus:border-indigo-500 transition-colors"
+                    data-testid="input-team-other"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Role indicator */}
             <div className="p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800 rounded-lg">
