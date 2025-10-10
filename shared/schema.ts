@@ -77,6 +77,11 @@ export const requestTypeEnum = pgEnum("request_type", [
   "adhoc_analysis",
   "data_extraction",
   "data_bug",
+  "bq_access",
+  "tracking",
+  "metric_change",
+  "pipeline_change",
+  "recurring_report",
   "other"
 ]);
 
@@ -105,6 +110,7 @@ export const dataRequests = pgTable("data_requests", {
   priority: requestPriorityEnum("priority").notNull(),
   status: requestStatusEnum("status").notNull().default("pending_review"),
   department: varchar("department").notNull(),
+  team: varchar("team"), // Sub-department/team within department
   requestedById: varchar("requested_by_id").notNull().references(() => users.id),
   reviewedById: varchar("reviewed_by_id").references(() => users.id), // Team lead who reviewed
   assignedToId: varchar("assigned_to_id").references(() => users.id), // Analyst assigned
@@ -116,6 +122,7 @@ export const dataRequests = pgTable("data_requests", {
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
   
+  // Common fields
   primaryQuestion: text("primary_question"),
   businessProblem: text("business_problem"),
   decisionAction: text("decision_action"),
@@ -124,12 +131,37 @@ export const dataRequests = pgTable("data_requests", {
   frequencyDuration: integer("frequency_duration"),
   frequencyUnit: varchar("frequency_unit"),
   
+  // Dashboard-specific fields
   dashboardAudience: text("dashboard_audience"),
   dashboardRefreshFrequency: varchar("dashboard_refresh_frequency"),
   keyMetrics: text("key_metrics"),
   filters: text("filters"),
   mockups: text("mockups"),
   actionPlan: text("action_plan"),
+  
+  // BigQuery access fields
+  bqEmail: varchar("bq_email"),
+  bqDatasets: text("bq_datasets"),
+  bqPurpose: text("bq_purpose"),
+  
+  // Bug-specific fields
+  bugDescription: text("bug_description"),
+  bugLocation: text("bug_location"),
+  
+  // Tracking-specific fields
+  trackingEvent: varchar("tracking_event"),
+  trackingPlatform: varchar("tracking_platform"),
+  trackingDetails: text("tracking_details"),
+  
+  // Metric change fields
+  metricName: varchar("metric_name"),
+  metricChangeType: varchar("metric_change_type"),
+  metricReason: text("metric_reason"),
+  
+  // Pipeline change fields
+  pipelineName: varchar("pipeline_name"),
+  pipelineChangeType: varchar("pipeline_change_type"),
+  pipelineDetails: text("pipeline_details"),
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
