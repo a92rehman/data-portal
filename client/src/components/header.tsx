@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Search, ChartLine, X, Check } from "lucide-react";
+import { Bell, Search, ChartLine, X, Check, ArrowLeft } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -71,10 +71,24 @@ export default function Header({ user }: HeaderProps) {
     }
   };
 
+  const handleBack = () => {
+    window.history.back();
+  };
+
   return (
     <header className="bg-white border-b-2 border-purple-200 sticky top-0 z-40 shadow-md">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="border-2 border-transparent hover:border-purple-300 rounded-lg transition-all"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
           <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
             <ChartLine className="w-7 h-7 text-white" />
           </div>
