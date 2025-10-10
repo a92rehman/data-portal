@@ -94,6 +94,7 @@ export const authEventTypeEnum = pgEnum("auth_event_type", [
 
 // Notification type enum
 export const notificationTypeEnum = pgEnum("notification_type", [
+  "request_submitted",
   "request_accepted",
   "request_rejected",
   "request_assigned",

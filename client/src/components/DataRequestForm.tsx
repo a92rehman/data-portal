@@ -34,6 +34,7 @@ export default function DataRequestForm() {
   const [impact, setImpact] = useState('');
   const [deadline, setDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // State for all type-specific fields
   const [businessQuestion, setBusinessQuestion] = useState('');
@@ -111,6 +112,12 @@ export default function DataRequestForm() {
     setTeam('');
     setTeamOther('');
   }, [department]);
+
+  useEffect(() => {
+    if (requestType) {
+      setShowSuccessMessage(false);
+    }
+  }, [requestType]);
 
   // Map request types to database enum
   const mapRequestType = (type: string): string => {
@@ -243,10 +250,12 @@ export default function DataRequestForm() {
         throw new Error(error.message || 'Failed to submit request');
       }
 
-      // Success - reset form
+      // Success - show success message and reset form
+      setShowSuccessMessage(true);
+      
       toast({
         title: "Success",
-        description: "Request submitted. We'll get back to you shortly.",
+        description: "Request submitted successfully!",
       });
 
       // Reset all fields
@@ -433,6 +442,33 @@ export default function DataRequestForm() {
       <Card className="w-full max-w-3xl shadow-xl border-2 border-purple-200 dark:border-purple-700">
         <CardContent className="p-6">
           <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Dynamic Data Request Form</h2>
+          
+          {showSuccessMessage && (
+            <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl p-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-3">What happens next?</h3>
+                  <ul className="space-y-2 text-blue-800 dark:text-blue-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span>Your request will be reviewed by the Data & Impact team</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span>You'll receive an estimated completion time within 24 hours</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
+                      <span>Track progress and communicate through the request detail page</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Section title="1) Requester Info & Request Type" open>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

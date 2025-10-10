@@ -562,6 +562,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertDataRequestSchema.parse(req.body);
       
       const request = await storage.createDataRequest(validatedData, userId);
+      
+      // Get requester info for notification
+      const requester = await storage.getUser(userId);
+      
+      // Send in-portal notifications to all Data Leads
+      const dataLeads = await storage.getUsersByRole('team_lead');
+      for (const lead of dataLeads) {
+        await storage.createNotification({
+          userId: lead.id,
+          type: 'request_submitted',
+          title: 'New Data Request Submitted',
+          message: `${requester?.firstName} ${requester?.lastName} submitted a new ${request.type.replace(/_/g, ' ')} request: ${request.title}`,
+          requestId: request.id,
+        });
+      }
+      
       res.status(201).json(request);
     } catch (error) {
       console.error("Error creating request:", error);
