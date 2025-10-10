@@ -208,5 +208,81 @@
     background: linear-gradient(135deg, hsl(0, 50%, 90%) 0%, hsl(10, 50%, 92%) 100%);
     @apply border border-red-300 text-red-800;
   }
+
+  /* React Toastify Custom Styles */
+  .Toastify__toast {
+    @apply rounded-xl shadow-xl border-2;
+    font-family: inherit;
+    backdrop-filter: blur(10px);
+  }
+
+  .Toastify__toast--success {
+    background: linear-gradient(135deg, hsl(142, 71%, 95%) 0%, hsl(152, 71%, 97%) 100%) !important;
+    @apply border-green-300 text-green-900;
+  }
+
+  .Toastify__toast--error {
+    background: linear-gradient(135deg, hsl(0, 84%, 95%) 0%, hsl(10, 84%, 97%) 100%) !important;
+    @apply border-red-300 text-red-900;
+  }
+
+  .Toastify__toast--info {
+    background: linear-gradient(135deg, hsl(199, 89%, 95%) 0%, hsl(209, 89%, 97%) 100%) !important;
+    @apply border-blue-300 text-blue-900;
+  }
+
+  .Toastify__toast--warning {
+    background: linear-gradient(135deg, hsl(38, 92%, 95%) 0%, hsl(48, 92%, 97%) 100%) !important;
+    @apply border-yellow-300 text-yellow-900;
+  }
+
+  .Toastify__progress-bar {
+    @apply h-1;
+  }
+
+  .Toastify__progress-bar--success {
+    background: linear-gradient(90deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%) !important;
+  }
+
+  .Toastify__progress-bar--error {
+    background: linear-gradient(90deg, hsl(0, 84%, 60%) 0%, hsl(10, 84%, 65%) 100%) !important;
+  }
+
+  .Toastify__progress-bar--info {
+    background: linear-gradient(90deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%) !important;
+  }
+
+  .Toastify__progress-bar--warning {
+    background: linear-gradient(90deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%) !important;
+  }
+
+  /* Dark mode support for toasts */
+  .dark .Toastify__toast {
+    @apply bg-gray-800 text-gray-100;
+  }
+
+  .dark .Toastify__toast--success {
+    background: linear-gradient(135deg, hsl(142, 71%, 20%) 0%, hsl(152, 71%, 22%) 100%) !important;
+    @apply border-green-700 text-green-100;
+  }
+
+  .dark .Toastify__toast--error {
+    background: linear-gradient(135deg, hsl(0, 84%, 25%) 0%, hsl(10, 84%, 27%) 100%) !important;
+    @apply border-red-700 text-red-100;
+  }
+
+  .dark .Toastify__toast--info {
+    background: linear-gradient(135deg, hsl(199, 89%, 25%) 0%, hsl(209, 89%, 27%) 100%) !important;
+    @apply border-blue-700 text-blue-100;
+  }
+
+  .dark .Toastify__toast--warning {
+    background: linear-gradient(135deg, hsl(38, 92%, 30%) 0%, hsl(48, 92%, 32%) 100%) !important;
+    @apply border-yellow-700 text-yellow-100;
+  }
+
+  .Toastify__close-button {
+    @apply opacity-60 hover:opacity-100 transition-opacity;
+  }
 }
 
