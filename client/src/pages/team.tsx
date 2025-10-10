@@ -113,7 +113,7 @@ export default function Team() {
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: async (data: { email: string; role: string; department?: string }) => {
+    mutationFn: async (data: { email: string; role: string; department?: string; name?: string }) => {
       return await apiRequest("POST", "/api/users/invite", data);
     },
     onSuccess: async (response: any, variables) => {
@@ -187,6 +187,7 @@ export default function Team() {
       setNewMemberEmail("");
       setNewMemberRole("");
       setNewMemberDepartment("");
+      setNewMemberName("");
     },
     onError: (error: Error) => {
       toast({
@@ -273,6 +274,7 @@ export default function Team() {
         email: newMemberEmail,
         role: newMemberRole,
         department: newMemberDepartment || undefined,
+        name: newMemberName || undefined,
       });
     }
   };
@@ -595,6 +597,16 @@ export default function Team() {
               />
             </div>
             <div>
+              <Label className="text-sm font-medium text-foreground mb-2 block">Full Name</Label>
+              <Input
+                type="text"
+                value={newMemberName}
+                onChange={(e) => setNewMemberName(e.target.value)}
+                placeholder="e.g., John Doe"
+                data-testid="input-member-name"
+              />
+            </div>
+            <div>
               <Label className="text-sm font-medium text-foreground mb-2 block">Role</Label>
               <Select value={newMemberRole} onValueChange={setNewMemberRole} data-testid="select-member-role">
                 <SelectTrigger>
@@ -625,6 +637,7 @@ export default function Team() {
                 setNewMemberEmail("");
                 setNewMemberRole("");
                 setNewMemberDepartment("");
+                setNewMemberName("");
               }}
               data-testid="button-cancel-add-member"
             >
