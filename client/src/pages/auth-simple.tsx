@@ -42,10 +42,18 @@ export default function AuthSimple() {
 
   useEffect(() => {
     const role = localStorage.getItem("selected_role");
+    const signupMode = localStorage.getItem("signup_mode");
+    
     setSelectedRole(role);
     
-    // If requester role selected, show signup form
-    if (role === "requester") {
+    // If signup mode is true (from landing page), show signup form as requester
+    if (signupMode === "true") {
+      setIsSignup(true);
+      setSelectedRole("requester");
+      localStorage.setItem("selected_role", "requester");
+      localStorage.removeItem("signup_mode");
+    } else if (role === "requester") {
+      // If requester role selected, show signup form
       setIsSignup(true);
     } else {
       setIsSignup(false);
@@ -361,7 +369,7 @@ export default function AuthSimple() {
                     className="text-purple-600 hover:underline"
                     data-testid="button-switch-to-signup"
                   >
-                    Sign up as Data Requester
+                    Sign up
                   </button>
                 </div>
               ) : null}
@@ -377,7 +385,7 @@ export default function AuthSimple() {
               }}
               data-testid="button-back"
             >
-              ← Back to role selection
+              ← Back to Home
             </Button>
           </div>
         </CardContent>

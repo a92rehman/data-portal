@@ -49,7 +49,10 @@ export default function Landing() {
             size="lg"
             variant="outline"
             className="w-full sm:w-auto text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-purple-300 hover:border-purple-500 dark:border-purple-600 dark:hover:border-purple-400 px-8 py-6"
-            onClick={() => setLocation("/auth")}
+            onClick={() => {
+              localStorage.setItem("signup_mode", "true");
+              setLocation("/auth");
+            }}
             data-testid="button-signup"
           >
             Sign Up
