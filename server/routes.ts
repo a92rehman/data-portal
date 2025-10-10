@@ -203,14 +203,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           generatedPassword = randomBytes(9).toString('base64').slice(0, 12);
           console.log(`[server] Step 2: Password generated (length: ${generatedPassword.length})`);
           
-          // Hash password using scrypt (same as auth.ts)
+          // Hash password using scrypt (same as auth.ts - format: hash.salt)
           const { scrypt } = await import('crypto');
           const { promisify } = await import('util');
           const scryptAsync = promisify(scrypt);
           
           const salt = randomBytes(16).toString('hex');
           const derivedKey = await scryptAsync(generatedPassword, salt, 64) as Buffer;
-          const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
+          const hashedPassword = `${derivedKey.toString('hex')}.${salt}`;
           console.log(`[server] Step 3: Password hashed successfully`);
           
           // Store hashed password for the analyst

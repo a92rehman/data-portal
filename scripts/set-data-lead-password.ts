@@ -12,10 +12,10 @@ async function setDataLeadPassword() {
 
   console.log('Setting password for Data Lead:', email);
 
-  // Hash password using scrypt (same as auth.ts)
+  // Hash password using scrypt (same as auth.ts - format: hash.salt)
   const salt = randomBytes(16).toString('hex');
   const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
-  const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
+  const hashedPassword = `${derivedKey.toString('hex')}.${salt}`;
 
   console.log('Password hashed successfully');
 
