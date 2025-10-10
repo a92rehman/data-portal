@@ -13,7 +13,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Moon, Sun, Building2, KeyRound, Loader2 } from "lucide-react";
+import { Moon, Sun, Building2, KeyRound, Loader2, Mail, User } from "lucide-react";
+
+const emailSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+const nameSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
 
 const departmentSchema = z.object({
   department: z.string().min(1, "Department is required"),
@@ -28,6 +37,8 @@ const passwordSchema = z.object({
   path: ["confirmPassword"],
 });
 
+type EmailFormData = z.infer<typeof emailSchema>;
+type NameFormData = z.infer<typeof nameSchema>;
 type DepartmentFormData = z.infer<typeof departmentSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
@@ -40,6 +51,21 @@ export default function SettingsPage() {
       return document.documentElement.classList.contains('dark');
     }
     return false;
+  });
+
+  const emailForm = useForm<EmailFormData>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: {
+      email: (user as any)?.email || "",
+    },
+  });
+
+  const nameForm = useForm<NameFormData>({
+    resolver: zodResolver(nameSchema),
+    defaultValues: {
+      firstName: (user as any)?.firstName || "",
+      lastName: (user as any)?.lastName || "",
+    },
   });
 
   const departmentForm = useForm<DepartmentFormData>({
@@ -55,6 +81,46 @@ export default function SettingsPage() {
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
+    },
+  });
+
+  const updateEmailMutation = useMutation({
+    mutationFn: async (data: EmailFormData) => {
+      return await apiRequest("PATCH", "/api/auth/user/email", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Success",
+        description: "Email updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update email",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateNameMutation = useMutation({
+    mutationFn: async (data: NameFormData) => {
+      return await apiRequest("PATCH", "/api/auth/user/name", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Success",
+        description: "Name updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update name",
+        variant: "destructive",
+      });
     },
   });
 
@@ -114,6 +180,14 @@ export default function SettingsPage() {
     }
   };
 
+  const onEmailSubmit = (data: EmailFormData) => {
+    updateEmailMutation.mutate(data);
+  };
+
+  const onNameSubmit = (data: NameFormData) => {
+    updateNameMutation.mutate(data);
+  };
+
   const onDepartmentSubmit = (data: DepartmentFormData) => {
     updateDepartmentMutation.mutate(data);
   };
@@ -153,6 +227,109 @@ export default function SettingsPage() {
               data-testid="switch-dark-mode"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            <CardTitle>Name</CardTitle>
+          </div>
+          <CardDescription>Update your name</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...nameForm}>
+            <form onSubmit={nameForm.handleSubmit(onNameSubmit)} className="space-y-4">
+              <FormField
+                control={nameForm.control}
+                name="firstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter first name"
+                        {...field}
+                        data-testid="input-first-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={nameForm.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter last name"
+                        {...field}
+                        data-testid="input-last-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="submit" 
+                disabled={updateNameMutation.isPending}
+                data-testid="button-update-name"
+              >
+                {updateNameMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Name
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Mail className="w-5 h-5" />
+            <CardTitle>Email Address</CardTitle>
+          </div>
+          <CardDescription>Update your email address</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...emailForm}>
+            <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-4">
+              <FormField
+                control={emailForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email"
+                        placeholder="Enter email address"
+                        {...field}
+                        data-testid="input-email"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Current: {(user as any)?.email || "Not set"}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="submit" 
+                disabled={updateEmailMutation.isPending}
+                data-testid="button-update-email"
+              >
+                {updateEmailMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Email
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
 
