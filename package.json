@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@emailjs/nodejs": "^5.0.2",
     "@getbrevo/brevo": "^3.0.1",
     "@google-cloud/storage": "^7.17.1",

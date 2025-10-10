@@ -183,13 +183,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resultUser = await storage.createInvitedUser(email, role, department);
       }
 
-      // For analysts, generate random password and send via EmailJS
+      let generatedPassword: string | undefined;
+      
+      // For analysts, generate random password
       if (role === 'analyst' && !existingUser && resultUser) {
         try {
-          const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Data Lead';
-          
           // Generate random password (12 characters: letters, numbers, special chars)
-          const randomPassword = randomBytes(9).toString('base64').slice(0, 12);
+          generatedPassword = randomBytes(9).toString('base64').slice(0, 12);
           
           // Hash password using scrypt (same as auth.ts)
           const { scrypt } = await import('crypto');
@@ -197,23 +197,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const scryptAsync = promisify(scrypt);
           
           const salt = randomBytes(16).toString('hex');
-          const derivedKey = await scryptAsync(randomPassword, salt, 64) as Buffer;
+          const derivedKey = await scryptAsync(generatedPassword, salt, 64) as Buffer;
           const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
           
           // Store hashed password for the analyst
           await storage.updateUserPassword(resultUser.id, hashedPassword);
-          
-          // Send credentials via EmailJS
-          await sendAnalystCredentialsViaEmailJS({
-            analystName: email.split('@')[0], // Use email username as name placeholder
-            analystEmail: email,
-            password: randomPassword, // Send plain password in email
-            inviterName,
-          });
-          console.log(`[emailjs] Analyst credentials sent successfully to ${email}`);
-        } catch (emailError) {
-          console.error("[emailjs] Failed to send analyst credentials:", emailError);
-          // Don't fail the request if email fails
+          console.log(`[server] Generated password for analyst ${email}`);
+        } catch (error) {
+          console.error("[server] Failed to generate analyst password:", error);
+          // Don't fail the request if password generation fails
         }
       } else {
         // For requesters and team leads, send regular invitation email
@@ -234,7 +226,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.status(existingUser ? 200 : 201).json(resultUser);
+      // Return user data with password for analysts (so frontend can send email via EmailJS)
+      res.status(existingUser ? 200 : 201).json({
+        ...resultUser,
+        ...(generatedPassword && { generatedPassword })
+      });
     } catch (error) {
       console.error("Error inviting team member:", error);
       res.status(500).json({ message: "Failed to invite team member" });

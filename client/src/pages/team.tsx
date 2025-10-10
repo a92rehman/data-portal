@@ -16,6 +16,7 @@ import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { Users, Mail, UserCog, UserMinus, Settings, UserPlus } from "lucide-react";
 import type { User } from "@shared/schema";
+import emailjs from "@emailjs/browser";
 
 export default function Team() {
   const { user, isLoading: authLoading } = useAuth();
@@ -92,12 +93,47 @@ export default function Team() {
     mutationFn: async (data: { email: string; role: string; department?: string }) => {
       return await apiRequest("POST", "/api/users/invite", data);
     },
-    onSuccess: () => {
+    onSuccess: async (response: any, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "Success",
-        description: "Team member invited successfully. They can now sign in.",
-      });
+      
+      // If analyst was invited and password was generated, send email via EmailJS
+      if (variables.role === 'analyst' && response.generatedPassword) {
+        try {
+          const inviterName = user ? `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || (user as any).email : 'Data Lead';
+          
+          await emailjs.send(
+            import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
+            import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '',
+            {
+              to_email: variables.email,
+              to_name: variables.email.split('@')[0],
+              analyst_name: variables.email.split('@')[0],
+              analyst_email: variables.email,
+              analyst_password: response.generatedPassword,
+              inviter_name: inviterName,
+            },
+            import.meta.env.VITE_EMAILJS_PUBLIC_KEY || ''
+          );
+          
+          toast({
+            title: "Success",
+            description: "Analyst invited successfully. Login credentials have been sent via email.",
+          });
+        } catch (emailError) {
+          console.error('[EmailJS] Failed to send email:', emailError);
+          toast({
+            title: "Analyst Invited",
+            description: "User created but email delivery failed. Please contact the analyst directly.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Success",
+          description: "Team member invited successfully. They can now sign in.",
+        });
+      }
+      
       setShowAddMemberDialog(false);
       setNewMemberEmail("");
       setNewMemberRole("");
