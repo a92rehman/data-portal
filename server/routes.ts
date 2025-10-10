@@ -154,10 +154,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only Data Lead can invite team members" });
       }
 
-      const { email, role, department } = req.body;
+      const { email, role, department, name } = req.body;
       
       if (!email || !role || !['requester', 'team_lead', 'analyst'].includes(role)) {
         return res.status(400).json({ message: "Invalid email or role" });
+      }
+
+      // Split name into first and last name if provided
+      let firstName: string | undefined;
+      let lastName: string | undefined;
+      if (name && name.trim()) {
+        const nameParts = name.trim().split(' ');
+        firstName = nameParts[0];
+        lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
       }
 
       // SECURITY: Protect primary data lead - cannot invite or change via this endpoint
@@ -189,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resultUser = await storage.updateUserRole(existingUser.id, role, department);
       } else {
         // Create placeholder user that will be populated on first login
-        resultUser = await storage.createInvitedUser(email, role, department);
+        resultUser = await storage.createInvitedUser(email, role, department, firstName, lastName);
       }
 
       let generatedPassword: string | undefined;
