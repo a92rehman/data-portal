@@ -174,7 +174,11 @@ export default function Header({ user }: HeaderProps) {
             </PopoverContent>
           </Popover>
 
-          <div className="flex items-center gap-3 pl-4 border-l-2 border-purple-200">
+          <div 
+            className="flex items-center gap-3 pl-4 border-l-2 border-purple-200 cursor-pointer hover:bg-purple-50 rounded-lg px-3 py-2 -mr-3 transition-all"
+            onClick={() => setLocation("/settings")}
+            data-testid="button-profile"
+          >
             <div className="text-right">
               <p className="text-sm font-semibold text-foreground" data-testid="text-user-name">
                 {user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "User"}
@@ -183,7 +187,7 @@ export default function Header({ user }: HeaderProps) {
                 {user?.role?.replace("_", " ") || "Team Member"}
               </p>
             </div>
-            <Avatar className="w-10 h-10 border-2 border-purple-300 cursor-pointer hover:border-purple-500 transition-all shadow-md" onClick={handleLogout} data-testid="avatar-user">
+            <Avatar className="w-10 h-10 border-2 border-purple-300 hover:border-purple-500 transition-all shadow-md" data-testid="avatar-user">
               <AvatarImage src={user?.profileImageUrl ?? ""} />
               <AvatarFallback className="font-bold text-white" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
                 {getInitials(user?.firstName ?? undefined, user?.lastName ?? undefined)}
