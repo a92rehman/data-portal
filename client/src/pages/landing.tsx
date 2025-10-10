@@ -60,48 +60,51 @@ export default function Landing() {
           </Button>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 max-w-5xl mx-auto">
-          <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-                  <TrendingUp className="w-6 h-6 text-white" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+          <div className="group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl opacity-20 group-hover:opacity-30 transition duration-300 blur"></div>
+            <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-8 border border-purple-100 dark:border-purple-900">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                  <TrendingUp className="w-7 h-7 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Request & Track</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Submit data requests and monitor their progress in real-time</p>
+                <div className="flex-1">
+                  <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">Request & Track</h3>
+                  <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">Submit data requests and monitor their progress in real-time with status updates</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
-                  <Users className="w-6 h-6 text-white" />
+          <div className="group relative">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-2xl opacity-20 group-hover:opacity-30 transition duration-300 blur"></div>
+            <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-8 border border-blue-100 dark:border-blue-900">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                  <Users className="w-7 h-7 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Team Collaboration</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Work together through comments, assignments, and file sharing</p>
+                <div className="flex-1">
+                  <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">Team Collaboration</h3>
+                  <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">Work together seamlessly through comments, task assignments, and file sharing</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card className="border-2 border-pink-200 dark:border-pink-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sm:col-span-2 lg:col-span-1">
-            <CardContent className="p-6">
-              <div className="space-y-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(330, 80%, 60%) 0%, hsl(340, 82%, 65%) 100%)'}}>
-                  <Zap className="w-6 h-6 text-white" />
+          <div className="group relative sm:col-span-2 lg:col-span-1">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl opacity-20 group-hover:opacity-30 transition duration-300 blur"></div>
+            <div className="relative bg-white dark:bg-gray-900 rounded-2xl p-8 border border-pink-100 dark:border-pink-900">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style={{background: 'linear-gradient(135deg, hsl(330, 80%, 60%) 0%, hsl(340, 82%, 65%) 100%)'}}>
+                  <Zap className="w-7 h-7 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Instant Analytics</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Get insights into team performance and request metrics</p>
+                <div className="flex-1">
+                  <h3 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">Instant Analytics</h3>
+                  <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">Get actionable insights into team performance and comprehensive request metrics</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         </div>
