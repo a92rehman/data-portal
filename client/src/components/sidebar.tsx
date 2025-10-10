@@ -1,15 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutDashboard, 
   Inbox, 
   BarChart3, 
   Users, 
-  Plus, 
-  Settings, 
-  LogOut,
+  Plus,
   ClipboardCheck,
   FileText,
   UserCheck
@@ -21,17 +18,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onNewRequest, user }: SidebarProps) {
-  const [location, setLocation] = useLocation();
-  const { logout } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      setLocation("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
+  const [location] = useLocation();
 
   // Role-specific navigation items
   const getNavItems = () => {
@@ -63,7 +50,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
   const navItems = getNavItems();
 
   return (
-    <aside className="w-64 bg-white border-r-2 border-purple-200 min-h-[calc(100vh-73px)] p-4 shadow-md">
+    <aside className="w-64 bg-white dark:bg-gray-800 border-r-2 border-purple-200 dark:border-purple-700 min-h-[calc(100vh-73px)] p-4 shadow-md">
       <nav className="space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -73,7 +60,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
             <Link 
               key={item.href} 
               href={item.href}
-              className={`sidebar-link ${isActive ? "gradient-button-primary text-white" : "text-gray-600 hover:bg-purple-50"}`}
+              className={`sidebar-link ${isActive ? "gradient-button-primary text-white" : "text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"}`}
               data-testid={item.testId}
             >
               <Icon className="w-5 h-5" />
@@ -84,7 +71,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
 
         {(user?.role === "requester" || user?.role === "team_lead" || user?.role === "analyst") && (
           <>
-            <Separator className="my-4 bg-purple-200" />
+            <Separator className="my-4 bg-purple-200 dark:bg-purple-700" />
             
             <div className="pt-2">
               <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
@@ -93,7 +80,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
               <Link href="/requests/new">
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start gradient-button-secondary font-medium" 
+                  className="w-full justify-start gradient-button-secondary font-medium dark:hover:bg-purple-900/30" 
                   data-testid="button-quick-new-request"
                 >
                   <Plus className="w-5 h-5 mr-3" />
@@ -105,32 +92,6 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
           </>
         )}
 
-        <Separator className="my-4 bg-purple-200" />
-        
-        <div className="pt-2 space-y-1">
-          <Link href="/settings" className="block">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-gray-600 hover:bg-purple-50 border-2 border-transparent hover:border-purple-200 transition-all" 
-              data-testid="button-settings"
-              asChild
-            >
-              <span className="flex items-center">
-                <Settings className="w-5 h-5 mr-3" />
-                Settings
-              </span>
-            </Button>
-          </Link>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-gray-600 hover:bg-red-50 border-2 border-transparent hover:border-red-200 transition-all" 
-            onClick={handleLogout}
-            data-testid="button-logout"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Logout
-          </Button>
-        </div>
       </nav>
     </aside>
   );

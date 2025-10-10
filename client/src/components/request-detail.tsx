@@ -530,190 +530,191 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </div>
       </DialogHeader>
 
-      <div className="space-y-6">
-        {/* Request Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Status</p>
-              <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
-                {formatStatus(request.status)}
-              </Badge>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Priority</p>
-              {isTeamLead && isEditingPriorityDeadline ? (
-                <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="p0_critical">P0 - Critical</SelectItem>
-                    <SelectItem value="p1_high">P1 - High</SelectItem>
-                    <SelectItem value="p2_medium">P2 - Medium</SelectItem>
-                    <SelectItem value="p3_low">P3 - Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="flex items-center gap-1" data-testid="priority-display">
-                  {getPriorityIcon(request.priority)}
-                  <span className="text-sm font-medium capitalize">{formatPriority(request.priority)}</span>
-                </div>
-              )}
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Request Type</p>
-              <p className="text-sm font-medium text-foreground" data-testid="text-request-type">
-                {formatRequestType(request.type)}
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Department</p>
-              <p className="text-sm font-medium text-foreground capitalize" data-testid="text-department">
-                {request.department}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Requested By</p>
-              <p className="text-sm font-medium text-foreground" data-testid="text-requested-by">
-                {request.requestedBy.firstName} {request.requestedBy.lastName} ({request.requestedBy.role?.replace("_", " ")})
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Due Date</p>
-              {isTeamLead && isEditingPriorityDeadline ? (
-                <Input 
-                  type="date" 
-                  value={editedDueDate}
-                  onChange={(e) => setEditedDueDate(e.target.value)}
-                  data-testid="input-edit-due-date"
-                />
-              ) : (
-                <p className="text-sm font-medium text-foreground" data-testid="text-due-date">
-                  {formatDate(request.dueDate.toString())}
+      <div className="space-y-4">
+        {/* Request Overview */}
+        <CollapsibleSection title="Request Overview" open={true}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Status</p>
+                <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
+                  {formatStatus(request.status)}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Priority</p>
+                {isTeamLead && isEditingPriorityDeadline ? (
+                  <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="p0_critical">P0 - Critical</SelectItem>
+                      <SelectItem value="p1_high">P1 - High</SelectItem>
+                      <SelectItem value="p2_medium">P2 - Medium</SelectItem>
+                      <SelectItem value="p3_low">P3 - Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex items-center gap-1" data-testid="priority-display">
+                    {getPriorityIcon(request.priority)}
+                    <span className="text-sm font-medium capitalize">{formatPriority(request.priority)}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Request Type</p>
+                <p className="text-sm font-medium text-foreground" data-testid="text-request-type">
+                  {formatRequestType(request.type)}
                 </p>
-              )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Department</p>
+                <p className="text-sm font-medium text-foreground capitalize" data-testid="text-department">
+                  {request.department}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Requested By</p>
+                <p className="text-sm font-medium text-foreground" data-testid="text-requested-by">
+                  {request.requestedBy.firstName} {request.requestedBy.lastName} ({request.requestedBy.role?.replace("_", " ")})
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Due Date</p>
+                {isTeamLead && isEditingPriorityDeadline ? (
+                  <Input 
+                    type="date" 
+                    value={editedDueDate}
+                    onChange={(e) => setEditedDueDate(e.target.value)}
+                    data-testid="input-edit-due-date"
+                  />
+                ) : (
+                  <p className="text-sm font-medium text-foreground" data-testid="text-due-date">
+                    {formatDate(request.dueDate.toString())}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Edit Priority and Deadline buttons for Data Lead */}
-        {isTeamLead && (
-          <div className="flex justify-end gap-2 -mt-2">
-            {isEditingPriorityDeadline ? (
-              <>
+          {/* Edit Priority and Deadline buttons for Data Lead */}
+          {isTeamLead && (
+            <div className="flex justify-end gap-2 mt-4">
+              {isEditingPriorityDeadline ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingPriorityDeadline(false);
+                      setEditedPriority(request.priority);
+                      setEditedDueDate(new Date(request.dueDate).toISOString().split('T')[0]);
+                    }}
+                    data-testid="button-cancel-edit-priority-deadline"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      updatePriorityDeadlineMutation.mutate({
+                        priority: editedPriority,
+                        dueDate: editedDueDate,
+                      });
+                    }}
+                    disabled={updatePriorityDeadlineMutation.isPending}
+                    data-testid="button-save-priority-deadline"
+                    className="gradient-button-primary text-white font-semibold"
+                    style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                  >
+                    {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </>
+              ) : (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setIsEditingPriorityDeadline(false);
-                    setEditedPriority(request.priority);
-                    setEditedDueDate(new Date(request.dueDate).toISOString().split('T')[0]);
-                  }}
-                  data-testid="button-cancel-edit-priority-deadline"
+                  onClick={() => setIsEditingPriorityDeadline(true)}
+                  data-testid="button-edit-priority-deadline"
                 >
-                  Cancel
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit Priority & Deadline
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    updatePriorityDeadlineMutation.mutate({
-                      priority: editedPriority,
-                      dueDate: editedDueDate,
-                    });
-                  }}
-                  disabled={updatePriorityDeadlineMutation.isPending}
-                  data-testid="button-save-priority-deadline"
-                  className="gradient-button-primary text-white font-semibold"
-                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                >
-                  {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditingPriorityDeadline(true)}
-                data-testid="button-edit-priority-deadline"
-              >
-                <Settings className="w-4 h-4 mr-2" />
-                Edit Priority & Deadline
-              </Button>
+              )}
+            </div>
+          )}
+        </CollapsibleSection>
+
+        {/* Workflow Actions */}
+        {(isTeamLead && request.status === "pending_review") || request.status === "accepted" || (isAnalyst && (request.status === "assigned" || request.status === "in_progress")) ? (
+          <CollapsibleSection title="Workflow Actions" open={true}>
+            {/* Data Lead Actions (Accept/Reject) */}
+            {isTeamLead && request.status === "pending_review" && (
+              <div className="border-2 border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/20">
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  Review Request
+                </h4>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => acceptRequestMutation.mutate()}
+                    disabled={acceptRequestMutation.isPending}
+                    data-testid="button-accept-request"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                  >
+                    {acceptRequestMutation.isPending ? "Accepting..." : "Accept Request"}
+                  </Button>
+                  <Button
+                    onClick={() => setShowRejectDialog(true)}
+                    disabled={rejectRequestMutation.isPending}
+                    variant="destructive"
+                    data-testid="button-reject-request"
+                    className="flex-1"
+                  >
+                    Reject Request
+                  </Button>
+                </div>
+              </div>
             )}
-          </div>
-        )}
 
-        {/* Data Lead Actions (Accept/Reject) */}
-        {isTeamLead && request.status === "pending_review" && (
-          <Card className="border-2 border-green-300 shadow-md bg-green-50/50">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                Review Request
-              </h4>
-              <div className="flex gap-2">
+            {/* Request Accepted Status */}
+            {request.status === "accepted" && (
+              <div className="border-2 border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/20">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="font-semibold" data-testid="text-request-accepted">Request Accepted</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  This request has been accepted by the Data Lead and is ready for assignment.
+                </p>
+              </div>
+            )}
+
+            {/* Analyst Actions (Add Blocker) */}
+            {isAnalyst && (request.status === "assigned" || request.status === "in_progress") && (
+              <div className="border-2 border-orange-200 dark:border-orange-700 rounded-lg p-4 bg-orange-50/50 dark:bg-orange-900/20">
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <CircleAlert className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  Blockers & Issues
+                </h4>
                 <Button
-                  onClick={() => acceptRequestMutation.mutate()}
-                  disabled={acceptRequestMutation.isPending}
-                  data-testid="button-accept-request"
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
+                  onClick={() => setShowBlockerDialog(true)}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-add-blocker"
+                  className="w-full"
                 >
-                  {acceptRequestMutation.isPending ? "Accepting..." : "Accept Request"}
-                </Button>
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={rejectRequestMutation.isPending}
-                  variant="destructive"
-                  data-testid="button-reject-request"
-                  className="flex-1"
-                >
-                  Reject Request
+                  <CircleAlert className="w-4 h-4 mr-2" />
+                  Add Blocker
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Request Accepted Status */}
-        {request.status === "accepted" && (
-          <Card className="border-2 border-green-300 shadow-md bg-green-50/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 text-green-700">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-semibold" data-testid="text-request-accepted">Request Accepted</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                This request has been accepted by the Data Lead and is ready for assignment.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Analyst Actions (Add Blocker) */}
-        {isAnalyst && (request.status === "assigned" || request.status === "in_progress") && (
-          <Card className="border-2 border-orange-300 shadow-md bg-orange-50/50">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <CircleAlert className="w-4 h-4 text-orange-600" />
-                Blockers & Issues
-              </h4>
-              <Button
-                onClick={() => setShowBlockerDialog(true)}
-                variant="outline"
-                size="sm"
-                data-testid="button-add-blocker"
-                className="w-full"
-              >
-                <CircleAlert className="w-4 h-4 mr-2" />
-                Add Blocker
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CollapsibleSection>
+        ) : null}
 
         {/* Section 3: Request Details & Business Impact */}
         <CollapsibleSection title="Request Details & Business Impact" open={true}>
@@ -895,153 +896,154 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           )}
         </CollapsibleSection>
 
-        {/* Assigned Analyst Display */}
-        {request.assignedTo && (
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Assigned To</p>
-            <Card className="border-2 border-green-200 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={request.assignedTo.profileImageUrl ?? ""} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                      {getInitials(request.assignedTo.firstName ?? undefined, request.assignedTo.lastName ?? undefined)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium text-foreground" data-testid="text-assigned-analyst">
-                      {request.assignedTo.firstName} {request.assignedTo.lastName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{request.assignedTo.email}</p>
+        {/* Assignment & Management */}
+        {(request.assignedTo || isTeamLead || isAnalyst) && (
+          <CollapsibleSection title="Assignment & Management" open={false}>
+            {/* Assigned Analyst Display */}
+            {request.assignedTo && (
+              <div className="mb-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">Assigned To</p>
+                <div className="border-2 border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10 border-2 border-green-300 dark:border-green-600">
+                      <AvatarImage src={request.assignedTo.profileImageUrl ?? ""} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                        {getInitials(request.assignedTo.firstName ?? undefined, request.assignedTo.lastName ?? undefined)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground" data-testid="text-assigned-analyst">
+                        {request.assignedTo.firstName} {request.assignedTo.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{request.assignedTo.email}</p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Assignment Section for Data Lead */}
-        {isTeamLead && (
-          <Card className="border-2 border-blue-300 shadow-md bg-blue-50/50">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <UserPlus className="w-4 h-4" />
-                Assign Request
-              </h4>
-              <div className="flex gap-2">
-                <Select value={selectedAnalyst} onValueChange={setSelectedAnalyst} data-testid="select-assign-analyst">
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select analyst..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {analysts.map((analyst) => (
-                      <SelectItem key={analyst.id} value={analyst.id}>
-                        {analyst.firstName} {analyst.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  size="sm" 
-                  onClick={handleAssignAnalyst}
-                  disabled={!selectedAnalyst || assignMutation.isPending}
-                  data-testid="button-assign"
-                  className="gradient-button-primary text-white font-semibold"
-                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                >
-                  {assignMutation.isPending ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Assign
-                    </>
-                  )}
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
 
-        {/* Data Analyst Response Section */}
-        {isAnalyst && (
-          <Card className="bg-accent">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3">Analyst Response</h4>
-              <Form {...analystForm}>
-                <form onSubmit={analystForm.handleSubmit(onAnalystSubmit)} className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <FormField
-                      control={analystForm.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Update Status</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value} data-testid="select-analyst-status">
-                            <FormControl>
-                              <SelectTrigger className="text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="pending_review">Pending Review</SelectItem>
-                              <SelectItem value="accepted">Accepted</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                              <SelectItem value="assigned">Assigned</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="blocked">Blocked</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={analystForm.control}
-                      name="estimatedDays"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Estimated Completion Days</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              placeholder="e.g., 5" 
-                              {...field}
-                              data-testid="input-estimated-days"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
+            {/* Assignment Section for Data Lead */}
+            {isTeamLead && (
+              <div className="border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4 bg-blue-50/50 dark:bg-blue-900/20">
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  Assign Request
+                </h4>
+                <div className="flex gap-2">
+                  <Select value={selectedAnalyst} onValueChange={setSelectedAnalyst} data-testid="select-assign-analyst">
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select analyst..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {analysts.map((analyst) => (
+                        <SelectItem key={analyst.id} value={analyst.id}>
+                          {analyst.firstName} {analyst.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button 
-                    type="submit" 
                     size="sm" 
-                    disabled={updateStatusMutation.isPending}
-                    data-testid="button-update-status"
+                    onClick={handleAssignAnalyst}
+                    disabled={!selectedAnalyst || assignMutation.isPending}
+                    data-testid="button-assign"
+                    className="gradient-button-primary text-white font-semibold"
+                    style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
                   >
-                    {updateStatusMutation.isPending ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
-                        Updating...
-                      </>
+                    {assignMutation.isPending ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Update Request
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Assign
                       </>
                     )}
                   </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Data Analyst Response Section */}
+            {isAnalyst && (
+              <div className="border-2 border-purple-200 dark:border-purple-700 rounded-lg p-4 bg-accent dark:bg-purple-900/20">
+                <h4 className="text-sm font-semibold text-foreground mb-3">Analyst Response</h4>
+                <Form {...analystForm}>
+                  <form onSubmit={analystForm.handleSubmit(onAnalystSubmit)} className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <FormField
+                        control={analystForm.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Update Status</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} data-testid="select-analyst-status">
+                              <FormControl>
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="pending_review">Pending Review</SelectItem>
+                                <SelectItem value="accepted">Accepted</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
+                                <SelectItem value="assigned">Assigned</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="blocked">Blocked</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={analystForm.control}
+                        name="estimatedDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estimated Completion Days</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                placeholder="e.g., 5" 
+                                {...field}
+                                data-testid="input-estimated-days"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      size="sm" 
+                      disabled={updateStatusMutation.isPending}
+                      data-testid="button-update-status"
+                      className="gradient-button-primary text-white font-semibold"
+                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                    >
+                      {updateStatusMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Update Request
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </div>
+            )}
+          </CollapsibleSection>
         )}
 
         {/* Communication History */}

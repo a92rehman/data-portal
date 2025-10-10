@@ -111,7 +111,7 @@ export default function Header({ user }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white border-b-2 border-purple-200 sticky top-0 z-40 shadow-md">
+    <header className="bg-white dark:bg-gray-800 border-b-2 border-purple-200 dark:border-purple-700 sticky top-0 z-40 shadow-md">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
           <Button
@@ -129,7 +129,7 @@ export default function Header({ user }: HeaderProps) {
           </div>
           <div>
             <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Taleemabad DataHub</h1>
-            <p className="text-xs text-gray-500">Request Management System</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Request Management System</p>
           </div>
         </div>
 
@@ -163,7 +163,7 @@ export default function Header({ user }: HeaderProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-96 p-0" align="end" data-testid="popover-notifications">
-              <div className="border-b px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50">
+              <div className="border-b px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
                 <h3 className="font-semibold text-lg">Notifications</h3>
                 {unreadCount > 0 && (
                   <Button
@@ -193,20 +193,20 @@ export default function Header({ user }: HeaderProps) {
                         onClick={() => handleNotificationClick(notification)}
                       >
                         <div
-                          className={`p-4 cursor-pointer transition-colors hover:bg-purple-50 ${
-                            notification.read === 'false' ? 'bg-blue-50' : 'bg-white'
+                          className={`p-4 cursor-pointer transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/30 ${
+                            notification.read === 'false' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
                           }`}
                           data-testid={`notification-${notification.id}`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900' : 'text-gray-700'}`}>
+                              <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300'}`}>
                                 {notification.title}
                               </p>
-                              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-400 mt-2">
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                                 {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                               </p>
                             </div>
