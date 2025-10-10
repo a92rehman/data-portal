@@ -14,7 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft, Send, User as UserIcon, Info } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ArrowLeft, Send, User as UserIcon, Info, ChevronDown, ChevronRight } from "lucide-react";
 import { showNotification } from "@/lib/notifications";
 import { z } from "zod";
 
@@ -48,6 +49,13 @@ export default function RequestWorkspace() {
   const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<string>("");
   const [commentText, setCommentText] = useState("");
+  
+  // Collapsible section states (all open by default)
+  const [section1Open, setSection1Open] = useState(true);
+  const [section2Open, setSection2Open] = useState(true);
+  const [section3Open, setSection3Open] = useState(true);
+  const [section4Open, setSection4Open] = useState(true);
+  const [section5Open, setSection5Open] = useState(true);
 
   // Fetch existing request if editing
   const { data: request, isLoading: isLoadingRequest } = useQuery<DataRequestWithDetails>({
@@ -226,10 +234,23 @@ export default function RequestWorkspace() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-4xl">
               
               {/* Section 1: Requester & Project Information */}
-              <div className="space-y-4 p-5 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(260, 100%, 97%) 0%, hsl(220, 100%, 98%) 100%)'}}>
-                <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Section 1: Requester & Project Information</h3>
-                
-                <FormField
+              <Collapsible open={section1Open} onOpenChange={setSection1Open}>
+                <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(260, 100%, 97%) 0%, hsl(220, 100%, 98%) 100%)'}}>
+                  <CollapsibleTrigger asChild>
+                    <button 
+                      type="button"
+                      className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                    >
+                      <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                        Section 1: Requester & Project Information
+                      </h3>
+                      {section1Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </button>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="space-y-4 px-5 pb-5">
+                      <FormField
                   control={form.control}
                   name="title"
                   render={({ field }) => (
@@ -325,7 +346,10 @@ export default function RequestWorkspace() {
                     )}
                   />
                 )}
-              </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
 
               {/* Section 2: Request Details & Business Impact */}
               <div className="space-y-4 p-5 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(200, 100%, 97%) 0%, hsl(180, 100%, 98%) 100%)'}}>
