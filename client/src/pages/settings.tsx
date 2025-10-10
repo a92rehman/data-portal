@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import notify from "@/lib/notifications";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,6 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -90,17 +89,10 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Success",
-        description: "Email updated successfully",
-      });
+      notify.success("Email updated successfully");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update email",
-        variant: "destructive",
-      });
+      notify.error(error.message || "Failed to update email");
     },
   });
 
@@ -110,17 +102,10 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Success",
-        description: "Name updated successfully",
-      });
+      notify.success("Name updated successfully");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update name",
-        variant: "destructive",
-      });
+      notify.error(error.message || "Failed to update name");
     },
   });
 
@@ -130,17 +115,10 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Success",
-        description: "Department updated successfully",
-      });
+      notify.success("Department updated successfully");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update department",
-        variant: "destructive",
-      });
+      notify.error(error.message || "Failed to update department");
     },
   });
 
@@ -153,17 +131,10 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       passwordForm.reset();
-      toast({
-        title: "Success",
-        description: "Password updated successfully",
-      });
+      notify.success("Password updated successfully");
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update password",
-        variant: "destructive",
-      });
+      notify.error(error.message || "Failed to update password");
     },
   });
 
