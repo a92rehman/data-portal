@@ -660,6 +660,21 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </Card>
         )}
 
+        {/* Request Accepted Status */}
+        {request.status === "accepted" && (
+          <Card className="border-2 border-green-300 shadow-md bg-green-50/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-green-700">
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-semibold" data-testid="text-request-accepted">Request Accepted</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                This request has been accepted by the Data Lead and is ready for assignment.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Analyst Actions (Add Blocker) */}
         {isAnalyst && (request.status === "assigned" || request.status === "in_progress") && (
           <Card className="border-2 border-orange-300 shadow-md bg-orange-50/50">
