@@ -540,7 +540,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </div>
       </DialogHeader>
 
-      <ScrollArea className="flex-1 pr-4">
+      <ScrollArea className="flex-1 px-6">
         <div className="space-y-4 py-4">
           {/* Basic Information - Always at Top */}
           <div className="mb-4">
