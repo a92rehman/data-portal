@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   X, 
   Save, 
@@ -28,11 +29,28 @@ import {
   UserPlus,
   Paperclip,
   Download,
-  FileIcon
+  FileIcon,
+  MessageSquare
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
+
+function CollapsibleSection({ title, children, open = true }: { title: string; children: React.ReactNode; open?: boolean }) {
+  const [isOpen, setIsOpen] = useState(open);
+  return (
+    <div className="mb-4 border-2 border-purple-200 dark:border-purple-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm">
+      <div 
+        className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors rounded-t-xl" 
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <h3 className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{title}</h3>
+        <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">{isOpen ? '▼ Hide' : '▶ Show'}</span>
+      </div>
+      {isOpen && <div className="px-4 pb-4 pt-2">{children}</div>}
+    </div>
+  );
+}
 
 interface RequestDetailProps {
   request: DataRequestWithDetails;
@@ -698,165 +716,136 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         )}
 
         {/* Section 3: Request Details & Business Impact */}
-        <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <InfoIcon className="w-4 h-4" />
-            Section 3: Request Details & Business Impact
-          </h4>
-          
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Primary Question</p>
-            <Card className="border-2 border-purple-200 shadow-md">
-              <CardContent className="p-4">
+        <CollapsibleSection title="Request Details & Business Impact" open={true}>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Primary Question</p>
+              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
                 <p className="text-sm text-foreground" data-testid="text-primary-question">
                   {request.primaryQuestion}
                 </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Business Problem or Goal</p>
-            <Card className="border-2 border-purple-200 shadow-md">
-              <CardContent className="p-4">
-                <p className="text-sm text-foreground" data-testid="text-business-problem">
-                  {request.businessProblem}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Decision or Action</p>
-            <Card className="border-2 border-purple-200 shadow-md">
-              <CardContent className="p-4">
-                <p className="text-sm text-foreground" data-testid="text-decision-action">
-                  {request.decisionAction}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Impact</p>
-              <Card className="border-2 border-blue-200 shadow-md">
-                <CardContent className="p-4">
-                  <p className="text-sm text-foreground capitalize" data-testid="text-impact">
-                    {request.impact}
-                  </p>
-                </CardContent>
-              </Card>
+              </div>
             </div>
 
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Frequency</p>
-              <Card className="border-2 border-blue-200 shadow-md">
-                <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Business Problem or Goal</p>
+              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                <p className="text-sm text-foreground" data-testid="text-business-problem">
+                  {request.businessProblem}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Decision or Action</p>
+              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                <p className="text-sm text-foreground" data-testid="text-decision-action">
+                  {request.decisionAction}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Impact</p>
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                  <p className="text-sm text-foreground capitalize" data-testid="text-impact">
+                    {request.impact}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Frequency</p>
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
                   <p className="text-sm text-foreground" data-testid="text-frequency">
                     {request.frequency}
                     {request.frequencyDuration && request.frequencyUnit && 
                       ` (${request.frequencyDuration} ${request.frequencyUnit})`
                     }
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </CollapsibleSection>
 
         {/* Section 4: Dashboard-Specific Details (if applicable) */}
         {(request.type === "new_dashboard" || request.type === "modify_dashboard") && (
-          <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              Section 4: Dashboard-Specific Details
-            </h4>
-
-            {request.dashboardAudience && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Audience/Users</p>
-                <Card className="border-2 border-green-200 shadow-md">
-                  <CardContent className="p-4">
+          <CollapsibleSection title="Dashboard-Specific Details" open={false}>
+            <div className="space-y-3">
+              {request.dashboardAudience && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Audience/Users</p>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                     <p className="text-sm text-foreground" data-testid="text-dashboard-audience">
                       {request.dashboardAudience}
                     </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
 
-            {request.dashboardRefreshFrequency && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Intended Refresh Frequency</p>
-                <Card className="border-2 border-green-200 shadow-md">
-                  <CardContent className="p-4">
+              {request.dashboardRefreshFrequency && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Intended Refresh Frequency</p>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                     <p className="text-sm text-foreground capitalize" data-testid="text-refresh-frequency">
                       {request.dashboardRefreshFrequency}
                     </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
 
-            {request.keyMetrics && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Key Metrics/KPIs Needed</p>
-                <Card className="border-2 border-green-200 shadow-md">
-                  <CardContent className="p-4">
+              {request.keyMetrics && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Key Metrics/KPIs Needed</p>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                     <p className="text-sm text-foreground" data-testid="text-key-metrics">
                       {request.keyMetrics}
                     </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
 
-            {request.filters && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Filters</p>
-                <Card className="border-2 border-green-200 shadow-md">
-                  <CardContent className="p-4">
+              {request.filters && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Filters</p>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                     <p className="text-sm text-foreground" data-testid="text-filters">
                       {request.filters}
                     </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
 
-            {request.mockups && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Mock-ups, Examples, or Links</p>
-                <Card className="border-2 border-green-200 shadow-md">
-                  <CardContent className="p-4">
+              {request.mockups && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Mock-ups, Examples, or Links</p>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                     <p className="text-sm text-foreground" data-testid="text-mockups">
                       {request.mockups}
                     </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
 
-            {request.actionPlan && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Action Plan</p>
-                <Card className="border-2 border-green-200 shadow-md">
-                  <CardContent className="p-4">
+              {request.actionPlan && (
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Action Plan</p>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
                     <p className="text-sm text-foreground" data-testid="text-action-plan">
                       {request.actionPlan}
                     </p>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CollapsibleSection>
         )}
 
         {/* Attachments Section */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Attachments</p>
+        <CollapsibleSection title="Attachments" open={false}>
+          <div className="flex items-center justify-end mb-3">
             <ObjectUploader
               maxNumberOfFiles={5}
               maxFileSize={10485760}
@@ -872,43 +861,39 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           {request.attachments && request.attachments.length > 0 ? (
             <div className="space-y-2">
               {request.attachments.map((attachment) => (
-                <Card key={attachment.id} className="border-2 border-blue-200 shadow-sm hover:shadow-md transition-all">
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <FileIcon className="w-4 h-4 text-primary flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate" data-testid={`attachment-name-${attachment.id}`}>
-                            {attachment.fileName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatFileSize(attachment.fileSize)} • Uploaded by {attachment.uploadedBy.firstName} {attachment.uploadedBy.lastName}
-                          </p>
-                        </div>
+                <div key={attachment.id} className="border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 hover:shadow-md transition-all">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate" data-testid={`attachment-name-${attachment.id}`}>
+                          {attachment.fileName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(attachment.fileSize)} • Uploaded by {attachment.uploadedBy.firstName} {attachment.uploadedBy.lastName}
+                        </p>
                       </div>
-                      <a
-                        href={attachment.filePath}
-                        download={attachment.fileName}
-                        className="flex-shrink-0"
-                        data-testid={`button-download-${attachment.id}`}
-                      >
-                        <Button variant="ghost" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      </a>
                     </div>
-                  </CardContent>
-                </Card>
+                    <a
+                      href={attachment.filePath}
+                      download={attachment.fileName}
+                      className="flex-shrink-0"
+                      data-testid={`button-download-${attachment.id}`}
+                    >
+                      <Button variant="ghost" size="sm">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </a>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
-            <Card className="border-2 border-dashed border-gray-300">
-              <CardContent className="p-4">
-                <p className="text-sm text-muted-foreground text-center">No attachments yet</p>
-              </CardContent>
-            </Card>
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
+              <p className="text-sm text-muted-foreground text-center">No attachments yet</p>
+            </div>
           )}
-        </div>
+        </CollapsibleSection>
 
         {/* Assigned Analyst Display */}
         {request.assignedTo && (
@@ -1060,62 +1045,64 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         )}
 
         {/* Communication History */}
-        <div>
-          <h4 className="text-sm font-semibold text-foreground mb-3">Communication History</h4>
+        <CollapsibleSection title={`Communication History (${request.comments.length})`} open={true}>
           <div className="space-y-3">
             {request.comments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No comments yet. Start the conversation!
-              </p>
+              <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground opacity-30 mb-2" />
+                <p className="text-sm text-muted-foreground">No comments yet. Start the conversation!</p>
+              </div>
             ) : (
-              request.comments.map((comment) => (
-                <Card key={comment.id} className="bg-muted">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={comment.user.profileImageUrl ?? ""} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                            {getInitials(comment.user.firstName ?? undefined, comment.user.lastName ?? undefined)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium text-foreground" data-testid={`comment-author-${comment.id}`}>
-                            {comment.user.firstName} {comment.user.lastName}
-                          </p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {comment.user.role?.replace("_", " ")}
-                          </p>
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-3">
+                  {request.comments.map((comment) => (
+                    <div key={comment.id} className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10 border-2 border-purple-300 dark:border-purple-600">
+                            <AvatarImage src={comment.user.profileImageUrl ?? ""} />
+                            <AvatarFallback className="text-white font-semibold" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                              {getInitials(comment.user.firstName ?? undefined, comment.user.lastName ?? undefined)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-semibold text-foreground" data-testid={`comment-author-${comment.id}`}>
+                              {comment.user.firstName} {comment.user.lastName}
+                            </p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {comment.user.role?.replace("_", " ")}
+                            </p>
+                          </div>
                         </div>
+                        <p className="text-xs text-muted-foreground" data-testid={`comment-date-${comment.id}`}>
+                          {comment.createdAt ? formatDate(comment.createdAt.toString()) : ''}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground" data-testid={`comment-date-${comment.id}`}>
-                        {comment.createdAt ? formatDate(comment.createdAt.toString()) : ''}
+                      <p className="text-sm text-foreground mt-2 ml-[52px]" data-testid={`comment-content-${comment.id}`}>
+                        {comment.content}
                       </p>
                     </div>
-                    <p className="text-sm text-foreground" data-testid={`comment-content-${comment.id}`}>
-                      {comment.content}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))
+                  ))}
+                </div>
+              </ScrollArea>
             )}
           </div>
 
           {/* Add Comment Form */}
-          <div className="mt-4">
+          <div className="mt-4 pt-4 border-t-2 border-purple-200 dark:border-purple-700">
             <form onSubmit={onCommentSubmit} className="flex gap-2">
-              <Input
+              <Textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Add a comment..."
-                className="flex-1"
+                className="flex-1 min-h-[80px] border-2 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500"
                 data-testid="input-new-comment"
               />
               <Button 
                 type="submit" 
                 disabled={!newComment.trim() || addCommentMutation.isPending}
                 data-testid="button-add-comment"
-                className="gradient-button-primary text-white font-semibold px-6"
+                className="gradient-button-primary text-white font-semibold px-6 self-end"
                 style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
               >
                 {addCommentMutation.isPending ? (
@@ -1132,7 +1119,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </Button>
             </form>
           </div>
-        </div>
+        </CollapsibleSection>
       </div>
 
       {/* Reject Request Dialog */}
