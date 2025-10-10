@@ -846,6 +846,405 @@ export default function RequestWorkspace() {
                 </>
               )}
 
+              {/* BigQuery Access Request Fields */}
+              {selectedType === "bq_access" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(280, 100%, 97%) 0%, hsl(260, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                          BigQuery Access Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="bqEmail"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email for BQ Access <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="email"
+                                  placeholder="user@taleemabad.com"
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-bq-email"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="bqDatasets"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Datasets/Tables Needed <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="List the specific datasets and tables you need access to..."
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-bq-datasets"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="bqPurpose"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Purpose of Access <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Explain why you need this data access and how it will be used..."
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-bq-purpose"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
+              {/* Data Bug Fields */}
+              {selectedType === "data_bug" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(0, 100%, 97%) 0%, hsl(20, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                          Bug Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="bugDescription"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bug Description <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe the data bug or quality issue in detail..."
+                                  rows={4}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-bug-description"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="bugLocation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Location/Dashboard/Report <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="Where did you observe this issue? (Dashboard name, report, table, etc.)"
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-bug-location"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
+              {/* Tracking Request Fields */}
+              {selectedType === "tracking" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(120, 100%, 97%) 0%, hsl(140, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                          Event Tracking Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="trackingEvent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Event Name</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g., button_click, page_view, video_complete"
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-tracking-event"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="trackingPlatform"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Platform/App</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g., Web App, Mobile App, Dashboard"
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-tracking-platform"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="trackingDetails"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Event Details</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe what should be tracked, when it fires, and what properties to capture..."
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-tracking-details"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
+              {/* Metric Change Fields */}
+              {selectedType === "metric_change" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(200, 100%, 97%) 0%, hsl(220, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                          Metric Change Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="metricName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Metric Name</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g., Active Users, Completion Rate"
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-metric-name"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="metricChangeType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Type of Change</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-metric-change-type">
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select change type..." />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="definition">Change Definition</SelectItem>
+                                  <SelectItem value="calculation">Change Calculation Method</SelectItem>
+                                  <SelectItem value="rename">Rename Metric</SelectItem>
+                                  <SelectItem value="deprecate">Deprecate/Remove Metric</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="metricReason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Reason for Change</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Explain why this metric needs to be changed..."
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-metric-reason"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
+              {/* Pipeline Change Fields */}
+              {selectedType === "pipeline_change" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(40, 100%, 97%) 0%, hsl(60, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
+                          Pipeline Change Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="pipelineName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Pipeline/ETL Name</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="e.g., student_data_sync, daily_aggregation"
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-pipeline-name"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="pipelineChangeType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Type of Change</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-pipeline-change-type">
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select change type..." />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="new_column">Add New Column/Field</SelectItem>
+                                  <SelectItem value="modify_transformation">Modify Transformation Logic</SelectItem>
+                                  <SelectItem value="schedule">Change Schedule/Frequency</SelectItem>
+                                  <SelectItem value="source">Change Data Source</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="pipelineDetails"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Change Details</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Describe the pipeline change in detail..."
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-pipeline-details"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
               {/* Info Card */}
               <Card className="bg-muted">
                 <CardContent className="p-4">

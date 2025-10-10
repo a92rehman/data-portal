@@ -6,6 +6,19 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
+**October 10, 2025 - Extended Request Types and Form Fields**
+- Added new request types: BigQuery Access, Event Tracking, Metric Change, Pipeline Change, Recurring Report
+- Added team/sub-department field to data requests for better organizational tracking
+- Enhanced data bug request type with dedicated fields for bug description and location
+- Created type-specific form sections with collapsible UI for each new request type:
+  - BigQuery Access: email, datasets, and purpose fields
+  - Data Bug: bug description and location fields
+  - Event Tracking: event name, platform, and tracking details
+  - Metric Change: metric name, change type, and reason
+  - Pipeline Change: pipeline name, change type, and details
+- Updated database schema with new columns for all type-specific fields
+- Auto-populates department field from user profile on new requests
+
 **October 10, 2025 - Settings Page Enhancements**
 - Added email editing capability to Settings page with email format validation and duplicate email checking
 - Added username (firstName/lastName) editing capability to Settings page
