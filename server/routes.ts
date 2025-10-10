@@ -368,6 +368,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/auth/user/email', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { email } = req.body;
+      
+      if (!email || !email.trim()) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Check if email is already taken by another user
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(409).json({ message: "Email is already in use" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await storage.upsertUser({
+        ...user,
+        email,
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating user email:", error);
+      res.status(500).json({ message: "Failed to update user email" });
+    }
+  });
+
+  app.patch('/api/auth/user/name', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { firstName, lastName } = req.body;
+      
+      if (!firstName || !firstName.trim()) {
+        return res.status(400).json({ message: "First name is required" });
+      }
+
+      if (!lastName || !lastName.trim()) {
+        return res.status(400).json({ message: "Last name is required" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await storage.upsertUser({
+        ...user,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating user name:", error);
+      res.status(500).json({ message: "Failed to update user name" });
+    }
+  });
+
   app.patch('/api/auth/user/password', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
