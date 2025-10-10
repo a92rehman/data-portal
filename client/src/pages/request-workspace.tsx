@@ -122,6 +122,13 @@ export default function RequestWorkspace() {
     }
   }, [request, isNewRequest]);
 
+  // Auto-populate department from user profile for new requests
+  useEffect(() => {
+    if (isNewRequest && user && (user as any)?.department) {
+      form.setValue("department", (user as any).department);
+    }
+  }, [isNewRequest, user, form]);
+
   const createRequestMutation = useMutation({
     mutationFn: async (data: FormData) => {
       const formattedData = {
