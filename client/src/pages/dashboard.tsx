@@ -7,7 +7,6 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
-import RequestForm from "@/components/request-form";
 import RequestDetail from "@/components/request-detail";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,18 +41,7 @@ export default function Dashboard() {
     from: undefined,
     to: undefined,
   });
-  const [showRequestForm, setShowRequestForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
-
-  // Check for "new" URL parameter to open request form
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('new') === 'true') {
-      setShowRequestForm(true);
-      // Clean up URL
-      window.history.replaceState({}, '', '/');
-    }
-  }, []);
 
   // Fetch analysts for filter (only for team leads and analysts)
   const { data: analysts = [] } = useQuery<User[]>({
@@ -323,7 +311,7 @@ export default function Dashboard() {
       <Header user={user as any} />
       
       <div className="flex">
-        <Sidebar onNewRequest={() => setShowRequestForm(true)} user={user as any} />
+        <Sidebar onNewRequest={() => setLocation("/requests/new")} user={user as any} />
         
         <main className="flex-1 p-6">
           <div className="mb-6">
@@ -536,7 +524,7 @@ export default function Dashboard() {
 
                 {((user as any)?.role === "requester" || (user as any)?.role === "team_lead") && (
                   <Button 
-                    onClick={() => setShowRequestForm(true)} 
+                    onClick={() => setLocation("/requests/new")} 
                     data-testid="button-new-request"
                     className="gradient-button-primary text-white font-semibold"
                   >
@@ -653,19 +641,6 @@ export default function Dashboard() {
         </main>
       </div>
 
-      {/* Request Form Modal */}
-      <Dialog open={showRequestForm} onOpenChange={setShowRequestForm}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-6">
-          <RequestForm 
-            onClose={() => setShowRequestForm(false)}
-            onSuccess={() => {
-              setShowRequestForm(false);
-              queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/analytics/stats"] });
-            }}
-          />
-        </DialogContent>
-      </Dialog>
 
       {/* Request Detail Modal */}
       <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
