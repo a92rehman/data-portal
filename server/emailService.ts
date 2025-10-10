@@ -627,36 +627,105 @@ export async function sendAnalystCredentialsViaEmailJS(data: AnalystCredentialsE
   try {
     const { analystName, analystEmail, password, inviterName } = data;
 
-    const serviceId = process.env.EMAILJS_SERVICE_ID;
-    const templateId = process.env.EMAILJS_TEMPLATE_ID;
-    const publicKey = process.env.EMAILJS_PUBLIC_KEY;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                <tr>
+                  <td style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 40px 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Welcome to DataHub!</h1>
+                    <p style="margin: 10px 0 0; color: #e0e7ff; font-size: 16px;">Data Analytics Team</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px; color: #1f2937; font-size: 16px; line-height: 1.5;">
+                      Hi <strong>${analystName}</strong>,
+                    </p>
+                    
+                    <p style="margin: 0 0 30px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                      ${inviterName} has invited you to join the DataHub Data Request Management System as a <strong>Data Analyst</strong>. Below are your login credentials to access the system.
+                    </p>
 
-    if (!serviceId || !templateId || !publicKey) {
-      throw new Error('EmailJS credentials not configured');
-    }
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 8px; border: 2px solid #e5e7eb; margin-bottom: 30px;">
+                      <tr>
+                        <td style="padding: 24px;">
+                          <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px; font-weight: 600;">Your Login Credentials</h2>
+                          
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #6b7280; font-size: 14px;">Email:</span>
+                                <span style="color: #111827; font-size: 14px; font-weight: 500; margin-left: 8px;">${analystEmail}</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #6b7280; font-size: 14px;">Password:</span>
+                                <span style="color: #111827; font-size: 14px; font-weight: 600; margin-left: 8px; font-family: monospace; background-color: #fef3c7; padding: 4px 8px; border-radius: 4px;">${password}</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #6b7280; font-size: 14px;">Role:</span>
+                                <span style="color: #111827; font-size: 14px; font-weight: 500; margin-left: 8px;">Data Analyst</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
 
-    const templateParams = {
-      to_email: analystEmail,
-      to_name: analystName,
-      analyst_name: analystName,
-      analyst_email: analystEmail,
-      analyst_password: password,
-      inviter_name: inviterName,
-    };
+                    <p style="margin: 0 0 20px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                      Please log in to the DataHub system using the credentials above. For security reasons, we recommend changing your password after your first login.
+                    </p>
 
-    const result = await emailjs.send(
-      serviceId,
-      templateId,
-      templateParams,
-      {
-        publicKey: publicKey,
-      }
-    );
+                    <p style="margin: 0 0 10px; color: #ef4444; font-size: 14px; font-weight: 500;">
+                      ⚠️ Important: Please keep these credentials secure and do not share them with anyone.
+                    </p>
+                    
+                    <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                      If you have any questions, please don't hesitate to reach out to ${inviterName} or the Data Team.
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
+                      DataHub Data Analytics Team
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      This is an automated notification. Please do not reply to this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
 
-    console.log(`[emailjs] Credentials sent successfully to ${analystEmail}:`, result);
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.to = [{ email: analystEmail, name: analystName }];
+    sendSmtpEmail.sender = { email: SENDER_EMAIL, name: SENDER_NAME };
+    sendSmtpEmail.subject = 'Welcome to DataHub - Your Login Credentials';
+    sendSmtpEmail.htmlContent = htmlContent;
+
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`[email] Analyst credentials email sent successfully to ${analystEmail}:`, result);
     return result;
   } catch (error) {
-    console.error('[emailjs] Failed to send credentials:', error);
+    console.error('[email] Failed to send analyst credentials:', error);
     throw error;
   }
 }
