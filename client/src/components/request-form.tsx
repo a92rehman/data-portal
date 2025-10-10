@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertDataRequestSchema } from "@shared/schema";
+import { insertDataRequestSchema, type User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { z } from "zod";
 const formSchema = insertDataRequestSchema.extend({
   title: z.string().min(1, "Project name is required"),
   dueDate: z.string().min(1, "Deadline is required"),
+  assignedToId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -31,6 +33,12 @@ interface RequestFormProps {
 export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
   const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<string>("");
+  const { user } = useAuth();
+  
+  const { data: analysts } = useQuery<User[]>({
+    queryKey: ["/api/users/analysts"],
+    enabled: user?.role === "team_lead",
+  });
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -40,6 +48,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
       priority: undefined,
       department: "",
       dueDate: "",
+      assignedToId: undefined,
       primaryQuestion: "",
       businessProblem: "",
       decisionAction: "",
@@ -177,6 +186,35 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 </FormItem>
               )}
             />
+
+            {user?.role === "team_lead" && (
+              <FormField
+                control={form.control}
+                name="assignedToId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Analyst (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-assignee">
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select analyst..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {analysts?.map((analyst) => (
+                          <SelectItem key={analyst.id} value={analyst.id}>
+                            {analyst.firstName && analyst.lastName
+                              ? `${analyst.firstName} ${analyst.lastName} (${analyst.email})`
+                              : analyst.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
           </div>
 
           <div className="space-y-4 p-4 rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(200, 100%, 97%) 0%, hsl(180, 100%, 98%) 100%)'}}>
