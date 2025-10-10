@@ -54,6 +54,7 @@ export default function Team() {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("");
   const [newMemberDepartment, setNewMemberDepartment] = useState("");
+  const [newMemberName, setNewMemberName] = useState("");
 
   const isDataLead = (user as any)?.role === "team_lead";
 
