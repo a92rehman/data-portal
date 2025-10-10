@@ -519,104 +519,102 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className="border-b pb-4">
         <div>
-          <DialogTitle className="text-xl font-semibold" data-testid="text-request-id">
-            {request.id.slice(0, 12)}...
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent" data-testid="text-request-id">
+            Request #{request.id.slice(0, 8)}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1" data-testid="text-request-title">
+          <p className="text-base text-foreground mt-2 font-medium" data-testid="text-request-title">
             {request.title}
           </p>
         </div>
       </DialogHeader>
 
-      <div className="space-y-4">
-        {/* Request Overview */}
-        <CollapsibleSection title="Request Overview" open={true}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
+      <ScrollArea className="max-h-[70vh] pr-4">
+        <div className="space-y-4 py-4">
+          {/* Basic Information - Always at Top */}
+          <CollapsibleSection title="📋 Basic Information" open={true}>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Status</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Status</p>
                 <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
                   {formatStatus(request.status)}
                 </Badge>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Priority</p>
-                {isTeamLead && isEditingPriorityDeadline ? (
-                  <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="p0_critical">P0 - Critical</SelectItem>
-                      <SelectItem value="p1_high">P1 - High</SelectItem>
-                      <SelectItem value="p2_medium">P2 - Medium</SelectItem>
-                      <SelectItem value="p3_low">P3 - Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="flex items-center gap-1" data-testid="priority-display">
-                    {getPriorityIcon(request.priority)}
-                    <span className="text-sm font-medium capitalize">{formatPriority(request.priority)}</span>
-                  </div>
-                )}
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Priority</p>
+                <div className="flex items-center gap-1" data-testid="priority-display">
+                  {getPriorityIcon(request.priority)}
+                  <span className="text-sm font-medium">{formatPriority(request.priority)}</span>
+                </div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Request Type</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Request Type</p>
                 <p className="text-sm font-medium text-foreground" data-testid="text-request-type">
                   {formatRequestType(request.type)}
                 </p>
               </div>
-            </div>
-
-            <div className="space-y-3">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Department</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Department</p>
                 <p className="text-sm font-medium text-foreground capitalize" data-testid="text-department">
                   {request.department}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Requested By</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Requested By</p>
                 <p className="text-sm font-medium text-foreground" data-testid="text-requested-by">
-                  {request.requestedBy.firstName} {request.requestedBy.lastName} ({request.requestedBy.role?.replace("_", " ")})
+                  {request.requestedBy.firstName} {request.requestedBy.lastName}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Due Date</p>
-                {isTeamLead && isEditingPriorityDeadline ? (
-                  <Input 
-                    type="date" 
-                    value={editedDueDate}
-                    onChange={(e) => setEditedDueDate(e.target.value)}
-                    data-testid="input-edit-due-date"
-                  />
-                ) : (
-                  <p className="text-sm font-medium text-foreground" data-testid="text-due-date">
-                    {formatDate(request.dueDate.toString())}
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Due Date</p>
+                <p className="text-sm font-medium text-foreground" data-testid="text-due-date">
+                  {formatDate(request.dueDate.toString())}
+                </p>
               </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Edit Priority and Deadline buttons for Data Lead */}
+          {/* Data Lead: Edit Priority & Deadline */}
           {isTeamLead && (
-            <div className="flex justify-end gap-2 mt-4">
-              {isEditingPriorityDeadline ? (
-                <>
+            <CollapsibleSection title="⚙️ Edit Priority & Deadline" open={false}>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Priority</label>
+                    <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="p0_critical">P0 - Critical</SelectItem>
+                        <SelectItem value="p1_high">P1 - High</SelectItem>
+                        <SelectItem value="p2_medium">P2 - Medium</SelectItem>
+                        <SelectItem value="p3_low">P3 - Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Due Date</label>
+                    <Input 
+                      type="date" 
+                      value={editedDueDate}
+                      onChange={(e) => setEditedDueDate(e.target.value)}
+                      data-testid="input-edit-due-date"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setIsEditingPriorityDeadline(false);
                       setEditedPriority(request.priority);
                       setEditedDueDate(new Date(request.dueDate).toISOString().split('T')[0]);
                     }}
                     data-testid="button-cancel-edit-priority-deadline"
                   >
-                    Cancel
+                    Reset
                   </Button>
                   <Button
                     size="sm"
@@ -633,91 +631,71 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   >
                     {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditingPriorityDeadline(true)}
-                  data-testid="button-edit-priority-deadline"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Edit Priority & Deadline
-                </Button>
-              )}
-            </div>
-          )}
-        </CollapsibleSection>
-
-        {/* Workflow Actions */}
-        {(isTeamLead && request.status === "pending_review") || request.status === "accepted" || (isAnalyst && (request.status === "assigned" || request.status === "in_progress")) ? (
-          <CollapsibleSection title="Workflow Actions" open={true}>
-            {/* Data Lead Actions (Accept/Reject) */}
-            {isTeamLead && request.status === "pending_review" && (
-              <div className="border-2 border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/20">
-                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  Review Request
-                </h4>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => acceptRequestMutation.mutate()}
-                    disabled={acceptRequestMutation.isPending}
-                    data-testid="button-accept-request"
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold"
-                  >
-                    {acceptRequestMutation.isPending ? "Accepting..." : "Accept Request"}
-                  </Button>
-                  <Button
-                    onClick={() => setShowRejectDialog(true)}
-                    disabled={rejectRequestMutation.isPending}
-                    variant="destructive"
-                    data-testid="button-reject-request"
-                    className="flex-1"
-                  >
-                    Reject Request
-                  </Button>
                 </div>
               </div>
-            )}
+            </CollapsibleSection>
+          )}
 
-            {/* Request Accepted Status */}
-            {request.status === "accepted" && (
-              <div className="border-2 border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/20">
-                <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-semibold" data-testid="text-request-accepted">Request Accepted</span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  This request has been accepted by the Data Lead and is ready for assignment.
+        {/* Data Lead: Accept/Reject Request */}
+        {isTeamLead && request.status === "under_review" && (
+          <CollapsibleSection title="✅ Accept / Reject Request" open={true}>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => acceptRequestMutation.mutate()}
+                disabled={acceptRequestMutation.isPending}
+                data-testid="button-accept-request"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold h-12"
+              >
+                {acceptRequestMutation.isPending ? "Accepting..." : "✓ Accept Request"}
+              </Button>
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                disabled={rejectRequestMutation.isPending}
+                variant="destructive"
+                data-testid="button-reject-request"
+                className="flex-1 h-12"
+              >
+                ✕ Reject Request
+              </Button>
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Request Accepted Status */}
+        {request.status === "accepted" && (
+          <CollapsibleSection title="Status Update" open={true}>
+            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-200 dark:border-green-700">
+              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="font-semibold text-green-700 dark:text-green-400" data-testid="text-request-accepted">Request Accepted</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This request has been accepted and is ready for assignment.
                 </p>
               </div>
-            )}
-
-            {/* Analyst Actions (Add Blocker) */}
-            {isAnalyst && (request.status === "assigned" || request.status === "in_progress") && (
-              <div className="border-2 border-orange-200 dark:border-orange-700 rounded-lg p-4 bg-orange-50/50 dark:bg-orange-900/20">
-                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <CircleAlert className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                  Blockers & Issues
-                </h4>
-                <Button
-                  onClick={() => setShowBlockerDialog(true)}
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-add-blocker"
-                  className="w-full"
-                >
-                  <CircleAlert className="w-4 h-4 mr-2" />
-                  Add Blocker
-                </Button>
-              </div>
-            )}
+            </div>
           </CollapsibleSection>
-        ) : null}
+        )}
 
-        {/* Section 3: Request Details & Business Impact */}
-        <CollapsibleSection title="Request Details & Business Impact" open={true}>
+        {/* Analyst: Add Blocker */}
+        {isAnalyst && (request.status === "assigned" || request.status === "in_progress") && (
+          <CollapsibleSection title="⚠️ Report Blocker" open={false}>
+            <p className="text-sm text-muted-foreground mb-3">
+              Report any blockers or issues preventing progress on this request.
+            </p>
+            <Button
+              onClick={() => setShowBlockerDialog(true)}
+              variant="outline"
+              data-testid="button-add-blocker"
+              className="w-full h-11"
+            >
+              <CircleAlert className="w-4 h-4 mr-2" />
+              Add Blocker
+            </Button>
+          </CollapsibleSection>
+        )}
+
+        {/* Request Details */}
+        <CollapsibleSection title="📝 Request Details & Business Impact" open={true}>
           <div className="space-y-3">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Primary Question</p>
@@ -771,9 +749,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </CollapsibleSection>
 
-        {/* Section 4: Dashboard-Specific Details (if applicable) */}
+        {/* Dashboard Details */}
         {(request.type === "new_dashboard" || request.type === "modify_dashboard") && (
-          <CollapsibleSection title="Dashboard-Specific Details" open={false}>
+          <CollapsibleSection title="📊 Dashboard-Specific Details" open={false}>
             <div className="space-y-3">
               {request.dashboardAudience && (
                 <div>
@@ -844,8 +822,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </CollapsibleSection>
         )}
 
-        {/* Attachments Section */}
-        <CollapsibleSection title="Attachments" open={false}>
+        {/* Attachments */}
+        <CollapsibleSection title="📎 Attachments" open={false}>
           <div className="flex items-center justify-end mb-3">
             <ObjectUploader
               maxNumberOfFiles={5}
@@ -896,9 +874,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           )}
         </CollapsibleSection>
 
-        {/* Assignment & Management */}
+        {/* Assignment */}
         {(request.assignedTo || isTeamLead || isAnalyst) && (
-          <CollapsibleSection title="Assignment & Management" open={false}>
+          <CollapsibleSection title="👥 Assignment & Management" open={false}>
             {/* Assigned Analyst Display */}
             {request.assignedTo && (
               <div className="mb-4">
@@ -1046,83 +1024,88 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </CollapsibleSection>
         )}
 
-        {/* Communication History */}
-        <CollapsibleSection title={`Communication History (${request.comments.length})`} open={true}>
-          <div className="space-y-3">
-            {request.comments.length === 0 ? (
-              <div className="text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground opacity-30 mb-2" />
-                <p className="text-sm text-muted-foreground">No comments yet. Start the conversation!</p>
-              </div>
-            ) : (
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-3">
-                  {request.comments.map((comment) => (
-                    <div key={comment.id} className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-10 h-10 border-2 border-purple-300 dark:border-purple-600">
-                            <AvatarImage src={comment.user.profileImageUrl ?? ""} />
-                            <AvatarFallback className="text-white font-semibold" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-                              {getInitials(comment.user.firstName ?? undefined, comment.user.lastName ?? undefined)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground" data-testid={`comment-author-${comment.id}`}>
-                              {comment.user.firstName} {comment.user.lastName}
-                            </p>
-                            <p className="text-xs text-muted-foreground capitalize">
-                              {comment.user.role?.replace("_", " ")}
-                            </p>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground" data-testid={`comment-date-${comment.id}`}>
-                          {comment.createdAt ? formatDate(comment.createdAt.toString()) : ''}
-                        </p>
-                      </div>
-                      <p className="text-sm text-foreground mt-2 ml-[52px]" data-testid={`comment-content-${comment.id}`}>
-                        {comment.content}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-          </div>
-
-          {/* Add Comment Form */}
-          <div className="mt-4 pt-4 border-t-2 border-purple-200 dark:border-purple-700">
-            <form onSubmit={onCommentSubmit} className="flex gap-2">
+        {/* Comments & Chat */}
+        <CollapsibleSection title={`💬 Comments & Discussion (${request.comments.length})`} open={true}>
+          {/* Add Comment Form - At Top */}
+          <div className="mb-4">
+            <form onSubmit={onCommentSubmit} className="space-y-2">
               <Textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 min-h-[80px] border-2 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500"
+                placeholder="Write a comment or ask a question..."
+                className="w-full min-h-[90px] border-2 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 resize-none"
                 data-testid="input-new-comment"
               />
-              <Button 
-                type="submit" 
-                disabled={!newComment.trim() || addCommentMutation.isPending}
-                data-testid="button-add-comment"
-                className="gradient-button-primary text-white font-semibold px-6 self-end"
-                style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-              >
-                {addCommentMutation.isPending ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Send
-                  </>
-                )}
-              </Button>
+              <div className="flex justify-end">
+                <Button 
+                  type="submit" 
+                  disabled={!newComment.trim() || addCommentMutation.isPending}
+                  data-testid="button-add-comment"
+                  className="gradient-button-primary text-white font-semibold px-8"
+                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                >
+                  {addCommentMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Post Comment
+                    </>
+                  )}
+                </Button>
+              </div>
             </form>
           </div>
+
+          {/* Comments Thread */}
+          <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-4">
+            {request.comments.length === 0 ? (
+              <div className="text-center py-10 border-2 border-dashed border-purple-200 dark:border-purple-700 rounded-lg bg-purple-50/30 dark:bg-purple-900/10">
+                <MessageSquare className="w-14 h-14 mx-auto text-purple-400 dark:text-purple-600 mb-3" />
+                <p className="text-sm font-medium text-muted-foreground">No comments yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Be the first to comment on this request</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                {request.comments.map((comment) => (
+                  <div key={comment.id} className="bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="w-10 h-10 border-2 border-purple-300 dark:border-purple-600 flex-shrink-0">
+                        <AvatarImage src={comment.user.profileImageUrl ?? ""} />
+                        <AvatarFallback className="text-white font-semibold text-sm" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                          {getInitials(comment.user.firstName ?? undefined, comment.user.lastName ?? undefined)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline justify-between gap-2 mb-2">
+                          <div>
+                            <span className="text-sm font-semibold text-foreground" data-testid={`comment-author-${comment.id}`}>
+                              {comment.user.firstName} {comment.user.lastName}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-2 capitalize">
+                              ({comment.user.role?.replace("_", " ")})
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground flex-shrink-0" data-testid={`comment-date-${comment.id}`}>
+                            {comment.createdAt ? formatDate(comment.createdAt.toString()) : ''}
+                          </p>
+                        </div>
+                        <p className="text-sm text-foreground leading-relaxed break-words" data-testid={`comment-content-${comment.id}`}>
+                          {comment.content}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CollapsibleSection>
-      </div>
+        </div>
+      </ScrollArea>
 
       {/* Reject Request Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
