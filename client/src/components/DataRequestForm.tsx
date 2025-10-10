@@ -135,7 +135,7 @@ export default function DataRequestForm() {
   };
 
   const handleSubmit = async () => {
-    // Validation
+    // Basic validation
     if (!requester.name || !requester.email || !department || !requestType || !priority || !impact || !deadline) {
       toast({
         title: "Validation Error",
@@ -149,6 +149,73 @@ export default function DataRequestForm() {
       toast({
         title: "Validation Error",
         description: "Please specify your team name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Type-specific validation
+    let missingFields: string[] = [];
+    
+    switch (requestType) {
+      case 'newDashboard':
+        if (!businessQuestion) missingFields.push("business question");
+        if (!keyMetrics) missingFields.push("key metrics");
+        if (!dashboardAudience) missingFields.push("dashboard audience");
+        if (!decisionAction) missingFields.push("decision/action");
+        if (frequency && (!duration || !unit)) missingFields.push("frequency duration and unit");
+        break;
+      case 'modifyDashboard':
+        if (!dashboardModification) missingFields.push("dashboard modification details");
+        if (!exactChanges) missingFields.push("exact changes required");
+        if (!decisionAction) missingFields.push("decision/action");
+        break;
+      case 'adhoc':
+        if (!hypothesis) missingFields.push("hypothesis/question");
+        if (!datasets) missingFields.push("datasets/dimensions");
+        if (!decisionAction) missingFields.push("decision/action");
+        break;
+      case 'extraction':
+        if (!dataExtraction) missingFields.push("data extraction details");
+        if (!fileFormat) missingFields.push("file format");
+        break;
+      case 'bug':
+        if (!bugDescription) missingFields.push("bug description");
+        if (!bugLocation) missingFields.push("bug location");
+        break;
+      case 'bqaccess':
+        if (!bqEmail) missingFields.push("BigQuery email");
+        if (!bqDatasets) missingFields.push("datasets/tables");
+        if (!bqPurpose) missingFields.push("purpose of access");
+        break;
+      case 'tracking':
+        if (!trackingFeature) missingFields.push("feature/event to track");
+        if (!trackingTrigger) missingFields.push("tracking trigger");
+        break;
+      case 'metricChange':
+        if (!metricName) missingFields.push("metric name");
+        if (!currentDefinition) missingFields.push("current definition");
+        if (!newDefinition) missingFields.push("new definition");
+        if (!decisionAction) missingFields.push("decision/action");
+        break;
+      case 'pipelineChange':
+        if (!pipelineDataset) missingFields.push("dataset/table");
+        if (!pipelineModification) missingFields.push("modification details");
+        break;
+      case 'recurringReport':
+        if (!reportMetrics) missingFields.push("report metrics");
+        if (!decisionAction) missingFields.push("decision/action");
+        if (frequency && (!duration || !unit)) missingFields.push("frequency duration and unit");
+        break;
+      case 'other':
+        if (!otherDescription) missingFields.push("request description");
+        break;
+    }
+
+    if (missingFields.length > 0) {
+      toast({
+        title: "Missing Required Fields",
+        description: `Please fill in: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -319,12 +386,15 @@ export default function DataRequestForm() {
   );
 
   const renderCommonDecisionField = () => (
-    <Textarea 
-      placeholder="Which action or decision will you take after receiving this dashboard or analysis?" 
-      className="mb-3" 
-      value={decisionAction}
-      onChange={(e) => setDecisionAction(e.target.value)}
-    />
+    <div className="mb-3">
+      <label className="text-sm font-medium">Decision/Action *</label>
+      <Textarea 
+        placeholder="Which action or decision will you take after receiving this dashboard or analysis?" 
+        className="mt-1" 
+        value={decisionAction}
+        onChange={(e) => setDecisionAction(e.target.value)}
+      />
+    </div>
   );
 
   const renderByType = () => {
@@ -332,9 +402,18 @@ export default function DataRequestForm() {
       case 'newDashboard':
         return (
           <>
-            <Textarea placeholder="What business question or goal will this dashboard address?" className="mb-3" value={businessQuestion} onChange={(e) => setBusinessQuestion(e.target.value)} />
-            <Textarea placeholder="What key metrics or visuals do you want to track?" className="mb-3" value={keyMetrics} onChange={(e) => setKeyMetrics(e.target.value)} />
-            <Textarea placeholder="Who will be using this dashboard and how often?" className="mb-3" value={dashboardAudience} onChange={(e) => setDashboardAudience(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Business Question *</label>
+              <Textarea placeholder="What business question or goal will this dashboard address?" className="mt-1" value={businessQuestion} onChange={(e) => setBusinessQuestion(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Key Metrics *</label>
+              <Textarea placeholder="What key metrics or visuals do you want to track?" className="mt-1" value={keyMetrics} onChange={(e) => setKeyMetrics(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Dashboard Audience *</label>
+              <Textarea placeholder="Who will be using this dashboard and how often?" className="mt-1" value={dashboardAudience} onChange={(e) => setDashboardAudience(e.target.value)} />
+            </div>
             {renderCommonDecisionField()}
             {renderFrequencyFields()}
           </>
@@ -342,25 +421,40 @@ export default function DataRequestForm() {
       case 'modifyDashboard':
         return (
           <>
-            <Textarea placeholder="Which dashboard needs modification and why?" className="mb-3" value={dashboardModification} onChange={(e) => setDashboardModification(e.target.value)} />
-            <Textarea placeholder="What exact changes are required (filters, visuals, new metrics)?" className="mb-3" value={exactChanges} onChange={(e) => setExactChanges(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Dashboard Modification *</label>
+              <Textarea placeholder="Which dashboard needs modification and why?" className="mt-1" value={dashboardModification} onChange={(e) => setDashboardModification(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Exact Changes Required *</label>
+              <Textarea placeholder="What exact changes are required (filters, visuals, new metrics)?" className="mt-1" value={exactChanges} onChange={(e) => setExactChanges(e.target.value)} />
+            </div>
             {renderCommonDecisionField()}
           </>
         );
       case 'adhoc':
         return (
           <>
-            <Textarea placeholder="What is the main hypothesis or question this analysis should answer?" className="mb-3" value={hypothesis} onChange={(e) => setHypothesis(e.target.value)} />
-            <Textarea placeholder="What datasets or dimensions should be included?" className="mb-3" value={datasets} onChange={(e) => setDatasets(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Hypothesis/Question *</label>
+              <Textarea placeholder="What is the main hypothesis or question this analysis should answer?" className="mt-1" value={hypothesis} onChange={(e) => setHypothesis(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Datasets/Dimensions *</label>
+              <Textarea placeholder="What datasets or dimensions should be included?" className="mt-1" value={datasets} onChange={(e) => setDatasets(e.target.value)} />
+            </div>
             {renderCommonDecisionField()}
           </>
         );
       case 'extraction':
         return (
           <>
-            <Textarea placeholder="What specific data do you need extracted? (e.g., teacher list, school visits)" className="mb-3" value={dataExtraction} onChange={(e) => setDataExtraction(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Data Extraction Details *</label>
+              <Textarea placeholder="What specific data do you need extracted? (e.g., teacher list, school visits)" className="mt-1" value={dataExtraction} onChange={(e) => setDataExtraction(e.target.value)} />
+            </div>
             <div>
-              <label className="text-sm">File Format *</label>
+              <label className="text-sm font-medium">File Format *</label>
               <select className="w-full mt-1 border rounded-md p-2" value={fileFormat} onChange={(e) => setFileFormat(e.target.value)}>
                 <option value="">Select format</option>
                 <option value="CSV">CSV</option>
@@ -374,51 +468,95 @@ export default function DataRequestForm() {
       case 'bug':
         return (
           <>
-            <Textarea placeholder="Describe the issue or incorrect data you found" className="mb-3" value={bugDescription} onChange={(e) => setBugDescription(e.target.value)} />
-            <Textarea placeholder="Where did you notice this issue? (Dashboard name or table)" className="mb-3" value={bugLocation} onChange={(e) => setBugLocation(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Bug Description *</label>
+              <Textarea placeholder="Describe the issue or incorrect data you found" className="mt-1" value={bugDescription} onChange={(e) => setBugDescription(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Bug Location *</label>
+              <Textarea placeholder="Where did you notice this issue? (Dashboard name or table)" className="mt-1" value={bugLocation} onChange={(e) => setBugLocation(e.target.value)} />
+            </div>
           </>
         );
       case 'bqaccess':
         return (
           <>
-            <Input placeholder="BigQuery email to grant access" className="mb-3" value={bqEmail} onChange={(e) => setBqEmail(e.target.value)} />
-            <Textarea placeholder="Which datasets/tables do you need access to?" className="mb-3" value={bqDatasets} onChange={(e) => setBqDatasets(e.target.value)} />
-            <Textarea placeholder="Purpose of access (e.g., analysis, QA)" className="mb-3" value={bqPurpose} onChange={(e) => setBqPurpose(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">BigQuery Email *</label>
+              <Input placeholder="BigQuery email to grant access" className="mt-1" value={bqEmail} onChange={(e) => setBqEmail(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Datasets/Tables *</label>
+              <Textarea placeholder="Which datasets/tables do you need access to?" className="mt-1" value={bqDatasets} onChange={(e) => setBqDatasets(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Purpose of Access *</label>
+              <Textarea placeholder="Purpose of access (e.g., analysis, QA)" className="mt-1" value={bqPurpose} onChange={(e) => setBqPurpose(e.target.value)} />
+            </div>
           </>
         );
       case 'tracking':
         return (
           <>
-            <Textarea placeholder="Which feature or event do you want to track?" className="mb-3" value={trackingFeature} onChange={(e) => setTrackingFeature(e.target.value)} />
-            <Textarea placeholder="What should trigger the tracking event?" className="mb-3" value={trackingTrigger} onChange={(e) => setTrackingTrigger(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Feature/Event to Track *</label>
+              <Textarea placeholder="Which feature or event do you want to track?" className="mt-1" value={trackingFeature} onChange={(e) => setTrackingFeature(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Tracking Trigger *</label>
+              <Textarea placeholder="What should trigger the tracking event?" className="mt-1" value={trackingTrigger} onChange={(e) => setTrackingTrigger(e.target.value)} />
+            </div>
           </>
         );
       case 'metricChange':
         return (
           <>
-            <Input placeholder="Metric name (e.g., LP Engagement)" className="mb-3" value={metricName} onChange={(e) => setMetricName(e.target.value)} />
-            <Textarea placeholder="What is the current definition?" className="mb-3" value={currentDefinition} onChange={(e) => setCurrentDefinition(e.target.value)} />
-            <Textarea placeholder="What should the new definition be?" className="mb-3" value={newDefinition} onChange={(e) => setNewDefinition(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Metric Name *</label>
+              <Input placeholder="Metric name (e.g., LP Engagement)" className="mt-1" value={metricName} onChange={(e) => setMetricName(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Current Definition *</label>
+              <Textarea placeholder="What is the current definition?" className="mt-1" value={currentDefinition} onChange={(e) => setCurrentDefinition(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">New Definition *</label>
+              <Textarea placeholder="What should the new definition be?" className="mt-1" value={newDefinition} onChange={(e) => setNewDefinition(e.target.value)} />
+            </div>
             {renderCommonDecisionField()}
           </>
         );
       case 'pipelineChange':
         return (
           <>
-            <Textarea placeholder="Which dataset/table requires change?" className="mb-3" value={pipelineDataset} onChange={(e) => setPipelineDataset(e.target.value)} />
-            <Textarea placeholder="Describe the modification (schema, logic, backfill)" className="mb-3" value={pipelineModification} onChange={(e) => setPipelineModification(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Dataset/Table *</label>
+              <Textarea placeholder="Which dataset/table requires change?" className="mt-1" value={pipelineDataset} onChange={(e) => setPipelineDataset(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Modification Details *</label>
+              <Textarea placeholder="Describe the modification (schema, logic, backfill)" className="mt-1" value={pipelineModification} onChange={(e) => setPipelineModification(e.target.value)} />
+            </div>
           </>
         );
       case 'recurringReport':
         return (
           <>
-            <Textarea placeholder="What data or metrics should this report include?" className="mb-3" value={reportMetrics} onChange={(e) => setReportMetrics(e.target.value)} />
+            <div className="mb-3">
+              <label className="text-sm font-medium">Report Metrics *</label>
+              <Textarea placeholder="What data or metrics should this report include?" className="mt-1" value={reportMetrics} onChange={(e) => setReportMetrics(e.target.value)} />
+            </div>
             {renderCommonDecisionField()}
             {renderFrequencyFields()}
           </>
         );
       case 'other':
-        return <Textarea placeholder="Describe your request in detail" className="mb-3" value={otherDescription} onChange={(e) => setOtherDescription(e.target.value)} />;
+        return (
+          <div className="mb-3">
+            <label className="text-sm font-medium">Request Description *</label>
+            <Textarea placeholder="Describe your request in detail" className="mt-1" value={otherDescription} onChange={(e) => setOtherDescription(e.target.value)} />
+          </div>
+        );
       default:
         return <p className="text-sm text-gray-600">Select a request type above to see the relevant fields.</p>;
     }
@@ -460,15 +598,15 @@ export default function DataRequestForm() {
           <Section title="1) Requester Info & Request Type" open>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="text-sm">Name (auto-filled)</label>
+                <label className="text-sm font-medium">Name *</label>
                 <Input placeholder="Your Name" value={requester.name} onChange={(e) => setRequester({ ...requester, name: e.target.value })} className="mt-1" />
               </div>
               <div>
-                <label className="text-sm">Email (auto-filled)</label>
+                <label className="text-sm font-medium">Email *</label>
                 <Input placeholder="you@org.org" value={requester.email} onChange={(e) => setRequester({ ...requester, email: e.target.value })} className="mt-1" />
               </div>
               <div>
-                <label className="text-sm">Department</label>
+                <label className="text-sm font-medium">Department *</label>
                 <select className="w-full mt-1 border rounded-md p-2" value={department} onChange={(e) => setDepartment(e.target.value)}>
                   <option value="">-- Select department --</option>
                   {DEPARTMENTS.map((d) => (<option key={d} value={d}>{d}</option>))}
@@ -476,7 +614,7 @@ export default function DataRequestForm() {
               </div>
               {department && TEAM_OPTIONS[department] && (
                 <div>
-                  <label className="text-sm">Team</label>
+                  <label className="text-sm font-medium">Team</label>
                   <select className="w-full mt-1 border rounded-md p-2" value={team} onChange={(e) => setTeam(e.target.value)}>
                     <option value="">-- Select team --</option>
                     {TEAM_OPTIONS[department].map((t) => (<option key={t} value={t}>{t}</option>))}
@@ -485,12 +623,12 @@ export default function DataRequestForm() {
               )}
               {team === 'Other' && (
                 <div>
-                  <label className="text-sm">Specify Team</label>
+                  <label className="text-sm font-medium">Specify Team *</label>
                   <Input placeholder="Team name" value={teamOther} onChange={(e) => setTeamOther(e.target.value)} className="mt-1" />
                 </div>
               )}
               <div className="md:col-span-2">
-                <label className="text-sm">Request Type</label>
+                <label className="text-sm font-medium">Request Type *</label>
                 <select className="w-full mt-1 border rounded-md p-2" value={requestType} onChange={(e) => setRequestType(e.target.value)}>
                   <option value="">-- Choose Type --</option>
                   <option value="newDashboard">New Dashboard/Report</option>
@@ -507,12 +645,12 @@ export default function DataRequestForm() {
                 </select>
               </div>
               <div className="md:col-span-2">
-                <label className="text-sm">Deadline</label>
+                <label className="text-sm font-medium">Deadline *</label>
                 <Input type="date" placeholder="DD/MM/YYYY" className="mt-1" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
               </div>
               <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm">Priority Level *</label>
+                  <label className="text-sm font-medium">Priority Level *</label>
                   <select className="w-full mt-1 border rounded-md p-2" value={priority} onChange={(e) => setPriority(e.target.value)}>
                     <option value="">Select priority...</option>
                     <option value="P0">P0 - Critical (Imminent business decision/launch)</option>
@@ -522,7 +660,7 @@ export default function DataRequestForm() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm">Impact *</label>
+                  <label className="text-sm font-medium">Impact *</label>
                   <select className="w-full mt-1 border rounded-md p-2" value={impact} onChange={(e) => setImpact(e.target.value)}>
                     <option value="">Select impact...</option>
                     <option value="Program Implementation">Program Implementation</option>
@@ -556,6 +694,39 @@ export default function DataRequestForm() {
               >
                 Reset
               </Button>
+            </div>
+          </Section>
+
+          <Section title="4) What's Next?" open={false}>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">1</div>
+                <div>
+                  <h4 className="font-semibold text-foreground mb-1">Review by Data Lead</h4>
+                  <p className="text-muted-foreground">Your request will be reviewed by the Data Lead team. They will assess priority, feasibility, and assign it to the right analyst.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">2</div>
+                <div>
+                  <h4 className="font-semibold text-foreground mb-1">Assignment to Analyst</h4>
+                  <p className="text-muted-foreground">Once approved, your request will be assigned to a data analyst who will begin working on it.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">3</div>
+                <div>
+                  <h4 className="font-semibold text-foreground mb-1">Collaboration & Updates</h4>
+                  <p className="text-muted-foreground">You'll receive notifications and can track progress in your dashboard. Feel free to add comments or ask questions anytime.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">4</div>
+                <div>
+                  <h4 className="font-semibold text-foreground mb-1">Delivery</h4>
+                  <p className="text-muted-foreground">The analyst will deliver the results according to your requirements. You'll be notified once your request is completed.</p>
+                </div>
+              </div>
             </div>
           </Section>
         </CardContent>
