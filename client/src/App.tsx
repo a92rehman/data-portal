@@ -15,6 +15,7 @@ import PendingReviews from "@/pages/pending-reviews";
 import AllRequests from "@/pages/all-requests";
 import MyAssignments from "@/pages/my-assignments";
 import Team from "@/pages/team";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/team">{() => <Team />}</Route>
       <Route path="/analytics">{() => <Analytics />}</Route>
       <Route path="/profile-setup">{() => <ProfileSetup />}</Route>
+      <Route path="/settings">{() => <Settings />}</Route>
       <Route>{() => <NotFound />}</Route>
     </Switch>
   );
