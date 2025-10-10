@@ -115,11 +115,12 @@ export default function DataRequestForm() {
   // Auto-fill requester info from authenticated user
   useEffect(() => {
     if (user) {
-      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      const userData = user as any;
+      const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
       setName(fullName || '');
-      setEmail(user.email || '');
-      if (user.department) {
-        setDepartment(user.department);
+      setEmail(userData.email || '');
+      if (userData.department) {
+        setDepartment(userData.department);
       }
     }
   }, [user]);
