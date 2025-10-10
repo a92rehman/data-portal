@@ -49,6 +49,14 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Run database migrations
+  try {
+    const { setupDataLead } = await import('./migrations/setup-data-lead');
+    await setupDataLead();
+  } catch (error) {
+    console.error('[Migration] Failed to setup Data Lead:', error);
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
