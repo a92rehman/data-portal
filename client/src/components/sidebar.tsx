@@ -82,7 +82,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
           );
         })}
 
-        {(user?.role === "requester" || user?.role === "team_lead") && (
+        {(user?.role === "requester" || user?.role === "team_lead" || user?.role === "analyst") && (
           <>
             <Separator className="my-4 bg-purple-200" />
             
@@ -106,7 +106,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         <Separator className="my-4 bg-purple-200" />
         
         <div className="pt-2 space-y-1">
-          <Link href="/profile-setup" className="block">
+          <Link href="/settings" className="block">
             <Button 
               variant="ghost" 
               className="w-full justify-start text-gray-600 hover:bg-purple-50 border-2 border-transparent hover:border-purple-200 transition-all" 
