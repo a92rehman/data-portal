@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { DEPARTMENTS, TEAM_OPTIONS } from '@shared/constants';
 
 function Section({ title, children, open = true }: { title: string; children: React.ReactNode; open?: boolean }) {
   const [isOpen, setIsOpen] = useState(open);
@@ -62,20 +63,6 @@ export default function DataRequestForm() {
   const [reportMetrics, setReportMetrics] = useState('');
   const [otherDescription, setOtherDescription] = useState('');
 
-  const DEPARTMENTS = [
-    'Learning Engineering',
-    'Program',
-    'People and Culture',
-    'Admin',
-    'Business Development',
-    'Fundraising',
-    'Strategy'
-  ];
-
-  const TEAM_OPTIONS: Record<string, string[]> = {
-    'Learning Engineering': ['Lesson Plan', 'Training', 'FICO', 'ERP', 'Other'],
-    Program: ['FDS', 'Data & Impact', 'Other']
-  };
 
   useEffect(() => {
     try {
