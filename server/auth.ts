@@ -183,7 +183,7 @@ export function setupAuth(app: Express) {
         }
       }
 
-      res.sendStatus(200);
+      res.json({ success: true });
     });
   });
 
