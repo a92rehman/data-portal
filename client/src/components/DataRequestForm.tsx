@@ -441,7 +441,7 @@ export default function DataRequestForm() {
     <div className="p-8 flex justify-center min-h-screen">
       <Card className="w-full max-w-3xl shadow-xl border-2 border-purple-200 dark:border-purple-700">
         <CardContent className="p-6">
-          <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Dynamic Data Request Form</h2>
+          <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Data Request Form</h2>
           
           {showSuccessMessage && (
             <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl p-6">
