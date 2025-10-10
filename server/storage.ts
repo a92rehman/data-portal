@@ -45,6 +45,7 @@ export interface IStorage {
   deleteUser(userId: string): Promise<void>;
   createInvitedUser(email: string, role: string, department?: string): Promise<User>;
   updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void>;
+  updateUserPassword(userId: string, password: string): Promise<void>;
   updateUserPasswordAndName(userId: string, password: string, name: string): Promise<void>;
   
   // Data request operations
@@ -247,6 +248,13 @@ export class DatabaseStorage implements IStorage {
         passwordResetToken: token,
         passwordResetExpires: expires,
       })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserPassword(userId: string, password: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ password })
       .where(eq(users.id, userId));
   }
 

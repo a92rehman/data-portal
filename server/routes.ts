@@ -12,7 +12,7 @@ function isAuthenticated(req: any, res: any, next: any) {
 }
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail } from "./emailService";
+import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail, sendAnalystCredentialsViaEmailJS } from "./emailService";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 
@@ -183,34 +183,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resultUser = await storage.createInvitedUser(email, role, department);
       }
 
-      // For analysts, generate password setup token and send setup email
-      if (role === 'analyst' && !existingUser) {
+      // For analysts, generate random password and send via EmailJS
+      if (role === 'analyst' && !existingUser && resultUser) {
         try {
           const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Data Lead';
           
-          // Generate password reset token
-          const resetToken = randomBytes(32).toString('hex');
-          const resetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+          // Generate random password (12 characters: letters, numbers, special chars)
+          const randomPassword = randomBytes(9).toString('base64').slice(0, 12);
           
-          // Store token in user record
-          await storage.updatePasswordResetToken(resultUser.id, resetToken, resetExpires);
+          // Hash password using scrypt (same as auth.ts)
+          const { scrypt } = await import('crypto');
+          const { promisify } = await import('util');
+          const scryptAsync = promisify(scrypt);
           
-          // Get app URL from environment or construct from request
-          const appUrl = process.env.REPLIT_DOMAINS?.split(',')[0] 
-            ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-            : `${req.protocol}://${req.get('host')}`;
+          const salt = randomBytes(16).toString('hex');
+          const derivedKey = await scryptAsync(randomPassword, salt, 64) as Buffer;
+          const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
           
-          // Send password setup email
-          await sendAnalystPasswordSetupEmail({
+          // Store hashed password for the analyst
+          await storage.updateUserPassword(resultUser.id, hashedPassword);
+          
+          // Send credentials via EmailJS
+          await sendAnalystCredentialsViaEmailJS({
             analystName: email.split('@')[0], // Use email username as name placeholder
             analystEmail: email,
-            setupToken: resetToken,
+            password: randomPassword, // Send plain password in email
             inviterName,
-            appUrl,
           });
-          console.log(`[email] Password setup email sent successfully to ${email}`);
+          console.log(`[emailjs] Analyst credentials sent successfully to ${email}`);
         } catch (emailError) {
-          console.error("[email] Failed to send password setup email:", emailError);
+          console.error("[emailjs] Failed to send analyst credentials:", emailError);
           // Don't fail the request if email fails
         }
       } else {
