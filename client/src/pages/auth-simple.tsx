@@ -261,7 +261,7 @@ export default function AuthSimple() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                 disabled={isSigningUp}
                 data-testid="button-submit-signup"
               >
@@ -334,7 +334,7 @@ export default function AuthSimple() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
                 disabled={isLoggingIn}
                 data-testid="button-submit-login"
               >
