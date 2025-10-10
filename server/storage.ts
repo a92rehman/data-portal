@@ -58,6 +58,8 @@ export interface IStorage {
     type?: string;
     requestedById?: string;
     assignedToId?: string;
+    startDate?: string;
+    endDate?: string;
   }): Promise<DataRequestWithDetails[]>;
   updateDataRequestStatus(id: string, status: string, estimatedDays?: number): Promise<DataRequest | undefined>;
   assignDataRequest(id: string, analystId: string): Promise<DataRequest | undefined>;
@@ -339,6 +341,8 @@ export class DatabaseStorage implements IStorage {
     type?: string;
     requestedById?: string;
     assignedToId?: string;
+    startDate?: string;
+    endDate?: string;
   }): Promise<DataRequestWithDetails[]> {
     let query = db
       .select({
@@ -369,6 +373,14 @@ export class DatabaseStorage implements IStorage {
       if (filters.type) conditions.push(eq(dataRequests.type, filters.type as any));
       if (filters.requestedById) conditions.push(eq(dataRequests.requestedById, filters.requestedById));
       if (filters.assignedToId) conditions.push(eq(dataRequests.assignedToId, filters.assignedToId));
+      
+      // Date filtering: filter by createdAt timestamp
+      if (filters.startDate) {
+        conditions.push(sql`${dataRequests.createdAt} >= ${new Date(filters.startDate)}`);
+      }
+      if (filters.endDate) {
+        conditions.push(sql`${dataRequests.createdAt} <= ${new Date(filters.endDate)}`);
+      }
 
       if (conditions.length > 0) {
         query = query.where(and(...conditions)) as any;

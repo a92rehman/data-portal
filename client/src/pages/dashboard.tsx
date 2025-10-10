@@ -16,8 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search, Trash2, Calendar as CalendarIcon } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
+import { format } from "date-fns";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -31,6 +34,13 @@ export default function Dashboard() {
     priority: "",
     type: "",
     assignedToId: "",
+    dateFilter: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
   });
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
@@ -179,6 +189,58 @@ export default function Dashboard() {
       });
     },
   });
+
+  // Handle date filter changes
+  const handleDateFilterChange = (value: string) => {
+    const now = new Date();
+    let startDate = "";
+    let endDate = "";
+
+    if (value === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      startDate = today.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "this_week") {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      startDate = weekStart.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "this_month") {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      startDate = monthStart.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "custom") {
+      // For custom, dates will be set via the date picker
+      setFilters({ ...filters, dateFilter: value, startDate: "", endDate: "" });
+      return;
+    } else {
+      // "all" - clear date filters
+      setFilters({ ...filters, dateFilter: "", startDate: "", endDate: "" });
+      setDateRange({ from: undefined, to: undefined });
+      return;
+    }
+
+    setFilters({ ...filters, dateFilter: value, startDate, endDate });
+  };
+
+  // Handle custom date range selection
+  useEffect(() => {
+    if (filters.dateFilter === "custom" && dateRange.from) {
+      const from = new Date(dateRange.from);
+      from.setHours(0, 0, 0, 0);
+      const to = dateRange.to ? new Date(dateRange.to) : new Date();
+      to.setHours(23, 59, 59, 999);
+      
+      setFilters({
+        ...filters,
+        startDate: from.toISOString(),
+        endDate: to.toISOString(),
+      });
+    }
+  }, [dateRange]);
 
   // Filter requests based on search query
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
@@ -421,6 +483,54 @@ export default function Dashboard() {
                         ))}
                       </SelectContent>
                     </Select>
+                  )}
+
+                  {(user as any)?.role === "team_lead" && (
+                    <>
+                      <Select value={filters.dateFilter || "all"} onValueChange={handleDateFilterChange}>
+                        <SelectTrigger className="w-40" data-testid="select-date-filter">
+                          <SelectValue placeholder="All Time" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Time</SelectItem>
+                          <SelectItem value="today">Today</SelectItem>
+                          <SelectItem value="this_week">This Week</SelectItem>
+                          <SelectItem value="this_month">This Month</SelectItem>
+                          <SelectItem value="custom">Custom Range</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {filters.dateFilter === "custom" && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-60" data-testid="button-custom-date">
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {dateRange.from ? (
+                                dateRange.to ? (
+                                  <>
+                                    {format(dateRange.from, "MMM dd, yyyy")} - {format(dateRange.to, "MMM dd, yyyy")}
+                                  </>
+                                ) : (
+                                  format(dateRange.from, "MMM dd, yyyy")
+                                )
+                              ) : (
+                                <span>Pick a date range</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              initialFocus
+                              mode="range"
+                              defaultMonth={dateRange.from}
+                              selected={dateRange}
+                              onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+                              numberOfMonths={2}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                    </>
                   )}
                 </div>
 

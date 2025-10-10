@@ -582,12 +582,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
 
-      // Start with query filters (for status, department, priority, type only)
+      // Start with query filters (for status, department, priority, type, and date)
       const filters = {
         status: req.query.status as string,
         department: req.query.department as string,
         priority: req.query.priority as string,
         type: req.query.type as string,
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
         requestedById: undefined as string | undefined,
         assignedToId: undefined as string | undefined,
       };

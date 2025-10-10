@@ -101,13 +101,7 @@ export default function Landing() {
           </Card>
         </div>
 
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-md">
-            <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            <span className="text-sm text-gray-600 dark:text-gray-300">Secure & Trusted by Taleemabad Teams</span>
-          </div>
         </div>
-      </div>
 
       <style>{`
         @keyframes blob {
