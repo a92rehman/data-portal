@@ -47,9 +47,17 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Run database migrations before setting up routes
+  try {
+    const { setupSessionTable } = await import('./migrations/setup-session-table');
+    await setupSessionTable();
+  } catch (error) {
+    console.error('[Migration] Failed to setup session table:', error);
+  }
+
   const server = await registerRoutes(app);
 
-  // Run database migrations
+  // Run additional migrations
   try {
     const { setupDataLead } = await import('./migrations/setup-data-lead');
     await setupDataLead();

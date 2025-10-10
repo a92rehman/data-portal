@@ -114,14 +114,8 @@ export class DatabaseStorage implements IStorage {
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true,
-      // Suppress errors for already existing tables/indexes
-      errorLog: (error: any) => {
-        if (!error.message?.includes('already exists')) {
-          console.error('[session-store]', error);
-        }
-      }
+      pool,
+      // Session table is created by migration, so we don't need createTableIfMissing
     });
   }
 
