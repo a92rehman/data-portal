@@ -9,12 +9,12 @@ import { useAuth } from '@/hooks/useAuth';
 function Section({ title, children, open = true }: { title: string; children: React.ReactNode; open?: boolean }) {
   const [isOpen, setIsOpen] = useState(open);
   return (
-    <div className="mb-6 border rounded-xl bg-white">
-      <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none" onClick={() => setIsOpen(!isOpen)}>
-        <h3 className="font-semibold">{title}</h3>
-        <span className="text-sm opacity-70">{isOpen ? 'Hide' : 'Show'}</span>
+    <div className="mb-6 border-2 border-purple-200 rounded-xl bg-white dark:bg-gray-800 dark:border-purple-700 shadow-sm">
+      <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors rounded-t-xl" onClick={() => setIsOpen(!isOpen)}>
+        <h3 className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{title}</h3>
+        <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">{isOpen ? '▼ Hide' : '▶ Show'}</span>
       </div>
-      {isOpen && <div className="px-4 pb-4">{children}</div>}
+      {isOpen && <div className="px-4 pb-4 pt-2">{children}</div>}
     </div>
   );
 }
@@ -363,7 +363,16 @@ export default function DataRequestForm() {
         return (
           <>
             <Textarea placeholder="What specific data do you need extracted? (e.g., teacher list, school visits)" className="mb-3" value={dataExtraction} onChange={(e) => setDataExtraction(e.target.value)} />
-            <Input placeholder="File format (CSV/Excel)" className="mb-3" value={fileFormat} onChange={(e) => setFileFormat(e.target.value)} />
+            <div>
+              <label className="text-sm">File Format *</label>
+              <select className="w-full mt-1 border rounded-md p-2" value={fileFormat} onChange={(e) => setFileFormat(e.target.value)}>
+                <option value="">Select format</option>
+                <option value="CSV">CSV</option>
+                <option value="Excel">Excel</option>
+                <option value="JSON">JSON</option>
+                <option value="PDF">PDF</option>
+              </select>
+            </div>
           </>
         );
       case 'bug':
@@ -420,10 +429,10 @@ export default function DataRequestForm() {
   };
 
   return (
-    <div className="p-8 flex justify-center bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <Card className="w-full max-w-3xl shadow-md">
+    <div className="p-8 flex justify-center min-h-screen">
+      <Card className="w-full max-w-3xl shadow-xl border-2 border-purple-200 dark:border-purple-700">
         <CardContent className="p-6">
-          <h2 className="text-2xl font-semibold mb-6 text-center">Dynamic Data Request Form</h2>
+          <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Dynamic Data Request Form</h2>
 
           <Section title="1) Requester Info & Request Type" open>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -510,10 +519,20 @@ export default function DataRequestForm() {
 
           <Section title="3) Submit" open={!!requestType}>
             <div className="flex items-center gap-3">
-              <Button className="px-6" onClick={handleSubmit} disabled={isSubmitting}>
+              <Button 
+                className="px-6 gradient-button-primary text-white font-semibold" 
+                onClick={handleSubmit} 
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? 'Submitting...' : 'Submit Request'}
               </Button>
-              <Button variant="outline" className="px-6" onClick={() => setRequestType('')}>Reset</Button>
+              <Button 
+                variant="outline" 
+                className="px-6 border-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900" 
+                onClick={() => setRequestType('')}
+              >
+                Reset
+              </Button>
             </div>
           </Section>
         </CardContent>
