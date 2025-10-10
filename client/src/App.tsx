@@ -20,6 +20,7 @@ import MyAssignments from "@/pages/my-assignments";
 import Team from "@/pages/team";
 import Settings from "@/pages/settings";
 import RequestWorkspace from "@/pages/request-workspace";
+import NewRequest from "@/pages/new-request";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -44,7 +45,7 @@ function Router() {
     <Switch>
       <Route path="/">{() => <Dashboard />}</Route>
       <Route path="/auth">{() => <Redirect to="/" />}</Route>
-      <Route path="/requests/new">{() => <RequestWorkspace />}</Route>
+      <Route path="/requests/new">{() => <NewRequest />}</Route>
       <Route path="/requests/:id">{() => <RequestWorkspace />}</Route>
       <Route path="/requester-signup">{() => <RequesterSignup />}</Route>
       <Route path="/pending-reviews">{() => <PendingReviews />}</Route>
