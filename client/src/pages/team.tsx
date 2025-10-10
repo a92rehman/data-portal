@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { Users, Mail, UserCog, UserMinus, Settings, UserPlus } from "lucide-react";
@@ -415,51 +416,71 @@ export default function Team() {
                   No team members found
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {allUsers.map((member) => (
-                    <Card key={member.id} className="border-2 border-gray-100 hover:border-gray-300 transition-all hover:shadow-lg">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Avatar className="w-12 h-12">
-                            <AvatarImage src={member.profileImageUrl ?? ""} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
-                              {getInitials(member.firstName ?? undefined, member.lastName ?? undefined)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-foreground truncate">
-                              {member.firstName} {member.lastName}
-                            </h3>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                              <Mail className="w-3 h-3" />
-                              <span className="truncate">{member.email}</span>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[250px]">Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Department</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allUsers.map((member) => (
+                        <TableRow key={member.id} data-testid={`row-member-${member.id}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-10 h-10">
+                                <AvatarImage src={member.profileImageUrl ?? ""} />
+                                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
+                                  {getInitials(member.firstName ?? undefined, member.lastName ?? undefined)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-semibold text-foreground">
+                                  {member.firstName} {member.lastName}
+                                </div>
+                                {isPrimaryDataLead(member) && (
+                                  <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 mt-1">
+                                    Primary Lead
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              <Badge className={`text-xs ${getRoleBadgeColor(member.role || '')}`}>
-                                {formatRole(member.role || '')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Mail className="w-4 h-4" />
+                              {member.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${getRoleBadgeColor(member.role || '')}`}>
+                              {formatRole(member.role || '')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {member.department ? (
+                              <Badge variant="outline" className="capitalize">
+                                {member.department}
                               </Badge>
-                              {isPrimaryDataLead(member) && (
-                                <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200">
-                                  Primary Lead
-                                </Badge>
-                              )}
-                              {member.department && (
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {member.department}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex gap-2 mt-2">
+                            ) : (
+                              <span className="text-sm text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-2 justify-end">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleChangeRole(member)}
                                 data-testid={`button-change-role-${member.id}`}
-                                className="flex-1"
                                 disabled={isPrimaryDataLead(member)}
                                 title={isPrimaryDataLead(member) ? "Primary Data Lead role cannot be changed" : ""}
                               >
-                                <Settings className="w-3 h-3 mr-1" />
+                                <Settings className="w-4 h-4 mr-1" />
                                 Change Role
                               </Button>
                               <Button
@@ -470,14 +491,14 @@ export default function Team() {
                                 disabled={member.id === (user as any)?.id || isPrimaryDataLead(member)}
                                 title={isPrimaryDataLead(member) ? "Primary Data Lead cannot be removed" : ""}
                               >
-                                <UserMinus className="w-3 h-3" />
+                                <UserMinus className="w-4 h-4" />
                               </Button>
                             </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>
