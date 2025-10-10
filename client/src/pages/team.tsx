@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
@@ -19,6 +19,28 @@ import type { User } from "@shared/schema";
 import emailjs from "@emailjs/browser";
 
 export default function Team() {
+  const [emailJSConfig, setEmailJSConfig] = useState<{serviceId: string, templateId: string, publicKey: string} | null>(null);
+  
+  // Initialize EmailJS
+  useEffect(() => {
+    // Fetch EmailJS config from server
+    fetch('/api/emailjs-config')
+      .then(res => res.json())
+      .then(config => {
+        console.log('[EmailJS] Config fetched from server:', { hasServiceId: !!config.serviceId, hasTemplateId: !!config.templateId, hasPublicKey: !!config.publicKey });
+        setEmailJSConfig(config);
+        if (config.publicKey) {
+          emailjs.init(config.publicKey);
+          console.log('[EmailJS] Initialized successfully with public key');
+        } else {
+          console.error('[EmailJS] Public key not found in server config');
+        }
+      })
+      .catch(error => {
+        console.error('[EmailJS] Failed to fetch config:', error);
+      });
+  }, []);
+  
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -94,6 +116,9 @@ export default function Team() {
       return await apiRequest("POST", "/api/users/invite", data);
     },
     onSuccess: async (response: any, variables) => {
+      console.log('[Frontend] Mutation success! Response:', response);
+      console.log('[Frontend] Variables:', variables);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       
       // If analyst was invited and password was generated, send email via EmailJS
@@ -123,15 +148,17 @@ export default function Team() {
           });
           
           console.log('[Frontend] Step 9: Sending email via EmailJS...');
-          console.log('[Frontend] Service ID:', import.meta.env.VITE_EMAILJS_SERVICE_ID);
-          console.log('[Frontend] Template ID:', import.meta.env.VITE_EMAILJS_TEMPLATE_ID);
-          console.log('[Frontend] Public Key:', import.meta.env.VITE_EMAILJS_PUBLIC_KEY);
+          console.log('[Frontend] Service ID:', emailJSConfig?.serviceId);
+          console.log('[Frontend] Template ID:', emailJSConfig?.templateId);
+          
+          if (!emailJSConfig) {
+            throw new Error('EmailJS not configured');
+          }
           
           const result = await emailjs.send(
-            import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
-            import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '',
-            emailParams,
-            import.meta.env.VITE_EMAILJS_PUBLIC_KEY || ''
+            emailJSConfig.serviceId,
+            emailJSConfig.templateId,
+            emailParams
           );
           
           console.log('[Frontend] Step 10: Email sent successfully via EmailJS!', result);

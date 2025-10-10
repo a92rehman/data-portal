@@ -138,6 +138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get EmailJS configuration for frontend
+  app.get('/api/emailjs-config', (req, res) => {
+    res.json({
+      serviceId: process.env.EMAILJS_SERVICE_ID || '',
+      templateId: process.env.EMAILJS_TEMPLATE_ID || '',
+      publicKey: process.env.EMAILJS_PUBLIC_KEY || ''
+    });
+  });
+
   app.post('/api/users/invite', isAuthenticated, async (req: any, res) => {
     try {
       const currentUser = await storage.getUser(req.user.id);
@@ -232,10 +241,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return user data with password for analysts (so frontend can send email via EmailJS)
-      res.status(existingUser ? 200 : 201).json({
+      const responseData = {
         ...resultUser,
         ...(generatedPassword && { generatedPassword })
+      };
+      
+      console.log(`[server] Step 6: Sending response to frontend:`, {
+        hasGeneratedPassword: !!generatedPassword,
+        passwordLength: generatedPassword?.length,
+        email: resultUser?.email,
+        role: resultUser?.role
       });
+      
+      res.status(existingUser ? 200 : 201).json(responseData);
     } catch (error) {
       console.error("Error inviting team member:", error);
       res.status(500).json({ message: "Failed to invite team member" });
