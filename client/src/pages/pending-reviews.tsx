@@ -116,7 +116,7 @@ export default function PendingReviews() {
           </div>
 
           {/* Search Filter */}
-          <Card className="mb-4 border-2 border-gray-200 shadow-md">
+          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
             <CardContent className="p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -132,7 +132,7 @@ export default function PendingReviews() {
           </Card>
 
           {/* Requests Table */}
-          <Card className="border-2 border-gray-200 shadow-md">
+          <Card className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
