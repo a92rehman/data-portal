@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Search, ChartLine, X, Check, ArrowLeft } from "lucide-react";
+import { Bell, Search, ChartLine, X, Check, ArrowLeft, Moon, Sun, Settings, LogOut } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,8 +21,22 @@ interface HeaderProps {
 export default function Header({ user }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { logout } = useAuth();
   const [_, setLocation] = useLocation();
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      const isDark = savedTheme === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return isDark;
+    }
+    return false;
+  });
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
@@ -65,10 +81,29 @@ export default function Header({ user }: HeaderProps) {
   const handleLogout = async () => {
     try {
       await logout();
+      setIsProfileOpen(false);
       setLocation("/");
     } catch (error) {
       console.error("Logout error:", error);
     }
+  };
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  const handleSettingsClick = () => {
+    setIsProfileOpen(false);
+    setLocation("/settings");
   };
 
   const handleBack = () => {
@@ -188,26 +223,92 @@ export default function Header({ user }: HeaderProps) {
             </PopoverContent>
           </Popover>
 
-          <div 
-            className="flex items-center gap-3 pl-4 border-l-2 border-purple-200 cursor-pointer hover:bg-purple-50 rounded-lg px-3 py-2 -mr-3 transition-all"
-            onClick={() => setLocation("/settings")}
-            data-testid="button-profile"
-          >
-            <div className="text-right">
-              <p className="text-sm font-semibold text-foreground" data-testid="text-user-name">
-                {user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "User"}
-              </p>
-              <p className="text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent capitalize" data-testid="text-user-role">
-                {user?.role?.replace("_", " ") || "Team Member"}
-              </p>
-            </div>
-            <Avatar className="w-10 h-10 border-2 border-purple-300 hover:border-purple-500 transition-all shadow-md" data-testid="avatar-user">
-              <AvatarImage src={user?.profileImageUrl ?? ""} />
-              <AvatarFallback className="font-bold text-white" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-                {getInitials(user?.firstName ?? undefined, user?.lastName ?? undefined)}
-              </AvatarFallback>
-            </Avatar>
-          </div>
+          <Popover open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+            <PopoverTrigger asChild>
+              <button 
+                className="flex items-center gap-3 pl-4 border-l-2 border-purple-200 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg px-3 py-2 -mr-3 transition-all"
+                data-testid="button-profile"
+              >
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-foreground" data-testid="text-user-name">
+                    {user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "User"}
+                  </p>
+                  <p className="text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent capitalize" data-testid="text-user-role">
+                    {user?.role?.replace("_", " ") || "Team Member"}
+                  </p>
+                </div>
+                <Avatar className="w-10 h-10 border-2 border-purple-300 hover:border-purple-500 transition-all shadow-md" data-testid="avatar-user">
+                  <AvatarImage src={user?.profileImageUrl ?? ""} />
+                  <AvatarFallback className="font-bold text-white" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                    {getInitials(user?.firstName ?? undefined, user?.lastName ?? undefined)}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="end" data-testid="popover-profile">
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-b">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-purple-300 shadow-md">
+                    <AvatarImage src={user?.profileImageUrl ?? ""} />
+                    <AvatarFallback className="font-bold text-white" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                      {getInitials(user?.firstName ?? undefined, user?.lastName ?? undefined)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <p className="text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent capitalize mt-1">
+                      {user?.role?.replace("_", " ") || "Team Member"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="py-2">
+                <div className="px-4 py-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {isDarkMode ? (
+                        <Moon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      ) : (
+                        <Sun className="w-4 h-4 text-purple-600" />
+                      )}
+                      <span className="text-sm font-medium">Dark Mode</span>
+                    </div>
+                    <Switch
+                      checked={isDarkMode}
+                      onCheckedChange={toggleDarkMode}
+                      data-testid="switch-dark-mode-header"
+                    />
+                  </div>
+                </div>
+
+                <Separator className="my-2" />
+
+                <button
+                  onClick={handleSettingsClick}
+                  className="w-full px-4 py-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors flex items-center gap-3 text-left"
+                  data-testid="button-settings"
+                >
+                  <Settings className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-sm font-medium">Settings</span>
+                </button>
+
+                <Separator className="my-2" />
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3 text-left text-red-600 dark:text-red-400"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="text-sm font-medium">Logout</span>
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </header>
