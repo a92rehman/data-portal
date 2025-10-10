@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Moon, Sun, Building2, KeyRound, Loader2, Mail, User } from "lucide-react";
+import { DEPARTMENTS, TEAM_OPTIONS } from "@shared/constants";
 
 const emailSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -26,6 +27,8 @@ const nameSchema = z.object({
 
 const departmentSchema = z.object({
   department: z.string().min(1, "Department is required"),
+  team: z.string().optional(),
+  teamOther: z.string().optional(),
 });
 
 const passwordSchema = z.object({
@@ -71,8 +74,23 @@ export default function SettingsPage() {
     resolver: zodResolver(departmentSchema),
     defaultValues: {
       department: (user as any)?.department || "",
+      team: "",
+      teamOther: "",
     },
   });
+
+  const [selectedDepartment, setSelectedDepartment] = useState((user as any)?.department || "");
+  const [selectedTeam, setSelectedTeam] = useState("");
+
+  useEffect(() => {
+    setSelectedDepartment((user as any)?.department || "");
+  }, [user]);
+
+  useEffect(() => {
+    departmentForm.setValue("team", "");
+    departmentForm.setValue("teamOther", "");
+    setSelectedTeam("");
+  }, [selectedDepartment]);
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
@@ -323,23 +341,23 @@ export default function SettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Department</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-department">
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedDepartment(value);
+                      }} 
+                      value={field.value} 
+                      data-testid="select-department"
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select department..." />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Program">Program</SelectItem>
-                        <SelectItem value="P&C">P&C</SelectItem>
-                        <SelectItem value="Product">Product</SelectItem>
-                        <SelectItem value="LP">LP</SelectItem>
-                        <SelectItem value="Training">Training</SelectItem>
-                        <SelectItem value="ERP">ERP</SelectItem>
-                        <SelectItem value="Finance">Finance</SelectItem>
-                        <SelectItem value="Leadership">Leadership</SelectItem>
-                        <SelectItem value="Strategy">Strategy</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                        {DEPARTMENTS.map((dept) => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -349,6 +367,56 @@ export default function SettingsPage() {
                   </FormItem>
                 )}
               />
+              {selectedDepartment && TEAM_OPTIONS[selectedDepartment] && (
+                <FormField
+                  control={departmentForm.control}
+                  name="team"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Team</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedTeam(value);
+                        }} 
+                        value={field.value} 
+                        data-testid="select-team"
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select team..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TEAM_OPTIONS[selectedDepartment].map((team) => (
+                            <SelectItem key={team} value={team}>{team}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              {selectedTeam === 'Other' && (
+                <FormField
+                  control={departmentForm.control}
+                  name="teamOther"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Specify Team</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter team name"
+                          {...field}
+                          data-testid="input-team-other"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <Button 
                 type="submit" 
                 disabled={updateDepartmentMutation.isPending}
