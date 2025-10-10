@@ -541,41 +541,227 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       </DialogHeader>
 
       <ScrollArea className="flex-1 px-6">
-        <div className="space-y-4 py-4">
+        <div className="py-4">
           {/* Basic Information - Always at Top */}
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Key Information</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
-                <p className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1 font-semibold flex items-center gap-1">
+          <div className="mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/40 dark:to-purple-800/20 p-4 rounded-lg border-2 border-purple-300 dark:border-purple-600">
+                <p className="text-xs text-purple-700 dark:text-purple-300 uppercase font-bold mb-1 flex items-center gap-1">
                   {getPriorityIcon(request.priority)}
                   Priority
                 </p>
-                <p className="text-sm font-bold text-foreground" data-testid="priority-display">
+                <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="priority-display">
                   {formatPriority(request.priority)}
                 </p>
               </div>
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
-                <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1 font-semibold">Department</p>
-                <p className="text-sm font-bold text-foreground capitalize" data-testid="text-department">
+              <div className="bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-600">
+                <p className="text-xs text-blue-700 dark:text-blue-300 uppercase font-bold mb-1">Department</p>
+                <p className="text-base font-bold text-gray-900 dark:text-white capitalize" data-testid="text-department">
                   {request.department}
                 </p>
               </div>
-              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700">
-                <p className="text-xs text-green-600 dark:text-green-400 uppercase tracking-wider mb-1 font-semibold">Requested By</p>
-                <p className="text-sm font-bold text-foreground" data-testid="text-requested-by">
+              <div className="bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/40 dark:to-green-800/20 p-4 rounded-lg border-2 border-green-300 dark:border-green-600">
+                <p className="text-xs text-green-700 dark:text-green-300 uppercase font-bold mb-1">Requested By</p>
+                <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="text-requested-by">
                   {request.requestedBy.firstName} {request.requestedBy.lastName}
                 </p>
               </div>
-              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
-                <p className="text-xs text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-1 font-semibold">Due Date</p>
-                <p className="text-sm font-bold text-foreground" data-testid="text-due-date">
+              <div className="bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-900/40 dark:to-orange-800/20 p-4 rounded-lg border-2 border-orange-300 dark:border-orange-600">
+                <p className="text-xs text-orange-700 dark:text-orange-300 uppercase font-bold mb-1">Due Date</p>
+                <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="text-due-date">
                   {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
               </div>
             </div>
           </div>
 
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column - Request Details */}
+            <div className="space-y-4">
+              {/* Request Details */}
+              <CollapsibleSection title="📝 Request Details & Business Impact" open={true}>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Primary Question</p>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-foreground" data-testid="text-primary-question">
+                        {request.primaryQuestion}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Business Problem or Goal</p>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-foreground" data-testid="text-business-problem">
+                        {request.businessProblem}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Decision or Action</p>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-foreground" data-testid="text-decision-action">
+                        {request.decisionAction}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Impact</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground capitalize" data-testid="text-impact">
+                          {request.impact}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Frequency</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-frequency">
+                          {request.frequency}
+                          {request.frequencyDuration && request.frequencyUnit && 
+                            ` (${request.frequencyDuration} ${request.frequencyUnit})`
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleSection>
+
+              {/* Dashboard Details */}
+              {(request.type === "new_dashboard" || request.type === "modify_dashboard") && (
+                <CollapsibleSection title="📊 Dashboard-Specific Details" open={false}>
+                  <div className="space-y-3">
+                    {request.dashboardAudience && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Audience/Users</p>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-foreground" data-testid="text-dashboard-audience">
+                            {request.dashboardAudience}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {request.dashboardRefreshFrequency && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Intended Refresh Frequency</p>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-foreground capitalize" data-testid="text-refresh-frequency">
+                            {request.dashboardRefreshFrequency}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {request.keyMetrics && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Key Metrics/KPIs Needed</p>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-foreground" data-testid="text-key-metrics">
+                            {request.keyMetrics}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {request.filters && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Filters</p>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-foreground" data-testid="text-filters">
+                            {request.filters}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {request.mockups && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Mock-ups, Examples, or Links</p>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-foreground" data-testid="text-mockups">
+                            {request.mockups}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {request.actionPlan && (
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Action Plan</p>
+                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm text-foreground" data-testid="text-action-plan">
+                            {request.actionPlan}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleSection>
+              )}
+
+              {/* Attachments */}
+              <CollapsibleSection title="📎 Attachments" open={false}>
+                <div className="flex items-center justify-end mb-3">
+                  <ObjectUploader
+                    maxNumberOfFiles={5}
+                    maxFileSize={10485760}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={handleUploadComplete}
+                    buttonVariant="outline"
+                    buttonSize="sm"
+                  >
+                    <Paperclip className="w-4 h-4 mr-2" />
+                    Upload File
+                  </ObjectUploader>
+                </div>
+                {request.attachments && request.attachments.length > 0 ? (
+                  <div className="space-y-2">
+                    {request.attachments.map((attachment) => (
+                      <div key={attachment.id} className="border-2 border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-800 hover:shadow-md transition-all">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <FileIcon className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate" data-testid={`attachment-name-${attachment.id}`}>
+                                {attachment.fileName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {formatFileSize(attachment.fileSize)} • Uploaded by {attachment.uploadedBy.firstName} {attachment.uploadedBy.lastName}
+                              </p>
+                            </div>
+                          </div>
+                          <a
+                            href={attachment.filePath}
+                            download={attachment.fileName}
+                            className="flex-shrink-0"
+                            data-testid={`button-download-${attachment.id}`}
+                          >
+                            <Button variant="ghost" size="sm">
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
+                    <p className="text-sm text-muted-foreground text-center">No attachments yet</p>
+                  </div>
+                )}
+              </CollapsibleSection>
+            </div>
+
+            {/* Right Column - Actions & Discussion */}
+            <div className="space-y-4">
           {/* Data Lead: Edit Priority & Deadline */}
           {isTeamLead && (
             <CollapsibleSection title="⚙️ Edit Priority & Deadline" open={false}>
@@ -676,204 +862,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
           </CollapsibleSection>
         )}
-
-        {/* Analyst: Add Blocker */}
-        {isAnalyst && (request.status === "assigned" || request.status === "in_progress") && (
-          <CollapsibleSection title="⚠️ Report Blocker" open={false}>
-            <p className="text-sm text-muted-foreground mb-3">
-              Report any blockers or issues preventing progress on this request.
-            </p>
-            <Button
-              onClick={() => setShowBlockerDialog(true)}
-              variant="outline"
-              data-testid="button-add-blocker"
-              className="w-full h-11"
-            >
-              <CircleAlert className="w-4 h-4 mr-2" />
-              Add Blocker
-            </Button>
-          </CollapsibleSection>
-        )}
-
-        {/* Request Details */}
-        <CollapsibleSection title="📝 Request Details & Business Impact" open={true}>
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Primary Question</p>
-              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
-                <p className="text-sm text-foreground" data-testid="text-primary-question">
-                  {request.primaryQuestion}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Business Problem or Goal</p>
-              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
-                <p className="text-sm text-foreground" data-testid="text-business-problem">
-                  {request.businessProblem}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Decision or Action</p>
-              <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
-                <p className="text-sm text-foreground" data-testid="text-decision-action">
-                  {request.decisionAction}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Impact</p>
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                  <p className="text-sm text-foreground capitalize" data-testid="text-impact">
-                    {request.impact}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Frequency</p>
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                  <p className="text-sm text-foreground" data-testid="text-frequency">
-                    {request.frequency}
-                    {request.frequencyDuration && request.frequencyUnit && 
-                      ` (${request.frequencyDuration} ${request.frequencyUnit})`
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* Dashboard Details */}
-        {(request.type === "new_dashboard" || request.type === "modify_dashboard") && (
-          <CollapsibleSection title="📊 Dashboard-Specific Details" open={false}>
-            <div className="space-y-3">
-              {request.dashboardAudience && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Audience/Users</p>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <p className="text-sm text-foreground" data-testid="text-dashboard-audience">
-                      {request.dashboardAudience}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {request.dashboardRefreshFrequency && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Intended Refresh Frequency</p>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <p className="text-sm text-foreground capitalize" data-testid="text-refresh-frequency">
-                      {request.dashboardRefreshFrequency}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {request.keyMetrics && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Key Metrics/KPIs Needed</p>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <p className="text-sm text-foreground" data-testid="text-key-metrics">
-                      {request.keyMetrics}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {request.filters && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Filters</p>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <p className="text-sm text-foreground" data-testid="text-filters">
-                      {request.filters}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {request.mockups && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Mock-ups, Examples, or Links</p>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <p className="text-sm text-foreground" data-testid="text-mockups">
-                      {request.mockups}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {request.actionPlan && (
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 font-medium">Action Plan</p>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <p className="text-sm text-foreground" data-testid="text-action-plan">
-                      {request.actionPlan}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CollapsibleSection>
-        )}
-
-        {/* Attachments */}
-        <CollapsibleSection title="📎 Attachments" open={false}>
-          <div className="flex items-center justify-end mb-3">
-            <ObjectUploader
-              maxNumberOfFiles={5}
-              maxFileSize={10485760}
-              onGetUploadParameters={handleGetUploadParameters}
-              onComplete={handleUploadComplete}
-              buttonVariant="outline"
-              buttonSize="sm"
-            >
-              <Paperclip className="w-4 h-4 mr-2" />
-              Upload File
-            </ObjectUploader>
-          </div>
-          {request.attachments && request.attachments.length > 0 ? (
-            <div className="space-y-2">
-              {request.attachments.map((attachment) => (
-                <div key={attachment.id} className="border-2 border-blue-200 dark:border-blue-700 rounded-lg p-3 bg-blue-50 dark:bg-blue-900/20 hover:shadow-md transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FileIcon className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate" data-testid={`attachment-name-${attachment.id}`}>
-                          {attachment.fileName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatFileSize(attachment.fileSize)} • Uploaded by {attachment.uploadedBy.firstName} {attachment.uploadedBy.lastName}
-                        </p>
-                      </div>
-                    </div>
-                    <a
-                      href={attachment.filePath}
-                      download={attachment.fileName}
-                      className="flex-shrink-0"
-                      data-testid={`button-download-${attachment.id}`}
-                    >
-                      <Button variant="ghost" size="sm">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
-              <p className="text-sm text-muted-foreground text-center">No attachments yet</p>
-            </div>
-          )}
-        </CollapsibleSection>
 
         {/* Assignment */}
         {(request.assignedTo || isTeamLead || isAnalyst) && (
@@ -1105,7 +1093,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             )}
           </div>
         </CollapsibleSection>
+          </div>
         </div>
+          </div>
       </ScrollArea>
 
       {/* Reject Request Dialog */}
