@@ -51,7 +51,6 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
       return [
         { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
         { href: "/my-assignments", icon: UserCheck, label: "My Assignments", testId: "nav-my-assignments" },
-        { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
       ];
     } else {
       // Requester - Limited access

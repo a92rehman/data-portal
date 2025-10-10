@@ -28,19 +28,24 @@ export default function Analytics() {
       return;
     }
 
-    // Redirect team leads to dashboard
-    if (!isLoading && isAuthenticated && (user as any)?.role !== "data_analyst") {
+    // Wait for user object to load before checking role
+    if (!isLoading && isAuthenticated && !user) {
+      return;
+    }
+
+    // Restrict access to Data Lead only
+    if (!isLoading && isAuthenticated && user && (user as any)?.role !== "team_lead") {
       toast({
         title: "Access Denied",
-        description: "Analytics is only available for data analysts",
+        description: "Analytics is only available for Data Lead",
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/";
+        setLocation("/");
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, user, toast]);
+  }, [isAuthenticated, isLoading, user, toast, setLocation]);
 
   const { data: departmentStats = [] } = useQuery<Array<{ department: string; count: number }>>({
     queryKey: ["/api/analytics/departments"],
