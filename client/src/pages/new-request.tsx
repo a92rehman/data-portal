@@ -11,9 +11,9 @@ export default function NewRequest() {
   
   return (
     <div className="h-screen flex flex-col bg-background dark:bg-gray-900">
-      <Header user={user || null} />
+      <Header user={user as any} />
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar onNewRequest={handleNewRequest} user={user} />
+        <Sidebar onNewRequest={handleNewRequest} user={user as any} />
         <main className="flex-1 overflow-y-auto">
           <DataRequestForm />
         </main>

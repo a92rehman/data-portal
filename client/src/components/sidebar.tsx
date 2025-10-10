@@ -90,15 +90,17 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
               <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
                 Quick Actions
               </p>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gradient-button-secondary font-medium" 
-                onClick={onNewRequest}
-                data-testid="button-quick-new-request"
-              >
-                <Plus className="w-5 h-5 mr-3" />
-                New Request
-              </Button>
+              <Link href="/requests/new">
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start gradient-button-secondary font-medium" 
+                  data-testid="button-quick-new-request"
+                >
+                  <Plus className="w-5 h-5 mr-3" />
+                  New Data Request
+                  <span className="ml-auto text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-0.5 rounded-full">NEW</span>
+                </Button>
+              </Link>
             </div>
           </>
         )}
