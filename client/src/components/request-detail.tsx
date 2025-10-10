@@ -519,61 +519,62 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   return (
     <>
-      <DialogHeader className="border-b pb-4">
+      <DialogHeader className="border-b pb-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 -m-6 mb-0 p-6">
         <div>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent" data-testid="text-request-id">
-            Request #{request.id.slice(0, 8)}
-          </DialogTitle>
-          <p className="text-base text-foreground mt-2 font-medium" data-testid="text-request-title">
+          <DialogTitle className="text-2xl font-bold text-foreground" data-testid="text-request-title">
             {request.title}
-          </p>
+          </DialogTitle>
+          <div className="flex items-center gap-3 mt-2">
+            <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
+              {formatStatus(request.status)}
+            </Badge>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm text-muted-foreground" data-testid="text-request-type">
+              {formatRequestType(request.type)}
+            </span>
+            <span className="text-sm text-muted-foreground">•</span>
+            <span className="text-sm font-mono text-muted-foreground" data-testid="text-request-id">
+              ID: {request.id.slice(0, 8)}
+            </span>
+          </div>
         </div>
       </DialogHeader>
 
-      <ScrollArea className="max-h-[70vh] pr-4">
+      <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4 py-4">
           {/* Basic Information - Always at Top */}
-          <CollapsibleSection title="📋 Basic Information" open={true}>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Status</p>
-                <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
-                  {formatStatus(request.status)}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Priority</p>
-                <div className="flex items-center gap-1" data-testid="priority-display">
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Key Information</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
+                <p className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1 font-semibold flex items-center gap-1">
                   {getPriorityIcon(request.priority)}
-                  <span className="text-sm font-medium">{formatPriority(request.priority)}</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Request Type</p>
-                <p className="text-sm font-medium text-foreground" data-testid="text-request-type">
-                  {formatRequestType(request.type)}
+                  Priority
+                </p>
+                <p className="text-sm font-bold text-foreground" data-testid="priority-display">
+                  {formatPriority(request.priority)}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Department</p>
-                <p className="text-sm font-medium text-foreground capitalize" data-testid="text-department">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1 font-semibold">Department</p>
+                <p className="text-sm font-bold text-foreground capitalize" data-testid="text-department">
                   {request.department}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Requested By</p>
-                <p className="text-sm font-medium text-foreground" data-testid="text-requested-by">
+              <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                <p className="text-xs text-green-600 dark:text-green-400 uppercase tracking-wider mb-1 font-semibold">Requested By</p>
+                <p className="text-sm font-bold text-foreground" data-testid="text-requested-by">
                   {request.requestedBy.firstName} {request.requestedBy.lastName}
                 </p>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">Due Date</p>
-                <p className="text-sm font-medium text-foreground" data-testid="text-due-date">
-                  {formatDate(request.dueDate.toString())}
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
+                <p className="text-xs text-orange-600 dark:text-orange-400 uppercase tracking-wider mb-1 font-semibold">Due Date</p>
+                <p className="text-sm font-bold text-foreground" data-testid="text-due-date">
+                  {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
               </div>
             </div>
-          </CollapsibleSection>
+          </div>
 
           {/* Data Lead: Edit Priority & Deadline */}
           {isTeamLead && (
