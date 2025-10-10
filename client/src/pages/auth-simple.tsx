@@ -9,19 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { ChartLine, Sparkles, Loader2, Eye, EyeOff, Building2 } from "lucide-react";
-
-const DEPARTMENTS = [
-  { value: "Program", label: "Program" },
-  { value: "P&C", label: "P&C (People & Culture)" },
-  { value: "Product", label: "Product" },
-  { value: "LP", label: "LP (Learning Platform)" },
-  { value: "Training", label: "Training" },
-  { value: "ERP", label: "ERP" },
-  { value: "Finance", label: "Finance" },
-  { value: "Leadership", label: "Leadership" },
-  { value: "Strategy", label: "Strategy" },
-  { value: "Other", label: "Other" },
-];
+import { DEPARTMENTS, TEAM_OPTIONS } from "@shared/constants";
 
 export default function AuthSimple() {
   const [showPassword, setShowPassword] = useState(false);
@@ -39,6 +27,8 @@ export default function AuthSimple() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [department, setDepartment] = useState("");
+  const [team, setTeam] = useState("");
+  const [teamOther, setTeamOther] = useState("");
 
   useEffect(() => {
     const role = localStorage.getItem("selected_role");
@@ -233,14 +223,46 @@ export default function AuthSimple() {
                     </SelectTrigger>
                     <SelectContent>
                       {DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept.value} value={dept.value}>
-                          {dept.label}
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
+              {department && TEAM_OPTIONS[department] && (
+                <div className="space-y-2">
+                  <Label htmlFor="team">Team</Label>
+                  <Select value={team} onValueChange={setTeam} required>
+                    <SelectTrigger data-testid="select-team">
+                      <SelectValue placeholder="Select your team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEAM_OPTIONS[department].map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {t}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {team === 'Other' && (
+                <div className="space-y-2">
+                  <Label htmlFor="teamOther">Specify Team</Label>
+                  <Input
+                    id="teamOther"
+                    type="text"
+                    value={teamOther}
+                    onChange={(e) => setTeamOther(e.target.value)}
+                    placeholder="Enter team name"
+                    data-testid="input-team-other"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
