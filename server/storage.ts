@@ -43,7 +43,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: string, role: string, department?: string): Promise<User | undefined>;
   deleteUser(userId: string): Promise<void>;
-  createInvitedUser(email: string, role: string, department?: string): Promise<User>;
+  createInvitedUser(email: string, role: string, department?: string, firstName?: string, lastName?: string): Promise<User>;
   updatePasswordResetToken(userId: string, token: string, expires: Date): Promise<void>;
   updateUserPassword(userId: string, password: string): Promise<void>;
   updateUserPasswordAndName(userId: string, password: string, name: string): Promise<void>;
@@ -226,14 +226,14 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, userId));
   }
 
-  async createInvitedUser(email: string, role: string, department?: string): Promise<User> {
+  async createInvitedUser(email: string, role: string, department?: string, firstName?: string, lastName?: string): Promise<User> {
     const userData: UpsertUser = {
       id: `invited-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       email,
       role: role as "requester" | "team_lead" | "analyst",
       department: department || null,
-      firstName: null,
-      lastName: null,
+      firstName: firstName || null,
+      lastName: lastName || null,
       profileImageUrl: null,
     };
 
