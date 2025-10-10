@@ -1,4 +1,5 @@
 import * as brevo from '@getbrevo/brevo';
+import emailjs from '@emailjs/nodejs';
 
 const apiInstance = new brevo.TransactionalEmailsApi();
 apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY || '');
@@ -611,6 +612,51 @@ export async function sendAnalystPasswordSetupEmail(data: AnalystPasswordSetupEm
     return result;
   } catch (error) {
     console.error('[email] Failed to send password setup email:', error);
+    throw error;
+  }
+}
+
+interface AnalystCredentialsEmailData {
+  analystName: string;
+  analystEmail: string;
+  password: string;
+  inviterName: string;
+}
+
+export async function sendAnalystCredentialsViaEmailJS(data: AnalystCredentialsEmailData) {
+  try {
+    const { analystName, analystEmail, password, inviterName } = data;
+
+    const serviceId = process.env.EMAILJS_SERVICE_ID;
+    const templateId = process.env.EMAILJS_TEMPLATE_ID;
+    const publicKey = process.env.EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      throw new Error('EmailJS credentials not configured');
+    }
+
+    const templateParams = {
+      to_email: analystEmail,
+      to_name: analystName,
+      analyst_name: analystName,
+      analyst_email: analystEmail,
+      analyst_password: password,
+      inviter_name: inviterName,
+    };
+
+    const result = await emailjs.send(
+      serviceId,
+      templateId,
+      templateParams,
+      {
+        publicKey: publicKey,
+      }
+    );
+
+    console.log(`[emailjs] Credentials sent successfully to ${analystEmail}:`, result);
+    return result;
+  } catch (error) {
+    console.error('[emailjs] Failed to send credentials:', error);
     throw error;
   }
 }
