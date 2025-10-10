@@ -109,6 +109,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/users/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can update users" });
+      }
+
+      const { firstName, lastName, email, role, department } = req.body;
+      
+      const targetUser = await storage.getUser(req.params.userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // SECURITY: Protect primary data lead - cannot be edited
+      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      if (targetUser.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
+        return res.status(403).json({ 
+          message: "Primary Data Lead information cannot be modified" 
+        });
+      }
+
+      // Validate firstName and lastName if provided
+      if (firstName && !firstName.trim()) {
+        return res.status(400).json({ message: "First name cannot be empty" });
+      }
+      if (lastName && !lastName.trim()) {
+        return res.status(400).json({ message: "Last name cannot be empty" });
+      }
+
+      // Validate email if provided
+      if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({ message: "Invalid email format" });
+        }
+
+        // Check if email is already taken by another user
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== req.params.userId) {
+          return res.status(409).json({ message: "Email is already in use" });
+        }
+      }
+
+      // Validate role if provided
+      if (role && !['requester', 'team_lead', 'analyst'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      // Email validation: Requesters must use company email
+      const finalEmail = email || targetUser.email;
+      const finalRole = role || targetUser.role;
+      if (finalRole === 'requester' && finalEmail) {
+        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
+        const hasValidDomain = allowedDomains.some(domain => finalEmail.toLowerCase().endsWith(domain));
+        
+        if (!hasValidDomain) {
+          return res.status(403).json({ 
+            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
+          });
+        }
+      }
+
+      // Update user with all provided fields
+      const updatedUser = await storage.upsertUser({
+        ...targetUser,
+        ...(firstName && { firstName: firstName.trim() }),
+        ...(lastName && { lastName: lastName.trim() }),
+        ...(email && { email }),
+        ...(role && { role }),
+        ...(department !== undefined && { department }),
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
   app.delete('/api/users/:userId', isAuthenticated, async (req: any, res) => {
     try {
       const currentUser = await storage.getUser(req.user.id);

@@ -47,11 +47,14 @@ export default function Team() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editRole, setEditRole] = useState("");
+  const [editDepartment, setEditDepartment] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState("");
   const [newMemberDepartment, setNewMemberDepartment] = useState("");
@@ -64,9 +67,12 @@ export default function Team() {
     enabled: isDataLead,
   });
 
-  const updateRoleMutation = useMutation({
-    mutationFn: async (data: { userId: string; role: string; department?: string }) => {
-      return await apiRequest("PATCH", `/api/users/${data.userId}/role`, { 
+  const updateUserMutation = useMutation({
+    mutationFn: async (data: { userId: string; firstName?: string; lastName?: string; email?: string; role?: string; department?: string }) => {
+      return await apiRequest("PATCH", `/api/users/${data.userId}`, { 
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
         role: data.role, 
         department: data.department 
       });
@@ -75,17 +81,20 @@ export default function Team() {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
         title: "Success",
-        description: "User role updated successfully",
+        description: "User information updated successfully",
       });
-      setShowRoleDialog(false);
+      setShowEditDialog(false);
       setSelectedUser(null);
-      setSelectedRole("");
-      setSelectedDepartment("");
+      setEditFirstName("");
+      setEditLastName("");
+      setEditEmail("");
+      setEditRole("");
+      setEditDepartment("");
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update user role",
+        description: error.message || "Failed to update user information",
         variant: "destructive",
       });
     },
@@ -237,11 +246,14 @@ export default function Team() {
     return member.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL;
   };
 
-  const handleChangeRole = (user: User) => {
+  const handleEditUser = (user: User) => {
     setSelectedUser(user);
-    setSelectedRole(user.role || "");
-    setSelectedDepartment(user.department || "");
-    setShowRoleDialog(true);
+    setEditFirstName(user.firstName || "");
+    setEditLastName(user.lastName || "");
+    setEditEmail(user.email || "");
+    setEditRole(user.role || "");
+    setEditDepartment(user.department || "");
+    setShowEditDialog(true);
   };
 
   const handleRemoveUser = (user: User) => {
@@ -249,12 +261,15 @@ export default function Team() {
     setShowRemoveDialog(true);
   };
 
-  const submitRoleChange = () => {
-    if (selectedUser && selectedRole) {
-      updateRoleMutation.mutate({
+  const submitUserEdit = () => {
+    if (selectedUser) {
+      updateUserMutation.mutate({
         userId: selectedUser.id,
-        role: selectedRole,
-        department: selectedDepartment || undefined,
+        firstName: editFirstName,
+        lastName: editLastName,
+        email: editEmail,
+        role: editRole,
+        department: editDepartment || undefined,
       });
     }
   };
@@ -475,13 +490,13 @@ export default function Team() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleChangeRole(member)}
-                                data-testid={`button-change-role-${member.id}`}
+                                onClick={() => handleEditUser(member)}
+                                data-testid={`button-edit-${member.id}`}
                                 disabled={isPrimaryDataLead(member)}
-                                title={isPrimaryDataLead(member) ? "Primary Data Lead role cannot be changed" : ""}
+                                title={isPrimaryDataLead(member) ? "Primary Data Lead information cannot be modified" : "Edit user information"}
                               >
                                 <Settings className="w-4 h-4 mr-1" />
-                                Change Role
+                                Edit
                               </Button>
                               <Button
                                 size="sm"
@@ -506,20 +521,53 @@ export default function Team() {
         </main>
       </div>
 
-      {/* Change Role Dialog */}
-      <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
-        <DialogContent data-testid="dialog-change-role">
+      {/* Edit User Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent data-testid="dialog-edit-user" className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Change User Role</DialogTitle>
+            <DialogTitle>Edit User Information</DialogTitle>
             <DialogDescription>
-              Update the role and department for {selectedUser?.firstName} {selectedUser?.lastName}
+              Update all information for {selectedUser?.firstName} {selectedUser?.lastName}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-first-name" className="text-sm font-medium mb-2">First Name</Label>
+                <Input
+                  id="edit-first-name"
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="First name"
+                  data-testid="input-edit-first-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-last-name" className="text-sm font-medium mb-2">Last Name</Label>
+                <Input
+                  id="edit-last-name"
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="Last name"
+                  data-testid="input-edit-last-name"
+                />
+              </div>
+            </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Role</label>
-              <Select value={selectedRole} onValueChange={setSelectedRole} data-testid="select-new-role">
-                <SelectTrigger>
+              <Label htmlFor="edit-email" className="text-sm font-medium mb-2">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="email@example.com"
+                data-testid="input-edit-email"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-role" className="text-sm font-medium mb-2">Role</Label>
+              <Select value={editRole} onValueChange={setEditRole} data-testid="select-edit-role">
+                <SelectTrigger id="edit-role">
                   <SelectValue placeholder="Select role..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -530,12 +578,13 @@ export default function Team() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">Department (Optional)</label>
+              <Label htmlFor="edit-department" className="text-sm font-medium mb-2">Department (Optional)</Label>
               <Input
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
+                id="edit-department"
+                value={editDepartment}
+                onChange={(e) => setEditDepartment(e.target.value)}
                 placeholder="e.g., Marketing, Engineering..."
-                data-testid="input-department"
+                data-testid="input-edit-department"
               />
             </div>
           </div>
@@ -543,23 +592,26 @@ export default function Team() {
             <Button
               variant="outline"
               onClick={() => {
-                setShowRoleDialog(false);
+                setShowEditDialog(false);
                 setSelectedUser(null);
-                setSelectedRole("");
-                setSelectedDepartment("");
+                setEditFirstName("");
+                setEditLastName("");
+                setEditEmail("");
+                setEditRole("");
+                setEditDepartment("");
               }}
-              data-testid="button-cancel-role-change"
+              data-testid="button-cancel-edit"
             >
               Cancel
             </Button>
             <Button
-              onClick={submitRoleChange}
-              disabled={!selectedRole || updateRoleMutation.isPending}
-              data-testid="button-confirm-role-change"
+              onClick={submitUserEdit}
+              disabled={!editFirstName || !editLastName || !editEmail || !editRole || updateUserMutation.isPending}
+              data-testid="button-confirm-edit"
               className="gradient-button-primary text-white font-semibold"
               style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
             >
-              {updateRoleMutation.isPending ? "Updating..." : "Update Role"}
+              {updateUserMutation.isPending ? "Updating..." : "Update User"}
             </Button>
           </DialogFooter>
         </DialogContent>
