@@ -50,6 +50,7 @@ export interface IStorage {
   
   // Data request operations
   createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest>;
+  updateDataRequest(id: string, request: InsertDataRequest): Promise<DataRequest | undefined>;
   getDataRequest(id: string): Promise<DataRequestWithDetails | undefined>;
   getDataRequests(filters?: {
     status?: string;
@@ -295,6 +296,18 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return dataRequest;
+  }
+
+  async updateDataRequest(id: string, request: InsertDataRequest): Promise<DataRequest | undefined> {
+    const [updatedRequest] = await db
+      .update(dataRequests)
+      .set({
+        ...request,
+        updatedAt: new Date(),
+      })
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return updatedRequest;
   }
 
   async getDataRequest(id: string): Promise<DataRequestWithDetails | undefined> {

@@ -573,6 +573,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/requests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const requestId = req.params.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Get the existing request to check permissions
+      const existingRequest = await storage.getDataRequest(requestId);
+      if (!existingRequest) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      // Check permissions: only requester or team lead can update
+      if (user.role === 'requester' && existingRequest.requestedById !== userId) {
+        return res.status(403).json({ message: "You can only update your own requests" });
+      }
+
+      if (user.role === 'analyst') {
+        return res.status(403).json({ message: "Analysts cannot update request details" });
+      }
+
+      // Validate the data
+      const validatedData = insertDataRequestSchema.parse(req.body);
+      
+      // Update the request
+      const updatedRequest = await storage.updateDataRequest(requestId, validatedData);
+      res.json(updatedRequest);
+    } catch (error) {
+      console.error("Error updating request:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid request data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update request" });
+      }
+    }
+  });
+
   app.get('/api/requests', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;

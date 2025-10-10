@@ -23,6 +23,49 @@ const formSchema = insertDataRequestSchema.extend({
   title: z.string().min(1, "Project name is required"),
   dueDate: z.string().min(1, "Deadline is required"),
   assignedToId: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // BigQuery access validation
+  if (data.type === "bq_access") {
+    if (!data.bqEmail || data.bqEmail.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Email for BQ Access is required",
+        path: ["bqEmail"],
+      });
+    }
+    if (!data.bqDatasets || data.bqDatasets.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Datasets/Tables are required",
+        path: ["bqDatasets"],
+      });
+    }
+    if (!data.bqPurpose || data.bqPurpose.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Purpose of access is required",
+        path: ["bqPurpose"],
+      });
+    }
+  }
+
+  // Data bug validation
+  if (data.type === "data_bug") {
+    if (!data.bugDescription || data.bugDescription.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Bug description is required",
+        path: ["bugDescription"],
+      });
+    }
+    if (!data.bugLocation || data.bugLocation.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Bug location is required",
+        path: ["bugLocation"],
+      });
+    }
+  }
 });
 
 type FormData = z.infer<typeof formSchema>;
