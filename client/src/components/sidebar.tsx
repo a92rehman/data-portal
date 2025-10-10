@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   LayoutDashboard, 
   Inbox, 
@@ -20,10 +21,16 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onNewRequest, user }: SidebarProps) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLocation("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   // Role-specific navigation items
