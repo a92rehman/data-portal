@@ -1,0 +1,150 @@
+0) Context
+
+I already have the full component UI in a file named DataRequestForm.tsx. Do not change its layout or wording. Use it as the base and make it fully functional.
+
+It uses shadcn/ui imports like @/components/ui/* and Tailwind utility classes.
+
+It shows departments, dynamic teams, request types, and conditionally rendered Request Details (already implemented).
+
+1) Routing & Page
+
+Create a new page at /requests/new that renders <DataRequestForm />.
+
+If my app uses the app/ router: create app/requests/new/page.tsx.
+
+If it uses the pages/ router: create pages/requests/new.tsx.
+
+Add this page to my left nav/sidebar as “New Data Request” (link to /requests/new).
+
+2) Make the form functional (controlled inputs + submit)
+
+Update DataRequestForm.tsx so all visible inputs are controlled and included in a single payload on submit.
+
+Keep all existing UI, but add state + onChange handlers for each input/textarea/select that currently isn’t controlled, including:
+
+deadline, priority, impact
+
+department, team, teamOther
+
+requestType
+
+frequency controls: frequency, duration, unit
+
+all Request Details fields per type (e.g., metrics, purpose, dataset/table names, etc.)
+
+Add a handleSubmit(e) that:
+
+Prevents default.
+
+Validates required fields:
+
+Always required: name, email, department, requestType, priority, impact, deadline.
+
+If requestType in ['newDashboard', 'recurringReport'] then frequency, duration, unit required.
+
+If team === 'Other' then teamOther required.
+
+If requestType is bqaccess: require bqEmail, bqDatasets, bqPurpose.
+
+If requestType is bug: require bugDescription and bugLocation.
+
+Constructs a JSON payload with:
+
+{
+  requester: { name, email },
+  org: { department, team: team === 'Other' ? teamOther : team },
+  meta: { requestType, priority, impact, deadline },
+  usage: { frequency, duration, unit },
+  details: { ...typeSpecificFields }, // based on requestType
+  createdAt: new Date().toISOString()
+}
+
+
+POST to /api/requests and shows success/failure toasts.
+
+Add a disabled state to the Submit button during submission and basic inline error messages where validation fails.
+
+3) API route to store requests
+
+Create /api/requests to persist the payload. Prefer Supabase; if env vars aren’t present, fall back to a local JSON file.
+
+Option A: Supabase (preferred)
+
+Env vars: SUPABASE_URL, SUPABASE_ANON_KEY.
+
+Create a table data_requests with columns:
+
+id uuid default gen_random_uuid() primary key
+
+requester jsonb
+
+org jsonb
+
+meta jsonb
+
+usage jsonb
+
+details jsonb
+
+created_at timestamptz default now()
+
+In the API route, validate the shape, insert, and return { id }.
+
+Option B: File fallback
+
+If Supabase envs are missing, append the payload into data/requests.json (create folder if needed). Return a generated id.
+
+API behavior
+
+Method: POST only. Return 405 for others.
+
+On success: { id, ok: true }. On error: { ok: false, message } with status 400/500.
+
+4) Small UX touches
+
+After successful submit: reset the form and show a success toast: “Request submitted. We’ll get back to you shortly.”
+
+If requestType === 'newDashboard' or 'adhoc' or 'metricChange', always include the question: “Which action or decision will you take after receiving this dashboard or analysis?” (already present as a shared field—keep it required for these types).
+
+Show/hide the Frequency | Duration | Unit block only for:
+
+newDashboard, recurringReport, and optional for modifyDashboard if the user indicates ongoing use.
+
+5) Types & safety
+
+Use TypeScript interfaces:
+
+interface Requester { name: string; email: string; }
+interface OrgInfo { department: string; team?: string; }
+type RequestType =
+  | 'newDashboard' | 'modifyDashboard' | 'adhoc' | 'extraction'
+  | 'bug' | 'bqaccess' | 'tracking' | 'metricChange'
+  | 'pipelineChange' | 'recurringReport' | 'other';
+
+interface Meta { requestType: RequestType; priority: 'P0'|'P1'|'P2'|'P3'; impact: 'Program Implementation'|'Product Improvement'|'Strategic Decision'|'Content Improvement'|'Others'; deadline: string; }
+interface Usage { frequency?: 'daily'|'weekly'|'monthly'|'quarterly'; duration?: string; unit?: 'days'|'weeks'|'months'; }
+
+
+Perform minimal front-end validation before POST. Re-validate in the API route.
+
+6) Sidebar badge (optional)
+
+After integration, add a small “NEW” badge on the sidebar item New Data Request for visibility. Remove after first visit (store a flag in localStorage).
+
+7) Keep existing app conventions
+
+Keep the @/components/ui/* imports.
+
+Keep Tailwind styles and class names.
+
+Keep APP_USER or REPLIT.user auto-fill behavior for requester name/email.
+
+Deliverables:
+
+app/requests/new/page.tsx (or pages/requests/new.tsx) rendering the form.
+
+Updated DataRequestForm.tsx with controlled fields, validation, and handleSubmit.
+
+pages/api/requests.ts or app/api/requests/route.ts implementing the storage logic (Supabase + file fallback).
+
+Sidebar link addition.
