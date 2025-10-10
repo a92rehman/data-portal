@@ -30,7 +30,8 @@ import {
   Paperclip,
   Download,
   FileIcon,
-  MessageSquare
+  MessageSquare,
+  ArrowLeft
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -520,22 +521,33 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       <DialogHeader className="border-b pb-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 -m-6 mb-0 p-6">
-        <div>
-          <DialogTitle className="text-2xl font-bold text-foreground" data-testid="text-request-title">
-            {request.title}
-          </DialogTitle>
-          <div className="flex items-center gap-3 mt-2">
-            <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
-              {formatStatus(request.status)}
-            </Badge>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground" data-testid="text-request-type">
-              {formatRequestType(request.type)}
-            </span>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm font-mono text-muted-foreground" data-testid="text-request-id">
-              ID: {request.id.slice(0, 8)}
-            </span>
+        <div className="flex items-start gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="flex-shrink-0 hover:bg-purple-100 dark:hover:bg-purple-800/30"
+            data-testid="button-back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex-1">
+            <DialogTitle className="text-2xl font-bold text-foreground" data-testid="text-request-title">
+              {request.title}
+            </DialogTitle>
+            <div className="flex items-center gap-3 mt-2">
+              <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
+                {formatStatus(request.status)}
+              </Badge>
+              <span className="text-sm text-muted-foreground">•</span>
+              <span className="text-sm text-muted-foreground" data-testid="text-request-type">
+                {formatRequestType(request.type)}
+              </span>
+              <span className="text-sm text-muted-foreground">•</span>
+              <span className="text-sm font-mono text-muted-foreground" data-testid="text-request-id">
+                ID: {request.id.slice(0, 8)}
+              </span>
+            </div>
           </div>
         </div>
       </DialogHeader>
@@ -545,8 +557,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           {/* Basic Information - Always at Top */}
           <div className="mb-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/40 dark:to-purple-800/20 p-4 rounded-lg border-2 border-purple-300 dark:border-purple-600">
-                <p className="text-xs text-purple-700 dark:text-purple-300 uppercase font-bold mb-1 flex items-center gap-1">
+              <div className="bg-purple-200 dark:bg-purple-700 p-4 rounded-lg border-2 border-purple-400 dark:border-purple-500">
+                <p className="text-xs text-purple-800 dark:text-purple-200 uppercase font-bold mb-1 flex items-center gap-1">
                   {getPriorityIcon(request.priority)}
                   Priority
                 </p>
@@ -554,20 +566,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   {formatPriority(request.priority)}
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 p-4 rounded-lg border-2 border-blue-300 dark:border-blue-600">
-                <p className="text-xs text-blue-700 dark:text-blue-300 uppercase font-bold mb-1">Department</p>
+              <div className="bg-blue-200 dark:bg-blue-700 p-4 rounded-lg border-2 border-blue-400 dark:border-blue-500">
+                <p className="text-xs text-blue-800 dark:text-blue-200 uppercase font-bold mb-1">Department</p>
                 <p className="text-base font-bold text-gray-900 dark:text-white capitalize" data-testid="text-department">
                   {request.department}
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/40 dark:to-green-800/20 p-4 rounded-lg border-2 border-green-300 dark:border-green-600">
-                <p className="text-xs text-green-700 dark:text-green-300 uppercase font-bold mb-1">Requested By</p>
+              <div className="bg-green-200 dark:bg-green-700 p-4 rounded-lg border-2 border-green-400 dark:border-green-500">
+                <p className="text-xs text-green-800 dark:text-green-200 uppercase font-bold mb-1">Requested By</p>
                 <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="text-requested-by">
                   {request.requestedBy.firstName} {request.requestedBy.lastName}
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-900/40 dark:to-orange-800/20 p-4 rounded-lg border-2 border-orange-300 dark:border-orange-600">
-                <p className="text-xs text-orange-700 dark:text-orange-300 uppercase font-bold mb-1">Due Date</p>
+              <div className="bg-orange-200 dark:bg-orange-700 p-4 rounded-lg border-2 border-orange-400 dark:border-orange-500">
+                <p className="text-xs text-orange-800 dark:text-orange-200 uppercase font-bold mb-1">Due Date</p>
                 <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="text-due-date">
                   {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>

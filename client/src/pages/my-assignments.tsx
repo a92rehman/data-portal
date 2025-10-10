@@ -242,7 +242,7 @@ export default function MyAssignments() {
       {/* Request Detail Dialog */}
       {selectedRequest && (
         <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-          <DialogContent className="max-w-6xl h-[95vh] flex flex-col p-0 overflow-hidden">
+          <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden">
             <RequestDetail
               request={selectedRequest}
               onClose={() => setSelectedRequest(null)}

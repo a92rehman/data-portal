@@ -644,7 +644,7 @@ export default function Dashboard() {
 
       {/* Request Detail Modal */}
       <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent className="max-w-6xl h-[95vh] flex flex-col p-0 overflow-hidden">
+        <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden">
           {selectedRequest && (
             <RequestDetail 
               request={selectedRequest}
