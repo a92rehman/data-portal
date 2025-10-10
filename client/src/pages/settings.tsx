@@ -250,6 +250,7 @@ export default function SettingsPage() {
                 type="submit" 
                 disabled={updateNameMutation.isPending}
                 data-testid="button-update-name"
+                className="gradient-button-primary text-white"
               >
                 {updateNameMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Name
@@ -295,6 +296,7 @@ export default function SettingsPage() {
                 type="submit" 
                 disabled={updateEmailMutation.isPending}
                 data-testid="button-update-email"
+                className="gradient-button-primary text-white"
               >
                 {updateEmailMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Email
@@ -351,6 +353,7 @@ export default function SettingsPage() {
                 type="submit" 
                 disabled={updateDepartmentMutation.isPending}
                 data-testid="button-update-department"
+                className="gradient-button-primary text-white"
               >
                 {updateDepartmentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Department
@@ -429,6 +432,7 @@ export default function SettingsPage() {
                 type="submit" 
                 disabled={updatePasswordMutation.isPending}
                 data-testid="button-update-password"
+                className="gradient-button-primary text-white"
               >
                 {updatePasswordMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Password
