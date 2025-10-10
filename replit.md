@@ -4,6 +4,16 @@
 
 This is a full-stack data request management system for managing data requests and analytics workflows. It enables team leads to submit data requests and data analysts to manage, review, and complete them. The system provides request tracking with status management, commenting, email/password authentication, and analytics dashboards. It is built with React, shadcn/ui, Express, and PostgreSQL, focusing on a modern, responsive user experience. The business vision is to streamline data request workflows, improve transparency, and provide actionable insights into data operations.
 
+## Recent Changes
+
+**October 10, 2025 - Settings Page Enhancements**
+- Added email editing capability to Settings page with email format validation and duplicate email checking
+- Added username (firstName/lastName) editing capability to Settings page
+- Fixed dark mode to apply globally across all screens by correcting CSS selector from `body.dark` to `.dark body`
+- Added theme initialization in App.tsx to load saved theme preference from localStorage on app startup
+- Created backend API endpoints: `/api/auth/user/email` and `/api/auth/user/name` with proper validation
+- Theme persistence now works correctly across page reloads
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -110,7 +120,7 @@ Preferred communication style: Simple, everyday language.
 ### API Structure
 
 **RESTful Endpoints:**
-- `GET /api/auth/user`, `PATCH /api/auth/user/role`, `PATCH /api/auth/user/department`
+- `GET /api/auth/user`, `PATCH /api/auth/user/role`, `PATCH /api/auth/user/department`, `PATCH /api/auth/user/email`, `PATCH /api/auth/user/name`, `PATCH /api/auth/user/password`
 - `GET /api/users/analysts`
 - `POST /api/requests`, `GET /api/requests`, `GET /api/requests/:id`
 - `PATCH /api/requests/:id/status`, `PATCH /api/requests/:id/assign`, `PATCH /api/requests/:id/priority-deadline`
