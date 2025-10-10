@@ -98,29 +98,50 @@ export default function Team() {
       
       // If analyst was invited and password was generated, send email via EmailJS
       if (variables.role === 'analyst' && response.generatedPassword) {
+        console.log('[Frontend] Step 6: Analyst invited, received password from server');
+        console.log('[Frontend] Step 7: Preparing to send email via EmailJS');
+        
         try {
           const inviterName = user ? `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || (user as any).email : 'Data Lead';
           
-          await emailjs.send(
+          const emailParams = {
+            to_email: variables.email,
+            to_name: variables.email.split('@')[0],
+            analyst_name: variables.email.split('@')[0],
+            analyst_email: variables.email,
+            analyst_password: response.generatedPassword,
+            inviter_name: inviterName,
+          };
+          
+          console.log('[Frontend] Step 8: EmailJS parameters prepared:', {
+            to_email: emailParams.to_email,
+            to_name: emailParams.to_name,
+            analyst_name: emailParams.analyst_name,
+            analyst_email: emailParams.analyst_email,
+            password_length: emailParams.analyst_password.length,
+            inviter_name: emailParams.inviter_name,
+          });
+          
+          console.log('[Frontend] Step 9: Sending email via EmailJS...');
+          console.log('[Frontend] Service ID:', import.meta.env.VITE_EMAILJS_SERVICE_ID);
+          console.log('[Frontend] Template ID:', import.meta.env.VITE_EMAILJS_TEMPLATE_ID);
+          console.log('[Frontend] Public Key:', import.meta.env.VITE_EMAILJS_PUBLIC_KEY);
+          
+          const result = await emailjs.send(
             import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
             import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '',
-            {
-              to_email: variables.email,
-              to_name: variables.email.split('@')[0],
-              analyst_name: variables.email.split('@')[0],
-              analyst_email: variables.email,
-              analyst_password: response.generatedPassword,
-              inviter_name: inviterName,
-            },
+            emailParams,
             import.meta.env.VITE_EMAILJS_PUBLIC_KEY || ''
           );
+          
+          console.log('[Frontend] Step 10: Email sent successfully via EmailJS!', result);
           
           toast({
             title: "Success",
             description: "Analyst invited successfully. Login credentials have been sent via email.",
           });
         } catch (emailError) {
-          console.error('[EmailJS] Failed to send email:', emailError);
+          console.error('[Frontend] Step 10: EmailJS failed to send email:', emailError);
           toast({
             title: "Analyst Invited",
             description: "User created but email delivery failed. Please contact the analyst directly.",

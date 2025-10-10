@@ -188,8 +188,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For analysts, generate random password
       if (role === 'analyst' && !existingUser && resultUser) {
         try {
+          console.log(`[server] Step 1: Generating password for analyst ${email}`);
+          
           // Generate random password (12 characters: letters, numbers, special chars)
           generatedPassword = randomBytes(9).toString('base64').slice(0, 12);
+          console.log(`[server] Step 2: Password generated (length: ${generatedPassword.length})`);
           
           // Hash password using scrypt (same as auth.ts)
           const { scrypt } = await import('crypto');
@@ -199,10 +202,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const salt = randomBytes(16).toString('hex');
           const derivedKey = await scryptAsync(generatedPassword, salt, 64) as Buffer;
           const hashedPassword = `${salt}:${derivedKey.toString('hex')}`;
+          console.log(`[server] Step 3: Password hashed successfully`);
           
           // Store hashed password for the analyst
           await storage.updateUserPassword(resultUser.id, hashedPassword);
-          console.log(`[server] Generated password for analyst ${email}`);
+          console.log(`[server] Step 4: Password stored in database for analyst ${email}`);
+          console.log(`[server] Step 5: Returning password to frontend for EmailJS delivery`);
         } catch (error) {
           console.error("[server] Failed to generate analyst password:", error);
           // Don't fail the request if password generation fails
