@@ -593,7 +593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(req.user.id);
       
       // Both Data Lead and Analyst can reject requests
-      if (!user || !['team_lead', 'analyst'].includes(user.role)) {
+      if (!user || !user.role || !['team_lead', 'analyst'].includes(user.role)) {
         return res.status(403).json({ message: "Unauthorized" });
       }
 
@@ -950,7 +950,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // - Requesters see stats for their own requests only
       // - Analysts see stats for requests assigned to them only
       // - Team leads see stats for all requests
-      const stats = await storage.getRequestStats(userId, user?.role);
+      const stats = await storage.getRequestStats(userId, user?.role || undefined);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
