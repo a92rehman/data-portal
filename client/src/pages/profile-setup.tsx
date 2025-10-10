@@ -3,13 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, ArrowRight } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { DEPARTMENTS, TEAM_OPTIONS } from "@shared/constants";
 
 export default function ProfileSetup() {
   const [department, setDepartment] = useState<string>("");
+  const [team, setTeam] = useState<string>("");
+  const [teamOther, setTeamOther] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -90,19 +94,51 @@ export default function ProfileSetup() {
                   <SelectValue placeholder="Select your department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Program" data-testid="option-program">Program</SelectItem>
-                  <SelectItem value="P&C" data-testid="option-pc">P&C</SelectItem>
-                  <SelectItem value="Product" data-testid="option-product">Product</SelectItem>
-                  <SelectItem value="LP" data-testid="option-lp">LP</SelectItem>
-                  <SelectItem value="Training" data-testid="option-training">Training</SelectItem>
-                  <SelectItem value="ERP" data-testid="option-erp">ERP</SelectItem>
-                  <SelectItem value="Finance" data-testid="option-finance">Finance</SelectItem>
-                  <SelectItem value="Leadership" data-testid="option-leadership">Leadership</SelectItem>
-                  <SelectItem value="Strategy" data-testid="option-strategy">Strategy</SelectItem>
-                  <SelectItem value="Other" data-testid="option-other">Other</SelectItem>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {department && TEAM_OPTIONS[department] && (
+              <div className="space-y-2">
+                <Label htmlFor="team" className="text-sm font-medium">
+                  Your Team
+                </Label>
+                <Select value={team} onValueChange={setTeam}>
+                  <SelectTrigger 
+                    id="team" 
+                    className="border-2 border-blue-200 focus:border-blue-400 transition-colors"
+                    data-testid="select-team"
+                  >
+                    <SelectValue placeholder="Select your team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEAM_OPTIONS[department].map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {team === 'Other' && (
+              <div className="space-y-2">
+                <Label htmlFor="teamOther" className="text-sm font-medium">
+                  Specify Team
+                </Label>
+                <Input
+                  id="teamOther"
+                  type="text"
+                  value={teamOther}
+                  onChange={(e) => setTeamOther(e.target.value)}
+                  placeholder="Enter team name"
+                  className="border-2 border-blue-200 focus:border-blue-400 transition-colors"
+                  data-testid="input-team-other"
+                />
+              </div>
+            )}
 
             <Button 
               type="submit" 
