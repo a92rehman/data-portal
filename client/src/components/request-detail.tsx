@@ -623,7 +623,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
       <ScrollArea className="flex-1">
         {/* Status Banners - Show after Accept/Reject actions */}
-        {isTeamLead && request.status === "under_review" && (
+        {request.status === "under_review" && (
           <div className="px-6 pt-4">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800" data-testid="banner-request-accepted">
               <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
@@ -635,7 +635,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-        {isTeamLead && request.rejectionReason && (
+        {request.rejectionReason && (
           <div className="px-6 pt-4">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800" data-testid="banner-request-rejected">
               <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
@@ -1013,13 +1013,18 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <CardTitle className="text-base">Delivery Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Request Type Badge */}
+                {/* Status Badge */}
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Request Type</p>
+                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Status</p>
                   <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
                     {formatStatus(request.status)}
                   </Badge>
-                  <p className="text-sm mt-1" data-testid="text-request-type">
+                </div>
+
+                {/* Request Type */}
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Request Type</p>
+                  <p className="text-sm font-medium" data-testid="text-request-type">
                     {formatRequestType(request.type)}
                   </p>
                 </div>
@@ -1361,7 +1366,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </div>
 
               {/* Add Comment Form */}
-              <form onSubmit={onCommentSubmit} className="space-y-2">
+              <form onSubmit={onCommentSubmit} className="space-y-3 pt-2">
                 <Textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
@@ -1374,6 +1379,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                     type="submit" 
                     disabled={!newComment.trim() || addCommentMutation.isPending}
                     data-testid="button-add-comment"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {addCommentMutation.isPending ? (
                       <>
