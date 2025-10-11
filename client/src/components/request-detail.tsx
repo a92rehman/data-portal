@@ -72,6 +72,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [justAccepted, setJustAccepted] = useState(false);
   const [justRejected, setJustRejected] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
+  const [deliveryLinks, setDeliveryLinks] = useState<string[]>(request.deliveryLinks || []);
+  const [deliveryNotes, setDeliveryNotes] = useState(request.deliveryNotes || "");
+  const [newDeliveryLink, setNewDeliveryLink] = useState("");
 
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
@@ -288,6 +291,46 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     }
   };
 
+  const handleDeliveryUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      const file = result.successful[0];
+      const uploadToken = file.meta?.uploadToken as string;
+      if (!uploadToken) {
+        toast({
+          title: "Error",
+          description: "Upload succeeded but upload token is missing",
+          variant: "destructive",
+        });
+        return;
+      }
+      uploadDeliveryAttachmentMutation.mutate({
+        uploadToken,
+        fileName: file.name || "untitled",
+        fileSize: file.size || 0,
+        mimeType: file.type || "application/octet-stream",
+        isDelivery: true,
+      });
+    }
+  };
+
+  const handleAddDeliveryLink = () => {
+    if (newDeliveryLink.trim()) {
+      setDeliveryLinks([...deliveryLinks, newDeliveryLink.trim()]);
+      setNewDeliveryLink("");
+    }
+  };
+
+  const handleRemoveDeliveryLink = (index: number) => {
+    setDeliveryLinks(deliveryLinks.filter((_, i) => i !== index));
+  };
+
+  const handleSaveDelivery = () => {
+    saveDeliveryMutation.mutate({
+      deliveryLinks,
+      deliveryNotes,
+    });
+  };
+
   // New three-role workflow mutations
   const acceptRequestMutation = useMutation({
     mutationFn: async () => {
@@ -429,6 +472,70 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       toast({
         title: "Error",
         description: error.message || "Failed to complete request",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveDeliveryMutation = useMutation({
+    mutationFn: async (data: { deliveryLinks: string[]; deliveryNotes: string }) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/delivery`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Delivery information saved successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save delivery information",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const uploadDeliveryAttachmentMutation = useMutation({
+    mutationFn: async (data: { uploadToken: string; fileName: string; fileSize: number; mimeType: string; isDelivery: boolean }) => {
+      return await apiRequest("POST", `/api/requests/${request.id}/attachments`, data);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/requests", request.id] });
+      toast({
+        title: "Success",
+        description: "Delivery file uploaded successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload delivery file",
         variant: "destructive",
       });
     },
@@ -1328,6 +1435,149 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </Form>
               </div>
             )}
+          </CollapsibleSection>
+        )}
+
+        {/* Request Delivery - For Team Lead or Analyst when in_progress or completed */}
+        {(isTeamLead || isAnalyst) && (request.status === "in_progress" || request.status === "completed") && (
+          <CollapsibleSection title="📦 Request Delivery" open={true}>
+            <div className="space-y-4">
+              {/* Delivery Links */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Delivery Links</label>
+                <div className="space-y-2">
+                  {deliveryLinks.map((link, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={link}
+                        readOnly
+                        className="flex-1"
+                        data-testid={`delivery-link-${index}`}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveDeliveryLink(index)}
+                        data-testid={`button-remove-link-${index}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newDeliveryLink}
+                      onChange={(e) => setNewDeliveryLink(e.target.value)}
+                      placeholder="Enter dashboard/report link..."
+                      data-testid="input-new-delivery-link"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddDeliveryLink();
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={handleAddDeliveryLink}
+                      disabled={!newDeliveryLink.trim()}
+                      data-testid="button-add-delivery-link"
+                      className="gradient-button-primary text-white font-semibold whitespace-nowrap"
+                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                    >
+                      Add Link
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Notes */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Delivery Notes</label>
+                <Textarea
+                  value={deliveryNotes}
+                  onChange={(e) => setDeliveryNotes(e.target.value)}
+                  placeholder="Add any notes about the delivery (optional)..."
+                  className="min-h-[100px]"
+                  data-testid="textarea-delivery-notes"
+                />
+              </div>
+
+              {/* Delivery Files Upload */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Delivery Files</label>
+                <ObjectUploader
+                  maxFileSize={10485760}
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleDeliveryUploadComplete}
+                  buttonVariant="outline"
+                  buttonSize="sm"
+                >
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  Upload Delivery File
+                </ObjectUploader>
+              </div>
+
+              {/* Display Existing Delivery Attachments */}
+              {request.attachments && request.attachments.filter(a => a.isDelivery).length > 0 && (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Uploaded Delivery Files</label>
+                  <div className="space-y-2">
+                    {request.attachments
+                      .filter(attachment => attachment.isDelivery)
+                      .map((attachment) => (
+                        <div key={attachment.id} className="border-2 border-green-200 dark:border-green-700 rounded-lg p-3 bg-green-50 dark:bg-green-900/20 hover:shadow-md transition-all">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <FileIcon className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate" data-testid={`delivery-attachment-name-${attachment.id}`}>
+                                  {attachment.fileName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(attachment.fileSize)} • Uploaded by {attachment.uploadedBy.firstName} {attachment.uploadedBy.lastName}
+                                </p>
+                              </div>
+                            </div>
+                            <a
+                              href={attachment.filePath}
+                              download={attachment.fileName}
+                              className="flex-shrink-0"
+                              data-testid={`button-download-delivery-${attachment.id}`}
+                            >
+                              <Button variant="ghost" size="sm">
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Save Delivery Info Button */}
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={handleSaveDelivery}
+                  disabled={saveDeliveryMutation.isPending}
+                  data-testid="button-save-delivery"
+                  className="gradient-button-primary text-white font-semibold"
+                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                >
+                  {saveDeliveryMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Delivery Info
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </CollapsibleSection>
         )}
 

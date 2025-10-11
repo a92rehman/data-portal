@@ -165,6 +165,10 @@ export const dataRequests = pgTable("data_requests", {
   pipelineChangeType: varchar("pipeline_change_type"),
   pipelineDetails: text("pipeline_details"),
   
+  // Delivery fields
+  deliveryLinks: text("delivery_links").array(), // Links to deliverables (dashboards, reports, etc.)
+  deliveryNotes: text("delivery_notes"), // Additional notes about the delivery
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -187,6 +191,7 @@ export const attachments = pgTable("attachments", {
   fileSize: integer("file_size").notNull(),
   mimeType: varchar("mime_type").notNull(),
   uploadedById: varchar("uploaded_by_id").notNull().references(() => users.id),
+  isDelivery: varchar("is_delivery").notNull().default("false"), // "true" for delivery attachments, "false" for request attachments
   createdAt: timestamp("created_at").defaultNow(),
 });
 
