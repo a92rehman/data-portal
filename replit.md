@@ -6,26 +6,6 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
-**October 11, 2025 - Request Workflow and Real-Time Features**
-- **Accept/Reject/Complete Workflow**: Added UI state management to show success messages when accept/reject/complete buttons are clicked (buttons disappear, success message appears)
-- **Request Delivery System**: 
-  - Added delivery section for completed/in-progress requests with file attachments and link inputs
-  - New database fields: `deliveryLinks` (text array), `deliveryNotes` (text), `isDelivery` flag for attachments
-  - Backend endpoint: `PATCH /api/requests/:id/delivery` for saving delivery information
-  - UI section with multiple link inputs, notes textarea, and file upload capability
-  - Delivery attachments marked with `isDelivery=true` flag to differentiate from request attachments
-- **Real-Time Countdown**: Added live countdown indicator showing time remaining until due date
-  - Updates every minute automatically
-  - Shows "X days Y hours left" or "Overdue by X hours" with color coding (blue for normal, red for overdue)
-  - Hides for completed/cancelled requests
-- **Real-Time Updates via Polling**: 
-  - Notifications poll every 5 seconds (reduced from 30s)
-  - Request list polls every 10 seconds
-  - Mutations trigger immediate cache invalidation and refetch
-  - Status changes appear across all user portals without manual refresh
-- **Conditional Field Display**: Request detail fields now show conditionally based on request type (e.g., data_extraction shows only primaryQuestion and businessProblem)
-- **Minimal Design Updates**: Changed information tile colors from vibrant to minimal/subtle theme (gray-100/slate-100 in light, gray-800/slate-800 in dark)
-
 **October 11, 2025 - Test Email Support for Production Testing**
 - Added test email support for production testing purposes
 - Test emails: ar09info@gmail.com (requester), ar92info@gmail.com (analyst)

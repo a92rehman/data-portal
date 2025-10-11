@@ -1022,42 +1022,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add delivery information (links and notes)
-  app.patch('/api/requests/:id/delivery', isAuthenticated, async (req: any, res) => {
-    try {
-      const user = await storage.getUser(req.user.id);
-      
-      // Both Data Lead and Analyst can add delivery info
-      if (!user || !user.role || !['team_lead', 'analyst'].includes(user.role)) {
-        return res.status(403).json({ message: "Unauthorized" });
-      }
-
-      // For analysts, verify they're assigned to this request
-      if (user.role === 'analyst') {
-        const requestDetails = await storage.getDataRequest(req.params.id);
-        if (!requestDetails || requestDetails.assignedToId !== user.id) {
-          return res.status(403).json({ message: "You can only add delivery info to requests assigned to you" });
-        }
-      }
-
-      const { deliveryLinks, deliveryNotes } = req.body;
-      
-      const request = await storage.updateDeliveryInfo(req.params.id, {
-        deliveryLinks: deliveryLinks || [],
-        deliveryNotes: deliveryNotes || null,
-      });
-      
-      if (!request) {
-        return res.status(404).json({ message: "Request not found" });
-      }
-
-      res.json(request);
-    } catch (error) {
-      console.error("Error updating delivery info:", error);
-      res.status(500).json({ message: "Failed to update delivery info" });
-    }
-  });
-
   app.patch('/api/requests/:id/assign-analyst', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
@@ -1269,7 +1233,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filePath: objectPath,
         fileSize: req.body.fileSize,
         mimeType: req.body.mimeType,
-        isDelivery: req.body.isDelivery || "false",
       });
       
       const attachment = await storage.addAttachment(validatedData, userId);
