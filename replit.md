@@ -6,6 +6,23 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
+**October 11, 2025 - Test Email Support for Production Testing**
+- Added test email support for production testing purposes
+- Test emails: ar09info@gmail.com (requester), ar92info@gmail.com (analyst)
+- Created isAllowedRequesterEmail() helper function in backend to centralize email validation
+- Updated frontend signup validation to accept test emails
+- Updated backend validation in 4 locations: role changes, email updates, invites, role selection
+- Test emails bypass company domain requirements for testing all workflows
+
+**October 11, 2025 - Request Detail Dialog Enhancements**
+- Made dialog fullscreen (98vw x 98vh) for better visibility
+- Added back button with ArrowLeft icon to dialog header
+- Improved header text alignment with flex layout
+- Updated information tile colors to be more vibrant and visible:
+  - Light mode: solid colors (purple-200, blue-200, green-200, orange-200)
+  - Dark mode: solid colors (purple-700, blue-700, green-700, orange-700)
+  - Enhanced borders and text contrast for better readability
+
 **October 10, 2025 - Extended Request Types and Form Fields**
 - Added new request types: BigQuery Access, Event Tracking, Metric Change, Pipeline Change, Recurring Report
 - Added team/sub-department field to data requests for better organizational tracking
