@@ -719,282 +719,752 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   return (
     <>
-      {/* Header Card */}
-      <div className="-m-6 mb-6">
-        <Card className="p-4 shadow-md border border-gray-200 dark:border-gray-700 rounded-none border-x-0 border-t-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="sr-only">Request Details</DialogTitle>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white" data-testid="text-request-title">
+      {/* Header Row */}
+      <DialogHeader className="border-b pb-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 -m-6 mb-0 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="flex-shrink-0 hover:bg-purple-100 dark:hover:bg-purple-800/30"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1">
+              <DialogTitle className="text-2xl font-bold text-foreground" data-testid="text-request-title">
                 {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
-                Request Type: {formatRequestType(request.type)} | ID: {request.id.slice(0, 8)}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                Data request details for {request.requestedBy.firstName} {request.requestedBy.lastName}, status: {request.status}
+              </DialogDescription>
+              <p className="text-sm font-mono text-muted-foreground mt-1" data-testid="text-request-id">
+                ID: {request.id.slice(0, 8)}
+              </p>
+            </div>
+          </div>
+          
+          {/* Accept/Reject Buttons - Only for submitted status, Team Lead only */}
+          {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
+            <div className="flex gap-3">
+              <Button
+                onClick={() => acceptRequestMutation.mutate()}
+                disabled={acceptRequestMutation.isPending}
+                data-testid="button-accept-request"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+              >
+                {acceptRequestMutation.isPending ? "Accepting..." : "✓ Accept"}
+              </Button>
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                disabled={rejectRequestMutation.isPending}
+                variant="destructive"
+                data-testid="button-reject-request"
+              >
+                ✕ Reject
+              </Button>
+            </div>
+          )}
+          
+          {/* Success Messages */}
+          {justAccepted && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <span className="font-semibold text-green-700 dark:text-green-400" data-testid="text-request-accepted">Request Accepted</span>
+            </div>
+          )}
+          {justRejected && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <span className="font-semibold text-red-700 dark:text-red-400" data-testid="text-request-rejected">Request Rejected</span>
+            </div>
+          )}
+        </div>
+      </DialogHeader>
+
+      <ScrollArea className="flex-1 px-6">
+        <div className="py-6 space-y-6">
+          {/* Info Grid Row - 4 columns, read-only display */}
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2 flex items-center gap-1">
+                {getPriorityIcon(request.priority)}
+                Priority
+              </p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white" data-testid="priority-display">
+                {formatPriority(request.priority)}
               </p>
             </div>
             
-            {/* Accept/Reject Buttons */}
-            {isTeamLead && !justAccepted && !justRejected && (
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => acceptRequestMutation.mutate()}
-                  disabled={acceptRequestMutation.isPending}
-                  variant="outline"
-                  data-testid="button-accept-request"
-                >
-                  {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
-                </Button>
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={rejectRequestMutation.isPending}
-                  variant="destructive"
-                  data-testid="button-reject-request"
-                >
-                  Reject
-                </Button>
-              </div>
-            )}
+            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+              <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-bold mb-2">Due Date</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white mb-2" data-testid="text-due-date">
+                {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+              <TimeRemaining dueDate={new Date(request.dueDate).toISOString()} status={request.status} />
+            </div>
             
-            {/* Success Messages */}
-            {justAccepted && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span className="font-semibold text-green-700 dark:text-green-400" data-testid="text-request-accepted">Request Accepted</span>
-              </div>
-            )}
-            {justRejected && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
-                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                <span className="font-semibold text-red-700 dark:text-red-400" data-testid="text-request-rejected">Request Rejected</span>
-              </div>
-            )}
-          </div>
-        </Card>
-      </div>
-
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
-        {/* Info Grid - Read-only display */}
-        <div className="grid grid-cols-4 gap-4">
-          <Input 
-            placeholder="Priority" 
-            value={formatPriority(request.priority)}
-            readOnly
-            className="bg-gray-50 dark:bg-gray-900"
-            data-testid="priority-display"
-          />
-          <Input 
-            type="text" 
-            placeholder="Due Date"
-            value={new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-            readOnly
-            className="bg-gray-50 dark:bg-gray-900"
-            data-testid="text-due-date"
-          />
-          <Input 
-            placeholder="Department/Team" 
-            value={request.department}
-            readOnly
-            className="bg-gray-50 dark:bg-gray-900 capitalize"
-            data-testid="text-department"
-          />
-          <Input 
-            placeholder="Requested By" 
-            value={`${request.requestedBy.firstName} ${request.requestedBy.lastName}`}
-            readOnly
-            className="bg-gray-50 dark:bg-gray-900"
-            data-testid="text-requested-by"
-          />
-        </div>
-
-        {/* Action Row - Team Lead only */}
-        {isTeamLead && (
-          <div className="grid grid-cols-4 gap-4">
-            <Input 
-              placeholder="New Priority" 
-              value={editedPriority ? formatPriority(editedPriority) : ''}
-              readOnly
-              className="bg-gray-50 dark:bg-gray-900"
-            />
-            <Input 
-              type="date" 
-              placeholder="New Due Date"
-              value={editedDueDate}
-              onChange={(e) => setEditedDueDate(e.target.value)}
-              data-testid="input-edit-due-date"
-            />
-            <div className="col-span-2">
-              <Input 
-                placeholder="Assigned To" 
-                value={selectedAnalyst && selectedAnalyst !== 'unassigned' ? 
-                  analysts.find(a => a.id === selectedAnalyst)?.firstName + ' ' + analysts.find(a => a.id === selectedAnalyst)?.lastName : 
-                  request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : 'Unassigned'}
-                readOnly
-                className="w-full bg-gray-50 dark:bg-gray-900"
-                data-testid="text-assigned-to"
-              />
+            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Department</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white capitalize" data-testid="text-department">
+                {request.department}
+              </p>
+            </div>
+            
+            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+              <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-bold mb-2">Requested By</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white" data-testid="text-requested-by">
+                {request.requestedBy.firstName} {request.requestedBy.lastName}
+              </p>
             </div>
           </div>
-        )}
 
-        {/* Two-Column Main Content Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Left Card - Request Details */}
-          <Card className="p-4 shadow-md border border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Request Details</h3>
-            <Textarea 
-              rows={6}
-              placeholder="Enter request details here..."
-              value={(() => {
-                let details = `Title: ${request.title}\n\n`;
-                if (request.primaryQuestion) details += `Primary Question: ${request.primaryQuestion}\n\n`;
-                if (request.businessProblem) details += `Business Problem: ${request.businessProblem}\n\n`;
-                if (request.decisionAction) details += `Decision/Action: ${request.decisionAction}\n\n`;
-                if (request.bugDescription) details += `Bug Description: ${request.bugDescription}\n\n`;
-                if (request.bugLocation) details += `Bug Location: ${request.bugLocation}\n\n`;
-                if (request.bqEmail) details += `BigQuery Email: ${request.bqEmail}\n\n`;
-                if (request.bqDatasets) details += `Datasets: ${request.bqDatasets}\n\n`;
-                if (request.bqPurpose) details += `Purpose: ${request.bqPurpose}\n\n`;
-                if (request.trackingEvent) details += `Event: ${request.trackingEvent}\n\n`;
-                if (request.trackingPlatform) details += `Platform: ${request.trackingPlatform}\n\n`;
-                if (request.trackingDetails) details += `Tracking Details: ${request.trackingDetails}\n\n`;
-                if (request.metricName) details += `Metric: ${request.metricName}\n\n`;
-                if (request.metricChangeType) details += `Change Type: ${request.metricChangeType}\n\n`;
-                if (request.metricReason) details += `Reason: ${request.metricReason}\n\n`;
-                if (request.pipelineName) details += `Pipeline: ${request.pipelineName}\n\n`;
-                if (request.pipelineChangeType) details += `Change Type: ${request.pipelineChangeType}\n\n`;
-                if (request.pipelineDetails) details += `Details: ${request.pipelineDetails}\n\n`;
-                return details.trim();
-              })()}
-              readOnly
-              className="bg-gray-50 dark:bg-gray-900"
-              data-testid="textarea-request-details"
-            />
-          </Card>
-
-          {/* Right Card - Delivery */}
-          <Card className="p-4 space-y-4 shadow-md border border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Delivery</h3>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Type</label>
-              <Select value={deliveryType} onValueChange={(value) => setDeliveryType(value as "link" | "attachment")} data-testid="select-delivery-type">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select delivery type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="attachment">Attachment</SelectItem>
-                  <SelectItem value="link">Link</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {deliveryType === "attachment" && (
+          {/* Action Row - 3 columns, Team Lead only */}
+          {isTeamLead && (
+            <div className="grid grid-cols-3 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
               <div>
-                <label className="block text-sm font-medium mb-1">Attachment</label>
-                <Input type="file" data-testid="input-file-attachment" />
+                <label className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-2 block uppercase">New Priority</label>
+                <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
+                  <SelectTrigger className="w-full bg-white dark:bg-gray-800">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="p0_critical">P0 - Critical</SelectItem>
+                    <SelectItem value="p1_high">P1 - High</SelectItem>
+                    <SelectItem value="p2_medium">P2 - Medium</SelectItem>
+                    <SelectItem value="p3_low">P3 - Low</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-
-            {deliveryType === "link" && (
+              
               <div>
-                <label className="block text-sm font-medium mb-1">Link URL</label>
-                <Input type="url" placeholder="https://..." data-testid="input-delivery-link" />
+                <label className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-2 block uppercase">New Due Date</label>
+                <Input 
+                  type="date" 
+                  value={editedDueDate}
+                  onChange={(e) => setEditedDueDate(e.target.value)}
+                  className="bg-white dark:bg-gray-800"
+                  data-testid="input-edit-due-date"
+                />
               </div>
-            )}
-
-            {request.status === "completed" && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Delivered On</label>
-                  <Input
-                    type="date"
-                    value={request.updatedAt ? new Date(request.updatedAt).toISOString().split('T')[0] : ""}
-                    readOnly
-                    data-testid="input-delivered-date"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Used to auto-calculate On Time vs Late using the (new) due date.
-                  </p>
+              
+              <div>
+                <label className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-2 block uppercase">Assigned To</label>
+                <div className="flex gap-2">
+                  <Select value={selectedAnalyst} onValueChange={setSelectedAnalyst} data-testid="select-assign-analyst">
+                    <SelectTrigger className="flex-1 bg-white dark:bg-gray-800">
+                      <SelectValue placeholder="Select analyst..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {analysts.map((analyst) => (
+                        <SelectItem key={analyst.id} value={analyst.id}>
+                          {analyst.firstName} {analyst.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    size="sm" 
+                    onClick={handleAssignAnalyst}
+                    disabled={!selectedAnalyst || assignMutation.isPending}
+                    data-testid="button-assign"
+                    className="gradient-button-primary text-white font-semibold"
+                    style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                  >
+                    {assignMutation.isPending ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      "Assign"
+                    )}
+                  </Button>
                 </div>
+              </div>
+            </div>
+          )}
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">On Time</label>
-                  <div className={`rounded-md border px-3 py-2 text-sm ${
-                    isDeliveryOnTime() === true 
-                      ? "border-green-300 text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400" 
-                      : isDeliveryOnTime() === false
-                      ? "border-red-300 text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
-                      : "bg-gray-50 text-gray-600 dark:bg-gray-900 dark:text-gray-400"
-                  }`}>
-                    {isDeliveryOnTime() === null ? "---" : isDeliveryOnTime() ? "On time" : "Late"}
+          {/* Two-Column Main Area - 70% left, 30% right */}
+          <div className="grid grid-cols-10 gap-6">
+            {/* Left Column - 70% (7/10 columns) - Request Details */}
+            <div className="col-span-7 space-y-6">
+              <div>
+                <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-4">Request Details</h3>
+                
+                <div className="space-y-4">
+                  {/* Title */}
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Title</p>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-foreground" data-testid="text-request-title-detail">
+                        {request.title}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
 
-            {request.status === "in_progress" && (isTeamLead || isAnalyst) && !justCompleted && (
-              <div className="pt-2">
-                <Button 
-                  onClick={() => completeRequestMutation.mutate()}
-                  disabled={completeRequestMutation.isPending}
-                  className="w-full bg-black hover:bg-gray-800 text-white"
-                  data-testid="button-mark-completed"
-                >
-                  {completeRequestMutation.isPending ? "Marking..." : "Mark as Completed"}
-                </Button>
-              </div>
-            )}
+                  {/* Primary Question - for most request types */}
+                  {(request.primaryQuestion || !['data_bug', 'bq_access', 'tracking', 'metric_change', 'pipeline_change'].includes(request.type)) && request.primaryQuestion && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Primary Question</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-primary-question">
+                          {request.primaryQuestion}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-            {justCompleted && (
-              <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                <span className="font-semibold text-green-700 dark:text-green-400" data-testid="text-marked-completed">Marked as Completed</span>
-              </div>
-            )}
-          </Card>
-        </div>
+                  {/* Business Problem */}
+                  {request.businessProblem && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Business Problem or Goal</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-business-problem">
+                          {request.businessProblem}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-        {/* Bottom Full-Width - Messages/Comments Section */}
-        <Card className="border-2 border-purple-200 dark:border-purple-700">
-          <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-4">Messages/Comments ({request.comments.length})</h3>
-          
-          {/* Add Comment Form */}
-          <div className="mb-4">
-            <form onSubmit={onCommentSubmit} className="space-y-2">
-              <Textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Write a comment or ask a question..."
-                className="w-full min-h-[90px] border-2 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 resize-none"
-                data-testid="input-new-comment"
-              />
-              <div className="flex justify-end">
-                <Button 
-                  type="submit" 
-                  disabled={!newComment.trim() || addCommentMutation.isPending}
-                  data-testid="button-add-comment"
-                  className="gradient-button-primary text-white font-semibold px-8"
-                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                >
-                  {addCommentMutation.isPending ? (
+                  {/* Decision Action */}
+                  {request.decisionAction && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Decision/Action Expected</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-decision-action">
+                          {request.decisionAction}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Type-specific fields */}
+                  
+                  {/* Data Bug fields */}
+                  {request.bugDescription && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Bug Description</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bug-description">
+                          {request.bugDescription}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.bugLocation && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Bug Location</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bug-location">
+                          {request.bugLocation}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BigQuery Access fields */}
+                  {request.bqEmail && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">BigQuery Email</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bq-email">
+                          {request.bqEmail}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.bqDatasets && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Datasets</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bq-datasets">
+                          {request.bqDatasets}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.bqPurpose && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Access Purpose</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bq-purpose">
+                          {request.bqPurpose}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tracking fields */}
+                  {request.trackingEvent && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Event Name</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-tracking-event">
+                          {request.trackingEvent}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.trackingPlatform && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Tracking Platform</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-tracking-platform">
+                          {request.trackingPlatform}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.trackingDetails && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Tracking Details</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-tracking-details">
+                          {request.trackingDetails}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metric Change fields */}
+                  {request.metricName && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Metric Name</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-metric-name">
+                          {request.metricName}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.metricChangeType && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Change Type</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-metric-change-type">
+                          {request.metricChangeType}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.metricReason && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Reason for Change</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-metric-reason">
+                          {request.metricReason}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pipeline Change fields */}
+                  {request.pipelineName && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Pipeline Name</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-pipeline-name">
+                          {request.pipelineName}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.pipelineChangeType && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Change Type</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-pipeline-change-type">
+                          {request.pipelineChangeType}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.pipelineDetails && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Pipeline Details</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-pipeline-details">
+                          {request.pipelineDetails}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dashboard fields */}
+                  {(request.type === "new_dashboard" || request.type === "modify_dashboard") && (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Posting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Post Comment
+                      {request.dashboardAudience && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Dashboard Audience</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-dashboard-audience">
+                              {request.dashboardAudience}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {request.dashboardRefreshFrequency && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Refresh Frequency</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground capitalize" data-testid="text-refresh-frequency">
+                              {request.dashboardRefreshFrequency}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {request.keyMetrics && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Key Metrics/KPIs</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-key-metrics">
+                              {request.keyMetrics}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {request.filters && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Filters</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-filters">
+                              {request.filters}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {request.mockups && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Mock-ups, Examples, or Links</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-mockups">
+                              {request.mockups}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {request.actionPlan && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Action Plan</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-action-plan">
+                              {request.actionPlan}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
-                </Button>
+
+                  {/* Attachments */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-semibold">Attachments</p>
+                      <ObjectUploader
+                        maxNumberOfFiles={5}
+                        maxFileSize={10485760}
+                        onGetUploadParameters={handleGetUploadParameters}
+                        onComplete={handleUploadComplete}
+                        buttonVariant="outline"
+                        buttonSize="sm"
+                      >
+                        <Paperclip className="w-4 h-4 mr-2" />
+                        Upload
+                      </ObjectUploader>
+                    </div>
+                    {request.attachments && request.attachments.filter(a => !a.isDelivery).length > 0 ? (
+                      <div className="space-y-2">
+                        {request.attachments.filter(a => !a.isDelivery).map((attachment) => (
+                          <div key={attachment.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <FileIcon className="w-4 h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate" data-testid={`attachment-name-${attachment.id}`}>
+                                    {attachment.fileName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatFileSize(attachment.fileSize)}
+                                  </p>
+                                </div>
+                              </div>
+                              <a
+                                href={attachment.filePath}
+                                download={attachment.fileName}
+                                className="flex-shrink-0"
+                                data-testid={`button-download-${attachment.id}`}
+                              >
+                                <Button variant="ghost" size="sm">
+                                  <Download className="w-4 h-4" />
+                                </Button>
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
+                        <p className="text-sm text-muted-foreground text-center">No attachments yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </form>
+            </div>
+
+            {/* Right Column - 30% (3/10 columns) - Delivery */}
+            <div className="col-span-3">
+              <div className="sticky top-0">
+                <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-4">Delivery</h3>
+                
+                {(isTeamLead || isAnalyst) && (request.status === "in_progress" || request.status === "completed") ? (
+                  <div className="space-y-4 p-4 border border-purple-200 dark:border-purple-700 rounded-lg bg-purple-50/30 dark:bg-purple-900/10">
+                    {/* Delivery Type Dropdown */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block uppercase">Delivery Type</label>
+                      <Select value={deliveryType} onValueChange={(value: "attachment" | "link") => setDeliveryType(value)} data-testid="select-delivery-type">
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="link">Link</SelectItem>
+                          <SelectItem value="attachment">Attachment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Show file uploader OR link inputs based on selection */}
+                    {deliveryType === "attachment" ? (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block uppercase">Upload Delivery File</label>
+                        <ObjectUploader
+                          maxFileSize={10485760}
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={handleDeliveryUploadComplete}
+                          buttonVariant="outline"
+                          buttonSize="sm"
+                        >
+                          <Paperclip className="w-4 h-4 mr-2" />
+                          Upload File
+                        </ObjectUploader>
+                        
+                        {request.attachments && request.attachments.filter(a => a.isDelivery).length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {request.attachments
+                              .filter(attachment => attachment.isDelivery)
+                              .map((attachment) => (
+                                <div key={attachment.id} className="border border-green-200 dark:border-green-700 rounded-lg p-2 bg-green-50 dark:bg-green-900/20">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      <FileIcon className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                      <p className="text-xs font-medium text-foreground truncate" data-testid={`delivery-attachment-name-${attachment.id}`}>
+                                        {attachment.fileName}
+                                      </p>
+                                    </div>
+                                    <a
+                                      href={attachment.filePath}
+                                      download={attachment.fileName}
+                                      data-testid={`button-download-delivery-${attachment.id}`}
+                                    >
+                                      <Button variant="ghost" size="sm">
+                                        <Download className="w-3 h-3" />
+                                      </Button>
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block uppercase">Delivery Links</label>
+                          {deliveryLinks.map((link, index) => (
+                            <div key={index} className="flex items-center gap-2 mb-2">
+                              <Input
+                                value={link}
+                                readOnly
+                                className="flex-1 text-xs"
+                                data-testid={`delivery-link-${index}`}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveDeliveryLink(index)}
+                                data-testid={`button-remove-link-${index}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={newDeliveryLink}
+                              onChange={(e) => setNewDeliveryLink(e.target.value)}
+                              placeholder="Enter link..."
+                              className="text-xs"
+                              data-testid="input-new-delivery-link"
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleAddDeliveryLink();
+                                }
+                              }}
+                            />
+                            <Button
+                              onClick={handleAddDeliveryLink}
+                              disabled={!newDeliveryLink.trim()}
+                              size="sm"
+                              data-testid="button-add-delivery-link"
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Delivery Notes */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 block uppercase">Notes</label>
+                      <Textarea
+                        value={deliveryNotes}
+                        onChange={(e) => setDeliveryNotes(e.target.value)}
+                        placeholder="Add notes..."
+                        className="min-h-[80px] text-sm"
+                        data-testid="textarea-delivery-notes"
+                      />
+                    </div>
+
+                    {/* Save Delivery Button */}
+                    <Button
+                      onClick={handleSaveDelivery}
+                      disabled={saveDeliveryMutation.isPending}
+                      data-testid="button-save-delivery"
+                      className="w-full gradient-button-primary text-white font-semibold"
+                      style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                    >
+                      {saveDeliveryMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Delivery
+                        </>
+                      )}
+                    </Button>
+
+                    {/* On Time Status Indicator */}
+                    {request.status === "completed" && isDeliveryOnTime() !== null && (
+                      <div className={`p-3 rounded-lg border ${isDeliveryOnTime() ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700'}`}>
+                        <p className={`text-sm font-semibold ${isDeliveryOnTime() ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`} data-testid="delivery-status">
+                          {isDeliveryOnTime() ? '✓ Delivered On Time' : '⚠ Delivered Late'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Request Completed Button - for in_progress status, Team Lead/Analyst only */}
+                    {request.status === "in_progress" && (
+                      <div className="pt-2">
+                        {justCompleted ? (
+                          <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-400" data-testid="text-request-completed">Completed</span>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => completeRequestMutation.mutate()}
+                            disabled={completeRequestMutation.isPending}
+                            data-testid="button-mark-complete"
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+                          >
+                            {completeRequestMutation.isPending ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                Completing...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Mark as Complete
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                    <p className="text-sm text-muted-foreground text-center">
+                      {request.status === "in_progress" || request.status === "completed" 
+                        ? "No delivery information available" 
+                        : "Delivery section will be available when request is in progress"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Comments Thread */}
-          <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-4">
+          {/* Bottom Full-Width - Messages/Comments Section */}
+          <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-6">
+            <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-4">Messages/Comments ({request.comments.length})</h3>
+            
+            {/* Add Comment Form */}
+            <div className="mb-4">
+              <form onSubmit={onCommentSubmit} className="space-y-2">
+                <Textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Write a comment or ask a question..."
+                  className="w-full min-h-[90px] border-2 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 resize-none"
+                  data-testid="input-new-comment"
+                />
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    disabled={!newComment.trim() || addCommentMutation.isPending}
+                    data-testid="button-add-comment"
+                    className="gradient-button-primary text-white font-semibold px-8"
+                    style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                  >
+                    {addCommentMutation.isPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Posting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Post Comment
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+            {/* Comments Thread */}
+            <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-4">
               {request.comments.length === 0 ? (
                 <div className="text-center py-10 border-2 border-dashed border-purple-200 dark:border-purple-700 rounded-lg bg-purple-50/30 dark:bg-purple-900/10">
                   <MessageSquare className="w-14 h-14 mx-auto text-purple-400 dark:text-purple-600 mb-3" />
@@ -1036,8 +1506,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </div>
               )}
             </div>
-          </Card>
+          </div>
         </div>
+      </ScrollArea>
 
       {/* Reject Request Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
