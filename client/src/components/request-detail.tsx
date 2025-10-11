@@ -620,7 +620,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           )}
 
           {/* Status Banners - Show in header after Accept/Reject actions */}
-          {request.status === "under_review" && (
+          {request.status === "accepted" && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex-shrink-0" data-testid="banner-request-accepted">
               <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
               <div>
