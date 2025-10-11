@@ -595,8 +595,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
           </div>
 
-          {/* Accept/Reject Buttons - Only for Team Lead when status is pending_review */}
-          {isTeamLead && request.status === "pending_review" && (
+          {/* Accept/Reject Buttons - Only for Team Lead when status is submitted */}
+          {isTeamLead && request.status === "submitted" && (
             <div className="flex gap-2 flex-shrink-0">
               <Button
                 onClick={() => acceptRequestMutation.mutate()}
@@ -622,6 +622,31 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       </DialogHeader>
 
       <ScrollArea className="flex-1">
+        {/* Status Banners - Show after Accept/Reject actions */}
+        {isTeamLead && request.status === "under_review" && (
+          <div className="px-6 pt-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800" data-testid="banner-request-accepted">
+              <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-green-700 dark:text-green-400">✓ Request Accepted</p>
+                <p className="text-xs text-green-600 dark:text-green-500">This request has been accepted and is ready for assignment</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isTeamLead && request.rejectionReason && (
+          <div className="px-6 pt-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800" data-testid="banner-request-rejected">
+              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">✗ Request Rejected</p>
+                <p className="text-xs text-red-600 dark:text-red-500">{request.rejectionReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 2. 4-Column Info Tiles Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 border-b bg-gray-50 dark:bg-gray-800/50">
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
@@ -1137,8 +1162,94 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </div>
                 )}
 
+                {/* Read-Only Delivery Panel for Team Lead */}
+                {isTeamLead && (
+                  <div className="space-y-3 border-t pt-4">
+                    <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status (Analyst View)</p>
+                    
+                    {/* Delivery Type Display */}
+                    {request.deliveryType && (
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
+                          Delivery Type
+                        </label>
+                        <Badge variant="outline" data-testid="badge-delivery-type">
+                          {request.deliveryType === "attachment" ? "Attachment" : "Link"}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {/* Delivery Link/File Display */}
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
+                        Delivery Link/File
+                      </label>
+                      {request.deliveryType === "link" && request.deliveryLink ? (
+                        <a 
+                          href={request.deliveryLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
+                          data-testid="text-delivery-link"
+                        >
+                          {request.deliveryLink}
+                        </a>
+                      ) : request.deliveryType === "attachment" ? (
+                        <p className="text-sm text-muted-foreground" data-testid="text-delivery-file">
+                          File uploaded
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground" data-testid="text-no-delivery">
+                          Not set yet
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Delivered Status */}
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
+                        Delivered Status
+                      </label>
+                      {request.deliveredAt ? (
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm text-green-700 dark:text-green-400" data-testid="text-delivered-yes">
+                            Delivered on {new Date(request.deliveredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground" data-testid="text-delivered-no">
+                          Not delivered yet
+                        </p>
+                      )}
+                    </div>
+
+                    {/* On Time/Late Indicator - Show only if delivered */}
+                    {request.deliveredAt && (
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
+                          Delivery Timeliness
+                        </label>
+                        <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+                          {isOnTime() ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                              <span className="text-sm font-semibold text-green-700 dark:text-green-400" data-testid="status-delivery-on-time">On Time</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                              <span className="text-sm font-semibold text-red-700 dark:text-red-400" data-testid="status-delivery-late">Late</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* On Time Indicator */}
-                {!isAnalyst && (
+                {!isAnalyst && !isTeamLead && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Timeline Status</p>
                     <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
