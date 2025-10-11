@@ -747,7 +747,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           
           {/* Accept/Reject Buttons - Only for submitted status, Team Lead only */}
           {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-3">
               <Button
                 onClick={() => acceptRequestMutation.mutate()}
                 disabled={acceptRequestMutation.isPending}
@@ -769,13 +769,13 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           
           {/* Success Messages */}
           {justAccepted && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700 mt-3">
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
               <span className="font-semibold text-green-700 dark:text-green-400" data-testid="text-request-accepted">Request Accepted</span>
             </div>
           )}
           {justRejected && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700 mt-3">
               <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
               <span className="font-semibold text-red-700 dark:text-red-400" data-testid="text-request-rejected">Request Rejected</span>
             </div>
