@@ -772,106 +772,69 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </Card>
       </div>
 
-      <ScrollArea className="flex-1 px-6">
-        <div className="py-6 space-y-6">
-          {/* Info Grid Row - 4 columns, read-only display */}
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        {/* Info Grid - Read-only display */}
+        <div className="grid grid-cols-4 gap-4">
+          <Input 
+            placeholder="Priority" 
+            value={formatPriority(request.priority)}
+            readOnly
+            className="bg-gray-50 dark:bg-gray-900"
+            data-testid="priority-display"
+          />
+          <Input 
+            type="text" 
+            placeholder="Due Date"
+            value={new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            readOnly
+            className="bg-gray-50 dark:bg-gray-900"
+            data-testid="text-due-date"
+          />
+          <Input 
+            placeholder="Department/Team" 
+            value={request.department}
+            readOnly
+            className="bg-gray-50 dark:bg-gray-900 capitalize"
+            data-testid="text-department"
+          />
+          <Input 
+            placeholder="Requested By" 
+            value={`${request.requestedBy.firstName} ${request.requestedBy.lastName}`}
+            readOnly
+            className="bg-gray-50 dark:bg-gray-900"
+            data-testid="text-requested-by"
+          />
+        </div>
+
+        {/* Action Row - Team Lead only */}
+        {isTeamLead && (
           <div className="grid grid-cols-4 gap-4">
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2 flex items-center gap-1">
-                {getPriorityIcon(request.priority)}
-                Priority
-              </p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white" data-testid="priority-display">
-                {formatPriority(request.priority)}
-              </p>
-            </div>
-            
-            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-              <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-bold mb-2">Due Date</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white mb-2" data-testid="text-due-date">
-                {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-              </p>
-              <TimeRemaining dueDate={new Date(request.dueDate).toISOString()} status={request.status} />
-            </div>
-            
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-2">Department</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white capitalize" data-testid="text-department">
-                {request.department}
-              </p>
-            </div>
-            
-            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-              <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-bold mb-2">Requested By</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-white" data-testid="text-requested-by">
-                {request.requestedBy.firstName} {request.requestedBy.lastName}
-              </p>
+            <Input 
+              placeholder="New Priority" 
+              value={editedPriority ? formatPriority(editedPriority) : ''}
+              readOnly
+              className="bg-gray-50 dark:bg-gray-900"
+            />
+            <Input 
+              type="date" 
+              placeholder="New Due Date"
+              value={editedDueDate}
+              onChange={(e) => setEditedDueDate(e.target.value)}
+              data-testid="input-edit-due-date"
+            />
+            <div className="col-span-2">
+              <Input 
+                placeholder="Assigned To" 
+                value={selectedAnalyst && selectedAnalyst !== 'unassigned' ? 
+                  analysts.find(a => a.id === selectedAnalyst)?.firstName + ' ' + analysts.find(a => a.id === selectedAnalyst)?.lastName : 
+                  request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : 'Unassigned'}
+                readOnly
+                className="w-full bg-gray-50 dark:bg-gray-900"
+                data-testid="text-assigned-to"
+              />
             </div>
           </div>
-
-          {/* Action Row - 3 columns, Team Lead only */}
-          {isTeamLead && (
-            <div className="grid grid-cols-3 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-              <div>
-                <label className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-2 block uppercase">New Priority</label>
-                <Select value={editedPriority} onValueChange={(value) => setEditedPriority(value as "p0_critical" | "p1_high" | "p2_medium" | "p3_low")} data-testid="select-edit-priority">
-                  <SelectTrigger className="w-full bg-white dark:bg-gray-800">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="p0_critical">P0 - Critical</SelectItem>
-                    <SelectItem value="p1_high">P1 - High</SelectItem>
-                    <SelectItem value="p2_medium">P2 - Medium</SelectItem>
-                    <SelectItem value="p3_low">P3 - Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-2 block uppercase">New Due Date</label>
-                <Input 
-                  type="date" 
-                  value={editedDueDate}
-                  onChange={(e) => setEditedDueDate(e.target.value)}
-                  className="bg-white dark:bg-gray-800"
-                  data-testid="input-edit-due-date"
-                />
-              </div>
-              
-              <div>
-                <label className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-2 block uppercase">Assigned To</label>
-                <div className="flex gap-2">
-                  <Select value={selectedAnalyst} onValueChange={setSelectedAnalyst} data-testid="select-assign-analyst">
-                    <SelectTrigger className="flex-1 bg-white dark:bg-gray-800">
-                      <SelectValue placeholder="Select analyst..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {analysts.map((analyst) => (
-                        <SelectItem key={analyst.id} value={analyst.id}>
-                          {analyst.firstName} {analyst.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    size="sm" 
-                    onClick={handleAssignAnalyst}
-                    disabled={!selectedAnalyst || assignMutation.isPending}
-                    data-testid="button-assign"
-                    className="gradient-button-primary text-white font-semibold"
-                    style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                  >
-                    {assignMutation.isPending ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      "Assign"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+        )}
 
           {/* Two-Column Main Area */}
           <div className="grid grid-cols-10 gap-6">
@@ -1075,7 +1038,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </div>
       </div>
-      </ScrollArea>
 
       {/* Reject Request Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
