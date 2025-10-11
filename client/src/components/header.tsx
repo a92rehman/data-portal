@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import type { User, Notification } from "@shared/schema";
 
 interface HeaderProps {
@@ -38,10 +39,11 @@ export default function Header({ user }: HeaderProps) {
     return false;
   });
 
+  useWebSocket(user?.id);
+
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
     enabled: !!user,
-    refetchInterval: 30000, // Poll every 30 seconds
   });
 
   const unreadCount = notifications.filter(n => n.read === 'false').length;

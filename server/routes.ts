@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
+import { setupWebSocketServer, getWebSocketServer } from "./websocket";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -838,6 +839,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
+      const wsServer = getWebSocketServer();
+      if (wsServer) {
+        wsServer.notifyUser(request.requestedById, {
+          type: 'request_accepted',
+          requestId: request.id,
+          message: `Your request "${request.title}" has been accepted`,
+        });
+      }
+
       res.json(request);
     } catch (error) {
       console.error("Error accepting request:", error);
@@ -903,6 +913,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requestId: request.id,
             read: 'false',
           });
+          
+          const wsServer = getWebSocketServer();
+          if (wsServer) {
+            wsServer.notifyUser(requester.id, {
+              type: 'request_rejected',
+              requestId: request.id,
+              message: `Your request "${request.title}" requires modifications`,
+            });
+          }
         } catch (notifError) {
           console.error('[notification] Failed to create notification:', notifError);
         }
@@ -921,6 +940,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               requestId: request.id,
               read: 'false',
             });
+            
+            const wsServer = getWebSocketServer();
+            if (wsServer) {
+              wsServer.notifyUser(dataLead.id, {
+                type: 'analyst_rejected_request',
+                requestId: request.id,
+                message: `Analyst rejected request "${request.title}"`,
+              });
+            }
           }
         } catch (notifError) {
           console.error('[notification] Failed to create Data Lead notification:', notifError);
@@ -972,6 +1000,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requestId: request.id,
             read: 'false',
           });
+          
+          const wsServer = getWebSocketServer();
+          if (wsServer) {
+            wsServer.notifyUser(requester.id, {
+              type: 'request_completed',
+              requestId: request.id,
+              message: `Your request "${request.title}" has been completed`,
+            });
+          }
         } catch (notifError) {
           console.error('[notification] Failed to create requester notification:', notifError);
         }
@@ -990,6 +1027,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               requestId: request.id,
               read: 'false',
             });
+            
+            const wsServer = getWebSocketServer();
+            if (wsServer) {
+              wsServer.notifyUser(analyst.id, {
+                type: 'request_completed',
+                requestId: request.id,
+                message: `Request "${request.title}" has been completed`,
+              });
+            }
           }
         } catch (notifError) {
           console.error('[notification] Failed to create analyst notification:', notifError);
@@ -1009,6 +1055,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               requestId: request.id,
               read: 'false',
             });
+            
+            const wsServer = getWebSocketServer();
+            if (wsServer) {
+              wsServer.notifyUser(teamLead.id, {
+                type: 'request_completed',
+                requestId: request.id,
+                message: `Request "${request.title}" has been completed`,
+              });
+            }
           }
         } catch (notifError) {
           console.error('[notification] Failed to create team lead notification:', notifError);
@@ -1045,6 +1100,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
+      }
+
+      const wsServer = getWebSocketServer();
+      if (wsServer && request.reviewedById) {
+        wsServer.notifyUser(request.reviewedById, {
+          type: 'request_delivered',
+          requestId: request.id,
+          message: `Request "${request.title}" has been delivered`,
+        });
       }
 
       res.json(request);
@@ -1112,6 +1176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requestId: request.id,
             read: 'false',
           });
+          
+          const wsServer = getWebSocketServer();
+          if (wsServer) {
+            wsServer.notifyUser(assignedAnalyst.id, {
+              type: 'request_assigned',
+              requestId: request.id,
+              message: `You have been assigned to work on "${request.title}"`,
+            });
+          }
         } catch (notifError) {
           console.error('[notification] Failed to create analyst notification:', notifError);
         }
@@ -1144,6 +1217,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requestId: request.id,
             read: 'false',
           });
+          
+          const wsServer = getWebSocketServer();
+          if (wsServer) {
+            wsServer.notifyUser(requester.id, {
+              type: 'request_accepted',
+              requestId: request.id,
+              message: `Your request "${request.title}" has been accepted`,
+            });
+          }
         } catch (notifError) {
           console.error('[notification] Failed to create requester notification:', notifError);
         }
@@ -1216,6 +1298,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const comment = await storage.addComment(validatedData, userId);
+      
+      const request = await storage.getDataRequest(req.params.id);
+      if (request) {
+        const wsServer = getWebSocketServer();
+        if (wsServer) {
+          const participants = [request.requestedById];
+          if (request.assignedToId) participants.push(request.assignedToId);
+          if (request.reviewedById) participants.push(request.reviewedById);
+          
+          const uniqueParticipants = Array.from(new Set(participants)).filter(id => id !== userId);
+          
+          wsServer.notifyMultipleUsers(uniqueParticipants, {
+            type: 'new_comment',
+            requestId: request.id,
+            message: `New comment added to "${request.title}"`,
+          });
+        }
+      }
+      
       res.status(201).json(comment);
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -1443,5 +1544,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  setupWebSocketServer(httpServer);
   return httpServer;
 }
