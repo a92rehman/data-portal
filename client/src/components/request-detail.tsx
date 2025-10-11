@@ -733,7 +733,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
           
           {/* Right Side - Buttons */}
-          {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
+          {isTeamLead && !justAccepted && !justRejected && (
             <div className="flex gap-2">
               <Button
                 onClick={() => acceptRequestMutation.mutate()}
