@@ -776,7 +776,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
                 <div className="mt-2">
-                  <TimeRemaining dueDate={request.dueDate} status={request.status} />
+                  <TimeRemaining dueDate={new Date(request.dueDate).toISOString()} status={request.status} />
                 </div>
               </div>
             </div>

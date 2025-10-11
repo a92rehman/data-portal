@@ -134,6 +134,7 @@ export default function Dashboard() {
   const { data: requests = [], isLoading: isRequestsLoading } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", filters],
     enabled: isAuthenticated,
+    refetchInterval: 10000, // Poll every 10 seconds for real-time updates
   });
 
   // Fetch stats

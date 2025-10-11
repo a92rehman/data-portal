@@ -41,7 +41,7 @@ export default function Header({ user }: HeaderProps) {
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
     enabled: !!user,
-    refetchInterval: 30000, // Poll every 30 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
   });
 
   const unreadCount = notifications.filter(n => n.read === 'false').length;
