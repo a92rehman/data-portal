@@ -956,7 +956,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </div>
 
         {/* Bottom Full-Width - Messages/Comments Section */}
-        <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-6">
+        <Card className="border-2 border-purple-200 dark:border-purple-700">
           <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-4">Messages/Comments ({request.comments.length})</h3>
           
           {/* Add Comment Form */}
@@ -1036,7 +1036,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
       {/* Reject Request Dialog */}
