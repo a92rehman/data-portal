@@ -11,6 +11,8 @@ import { queryClient } from "@/lib/queryClient";
 import { ChartLine, Sparkles, Loader2, Eye, EyeOff, Building2 } from "lucide-react";
 import { DEPARTMENTS, TEAM_OPTIONS } from "@shared/constants";
 
+const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
+
 export default function AuthSimple() {
   const [showPassword, setShowPassword] = useState(false);
   const [_, setLocation] = useLocation();
@@ -74,13 +76,14 @@ export default function AuthSimple() {
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate company email for requesters
+    // Validate company email or test emails for requesters
     if (selectedRole === "requester") {
       const emailLower = email.toLowerCase();
       const allowedDomains = ['@taleemabad.com', '@niete.edu.pk', '@niete.pk'];
       const hasValidDomain = allowedDomains.some(domain => emailLower.endsWith(domain));
+      const isTestEmail = TEST_EMAILS.includes(emailLower);
       
-      if (!hasValidDomain) {
+      if (!hasValidDomain && !isTestEmail) {
         toast({
           title: "Invalid Email",
           description: "Data Requesters must use a company email address (@taleemabad.com, @niete.edu.pk, or @niete.pk)",

@@ -21,6 +21,8 @@ import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCirc
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { format } from "date-fns";
 
+const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
+
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
@@ -54,7 +56,9 @@ export default function Dashboard() {
     if (!isLoading && isAuthenticated && user && !(user as any)?.role) {
       const selectedRole = localStorage.getItem("selected_role");
       const email = (user as any)?.email || "";
+      const emailLower = email.toLowerCase();
       const isCompanyEmail = email.endsWith("@taleemabad.com") || email.endsWith("@niete.edu.pk");
+      const isTestEmail = TEST_EMAILS.includes(emailLower);
       
       // If they have a selected role from landing page, process it
       if (selectedRole) {
@@ -78,9 +82,9 @@ export default function Dashboard() {
         applyRoleSelection();
       } else {
         // No selected_role in localStorage (cleared, new device, etc.)
-        // Automatically redirect based on email domain
-        if (isCompanyEmail) {
-          // Company email → likely a requester, send to signup
+        // Automatically redirect based on email domain or test email
+        if (isCompanyEmail || isTestEmail) {
+          // Company email or test email → likely a requester, send to signup
           localStorage.setItem("selected_role", "requester");
           setLocation("/requester-signup");
         } else {

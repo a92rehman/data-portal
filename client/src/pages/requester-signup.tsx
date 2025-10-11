@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 import { DEPARTMENTS, TEAM_OPTIONS } from "@shared/constants";
 
+const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
+
 export default function RequesterSignup() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -29,12 +31,13 @@ export default function RequesterSignup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate company email
+    // Validate company email or test emails
     const email = user?.email?.toLowerCase() || '';
     const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
     const hasValidDomain = allowedDomains.some(domain => email.endsWith(domain));
+    const isTestEmail = TEST_EMAILS.includes(email);
     
-    if (!hasValidDomain) {
+    if (!hasValidDomain && !isTestEmail) {
       toast({
         title: "Invalid Email",
         description: "Data Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)",
