@@ -3,6 +3,18 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 
+// Test emails for testing purposes
+const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
+
+// Helper function to check if an email is allowed for requesters
+function isAllowedRequesterEmail(email: string): boolean {
+  const lowerEmail = email.toLowerCase();
+  const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
+  const hasValidDomain = allowedDomains.some(domain => lowerEmail.endsWith(domain));
+  const isTestEmail = TEST_EMAILS.includes(lowerEmail);
+  return hasValidDomain || isTestEmail;
+}
+
 // Middleware to check if user is authenticated
 function isAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) {
@@ -83,13 +95,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Email validation: Requesters can only use company email
+      // Email validation: Requesters can only use company email or test emails
       if (role === 'requester') {
         const email = targetUser.email || '';
-        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
-        const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
         
-        if (!hasValidDomain) {
+        if (!isAllowedRequesterEmail(email)) {
           return res.status(403).json({ 
             message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });
@@ -158,14 +168,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid role" });
       }
 
-      // Email validation: Requesters must use company email
+      // Email validation: Requesters must use company email or test emails
       const finalEmail = email || targetUser.email;
       const finalRole = role || targetUser.role;
       if (finalRole === 'requester' && finalEmail) {
-        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
-        const hasValidDomain = allowedDomains.some(domain => finalEmail.toLowerCase().endsWith(domain));
-        
-        if (!hasValidDomain) {
+        if (!isAllowedRequesterEmail(finalEmail)) {
           return res.status(403).json({ 
             message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });
@@ -257,12 +264,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Email validation: Requesters must use company email
+      // Email validation: Requesters must use company email or test emails
       if (role === 'requester') {
-        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
-        const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
-        
-        if (!hasValidDomain) {
+        if (!isAllowedRequesterEmail(email)) {
           return res.status(403).json({ 
             message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });
@@ -389,13 +393,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Email validation: Requesters can only use company email
+      // Email validation: Requesters can only use company email or test emails
       if (role === 'requester') {
         const email = user.email || '';
-        const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
-        const hasValidDomain = allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
         
-        if (!hasValidDomain) {
+        if (!isAllowedRequesterEmail(email)) {
           return res.status(403).json({ 
             message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });

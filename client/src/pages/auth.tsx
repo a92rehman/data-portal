@@ -19,10 +19,16 @@ const loginSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
+const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
+
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email").refine(
-    (email) => email.endsWith("@taleemabad.com") || email.endsWith("@niete.edu.pk") || email.endsWith("@niete.pk"),
+    (email) => 
+      email.endsWith("@taleemabad.com") || 
+      email.endsWith("@niete.edu.pk") || 
+      email.endsWith("@niete.pk") ||
+      TEST_EMAILS.includes(email.toLowerCase()),
     "Must use company email (@taleemabad.com, @niete.edu.pk, or @niete.pk)"
   ),
   password: z.string().min(8, "Password must be at least 8 characters"),
