@@ -721,16 +721,29 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     <>
       {/* Header Row */}
       <DialogHeader className="border-b pb-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 -m-6 mb-0 p-6">
-        <div className="flex items-start gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="flex-shrink-0 hover:bg-purple-100 dark:hover:bg-purple-800/30"
-            data-testid="button-back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="flex-shrink-0 hover:bg-purple-100 dark:hover:bg-purple-800/30"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1">
+              <DialogTitle className="text-2xl font-bold text-foreground" data-testid="text-request-title">
+                {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                Data request details for {request.requestedBy.firstName} {request.requestedBy.lastName}, status: {request.status}
+              </DialogDescription>
+              <p className="text-sm font-mono text-muted-foreground mt-1" data-testid="text-request-id">
+                ID: {request.id.slice(0, 8)}
+              </p>
+            </div>
+          </div>
           
           {/* Accept/Reject Buttons - Only for submitted status, Team Lead only */}
           {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
@@ -767,18 +780,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               <span className="font-semibold text-red-700 dark:text-red-400" data-testid="text-request-rejected">Request Rejected</span>
             </div>
           )}
-        </div>
-        
-        <div className="mt-4">
-          <DialogTitle className="text-2xl font-bold text-foreground" data-testid="text-request-title">
-            {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Data request details for {request.requestedBy.firstName} {request.requestedBy.lastName}, status: {request.status}
-          </DialogDescription>
-          <p className="text-sm font-mono text-muted-foreground mt-1" data-testid="text-request-id">
-            ID: {request.id.slice(0, 8)}
-          </p>
         </div>
       </DialogHeader>
 

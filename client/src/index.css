@@ -13,24 +13,30 @@
   --card-foreground: hsl(222, 47%, 11%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(222, 47%, 11%);
-  --primary: hsl(239, 84%, 67%);
+  --primary: linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%);
+  --primary-solid: hsl(239, 84%, 67%);
   --primary-foreground: hsl(0, 0%, 100%);
-  --secondary: hsl(210, 40%, 96%);
+  --secondary: linear-gradient(135deg, hsl(210, 60%, 95%) 0%, hsl(220, 60%, 96%) 100%);
+  --secondary-solid: hsl(210, 40%, 96%);
   --secondary-foreground: hsl(222, 47%, 11%);
   --muted: hsl(210, 40%, 96%);
   --muted-foreground: hsl(215, 16%, 47%);
   --accent: hsl(239, 84%, 67%);
+  --accent-solid: hsl(239, 84%, 67%);
   --accent-foreground: hsl(0, 0%, 100%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(0, 0%, 100%);
   --border: hsl(214, 32%, 85%);
   --input: hsl(214, 32%, 91%);
   --ring: hsl(239, 84%, 67%);
-  --success: hsl(142, 71%, 45%);
+  --success: linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%);
+  --success-solid: hsl(142, 71%, 45%);
   --success-foreground: hsl(0, 0%, 100%);
-  --warning: hsl(38, 92%, 50%);
+  --warning: linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%);
+  --warning-solid: hsl(38, 92%, 50%);
   --warning-foreground: hsl(0, 0%, 100%);
-  --info: hsl(199, 89%, 48%);
+  --info: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%);
+  --info-solid: hsl(199, 89%, 48%);
   --info-foreground: hsl(0, 0%, 100%);
   --sidebar: hsl(0, 0%, 100%);
   --sidebar-foreground: hsl(222, 47%, 11%);
@@ -109,18 +115,15 @@
   }
 
   .status-under-review {
-    @apply bg-blue-100 dark:bg-blue-900;
-    color: hsl(199, 89%, 48%);
+    @apply bg-blue-100 text-info dark:bg-blue-900;
   }
 
   .status-in-progress {
-    @apply bg-yellow-100 dark:bg-yellow-900;
-    color: hsl(38, 92%, 50%);
+    @apply bg-yellow-100 text-warning dark:bg-yellow-900;
   }
 
   .status-completed {
-    @apply bg-green-100 dark:bg-green-900;
-    color: hsl(142, 71%, 45%);
+    @apply bg-green-100 text-success dark:bg-green-900;
   }
 
   .priority-high {
@@ -128,11 +131,11 @@
   }
 
   .priority-medium {
-    color: hsl(38, 92%, 50%);
+    @apply text-warning;
   }
 
   .priority-low {
-    color: hsl(199, 89%, 48%);
+    @apply text-info;
   }
 
   .sidebar-link {
