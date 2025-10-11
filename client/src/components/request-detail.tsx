@@ -719,50 +719,39 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   return (
     <>
-      {/* Header Row */}
-      <DialogHeader className="border-b pb-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 -m-6 mb-0 p-6">
+      {/* Header */}
+      <DialogHeader className="border-b pb-4 -m-6 mb-0 p-6">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-4 flex-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="flex-shrink-0 hover:bg-purple-100 dark:hover:bg-purple-800/30"
-              data-testid="button-back"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1">
-              <DialogTitle className="text-2xl font-bold text-foreground" data-testid="text-request-title">
-                {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
-              </DialogTitle>
-              <DialogDescription className="sr-only">
-                Data request details for {request.requestedBy.firstName} {request.requestedBy.lastName}, status: {request.status}
-              </DialogDescription>
-              <p className="text-sm font-mono text-muted-foreground mt-1" data-testid="text-request-id">
-                ID: {request.id.slice(0, 8)}
-              </p>
-            </div>
+          {/* Left Side - Title and Subtitle */}
+          <div className="flex-1">
+            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-1" data-testid="text-request-title">
+              {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 mt-0">
+              Request Type: {formatRequestType(request.type)} | ID: {request.id.slice(0, 8)}
+            </DialogDescription>
           </div>
           
-          {/* Accept/Reject Buttons - Only for submitted status, Team Lead only */}
+          {/* Right Side - Accept/Reject Buttons */}
           {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
             <div className="flex gap-3">
               <Button
                 onClick={() => acceptRequestMutation.mutate()}
                 disabled={acceptRequestMutation.isPending}
+                variant="outline"
                 data-testid="button-accept-request"
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+                className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
               >
-                {acceptRequestMutation.isPending ? "Accepting..." : "✓ Accept"}
+                {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
               </Button>
               <Button
                 onClick={() => setShowRejectDialog(true)}
                 disabled={rejectRequestMutation.isPending}
                 variant="destructive"
                 data-testid="button-reject-request"
+                className="bg-red-600 hover:bg-red-700 text-white"
               >
-                ✕ Reject
+                Reject
               </Button>
             </div>
           )}
