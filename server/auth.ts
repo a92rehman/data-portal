@@ -28,10 +28,16 @@ export async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// Test emails for testing purposes
+const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
+
 // Validate email domain for requesters
 function isValidRequesterEmail(email: string): boolean {
+  const emailLower = email.toLowerCase();
   const allowedDomains = ['@taleemabad.com', '@niete.edu.pk', '@niete.pk'];
-  return allowedDomains.some(domain => email.toLowerCase().endsWith(domain));
+  const hasValidDomain = allowedDomains.some(domain => emailLower.endsWith(domain));
+  const isTestEmail = TEST_EMAILS.includes(emailLower);
+  return hasValidDomain || isTestEmail;
 }
 
 export function setupAuth(app: Express) {
