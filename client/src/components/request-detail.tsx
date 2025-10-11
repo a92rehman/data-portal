@@ -720,21 +720,32 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       {/* Header */}
-      <DialogHeader className="border-b -m-6 mb-0 px-6 py-3">
-        <div className="flex items-center justify-between">
-          {/* Left Side - Title and Subtitle */}
-          <div>
-            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-request-title">
-              {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Request Type: {formatRequestType(request.type)} | ID: {request.id.slice(0, 8)}
-            </DialogDescription>
+      <DialogHeader className="border-b -m-6 mb-0 px-6 py-4">
+        <div className="space-y-3">
+          {/* Title Row with Back Button */}
+          <div className="flex items-start gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="flex-shrink-0 mt-0.5"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-request-title">
+                {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Request Type: {formatRequestType(request.type)} | ID: {request.id.slice(0, 8)}
+              </DialogDescription>
+            </div>
           </div>
           
-          {/* Right Side - Buttons */}
+          {/* Buttons Row */}
           {isTeamLead && !justAccepted && !justRejected && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 pl-11">
               <Button
                 onClick={() => acceptRequestMutation.mutate()}
                 disabled={acceptRequestMutation.isPending}
@@ -757,13 +768,13 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           
           {/* Success Messages */}
           {justAccepted && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700 ml-11">
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
               <span className="font-semibold text-green-700 dark:text-green-400" data-testid="text-request-accepted">Request Accepted</span>
             </div>
           )}
           {justRejected && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700 ml-11">
               <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
               <span className="font-semibold text-red-700 dark:text-red-400" data-testid="text-request-rejected">Request Rejected</span>
             </div>
