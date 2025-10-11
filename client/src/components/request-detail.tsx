@@ -720,60 +720,40 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       {/* Header */}
-      <DialogHeader className="border-b -m-6 mb-0 px-6 py-4">
-        <div className="flex items-start justify-between gap-8">
+      <DialogHeader className="border-b -m-6 mb-0 px-6 py-3">
+        <div className="flex items-center justify-between">
           {/* Left Side - Title and Subtitle */}
-          <div className="flex-1 min-w-0">
-            <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white mb-1" data-testid="text-request-title">
+          <div>
+            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="text-request-title">
               {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
+            <DialogDescription className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               Request Type: {formatRequestType(request.type)} | ID: {request.id.slice(0, 8)}
             </DialogDescription>
           </div>
           
-          {/* Right Side - Status and Buttons */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {/* Status Badge */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">Status:</span>
-              <span className={`px-3 py-1.5 rounded-md text-sm font-medium capitalize whitespace-nowrap ${
-                request.status === "submitted" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" :
-                request.status === "accepted" || request.status === "under_review" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" :
-                request.status === "in_progress" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" :
-                request.status === "completed" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
-                "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400"
-              }`} data-testid="text-request-status">
-                {request.status.replace('_', ' ')}
-              </span>
+          {/* Right Side - Buttons */}
+          {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
+            <div className="flex gap-2">
+              <Button
+                onClick={() => acceptRequestMutation.mutate()}
+                disabled={acceptRequestMutation.isPending}
+                variant="outline"
+                data-testid="button-accept-request"
+                className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
+              >
+                {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
+              </Button>
+              <Button
+                onClick={() => setShowRejectDialog(true)}
+                disabled={rejectRequestMutation.isPending}
+                data-testid="button-reject-request"
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Reject
+              </Button>
             </div>
-            
-            {/* Accept/Reject Buttons */}
-            {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
-              <>
-                <Button
-                  onClick={() => acceptRequestMutation.mutate()}
-                  disabled={acceptRequestMutation.isPending}
-                  variant="outline"
-                  size="sm"
-                  data-testid="button-accept-request"
-                  className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
-                >
-                  {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
-                </Button>
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={rejectRequestMutation.isPending}
-                  variant="destructive"
-                  size="sm"
-                  data-testid="button-reject-request"
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Reject
-                </Button>
-              </>
-            )}
-          </div>
+          )}
           
           {/* Success Messages */}
           {justAccepted && (
