@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,6 +50,64 @@ function CollapsibleSection({ title, children, open = true }: { title: string; c
         <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">{isOpen ? '▼ Hide' : '▶ Show'}</span>
       </div>
       {isOpen && <div className="px-4 pb-4 pt-2">{children}</div>}
+    </div>
+  );
+}
+
+function TimeRemaining({ dueDate, status }: { dueDate: string; status: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+  const [isOverdue, setIsOverdue] = useState(false);
+  
+  useEffect(() => {
+    const updateTimeLeft = () => {
+      const now = new Date().getTime();
+      const due = new Date(dueDate).getTime();
+      const diff = due - now;
+      
+      if (diff < 0) {
+        setIsOverdue(true);
+        const absDiff = Math.abs(diff);
+        const days = Math.floor(absDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((absDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((absDiff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (days > 0) {
+          setTimeLeft(`Overdue by ${days}d ${hours}h`);
+        } else if (hours > 0) {
+          setTimeLeft(`Overdue by ${hours}h ${minutes}m`);
+        } else {
+          setTimeLeft(`Overdue by ${minutes}m`);
+        }
+      } else {
+        setIsOverdue(false);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (days > 0) {
+          setTimeLeft(`${days}d ${hours}h left`);
+        } else if (hours > 0) {
+          setTimeLeft(`${hours}h ${minutes}m left`);
+        } else {
+          setTimeLeft(`${minutes}m left`);
+        }
+      }
+    };
+    
+    updateTimeLeft();
+    const interval = setInterval(updateTimeLeft, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, [dueDate]);
+  
+  if (status === "completed" || status === "cancelled") {
+    return null;
+  }
+  
+  return (
+    <div className={`flex items-center gap-2 ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`} data-testid="time-remaining">
+      <Clock className="w-4 h-4" />
+      <span className="font-semibold">{timeLeft}</span>
     </div>
   );
 }
@@ -717,6 +775,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="text-due-date">
                   {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
+                <div className="mt-2">
+                  <TimeRemaining dueDate={request.dueDate} status={request.status} />
+                </div>
               </div>
             </div>
           </div>
