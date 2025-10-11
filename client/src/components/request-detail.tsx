@@ -31,7 +31,8 @@ import {
   Download,
   FileIcon,
   MessageSquare,
-  ArrowLeft
+  ArrowLeft,
+  XCircle
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -68,6 +69,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [isEditingPriorityDeadline, setIsEditingPriorityDeadline] = useState(false);
   const [editedPriority, setEditedPriority] = useState(request.priority);
   const [editedDueDate, setEditedDueDate] = useState(new Date(request.dueDate).toISOString().split('T')[0]);
+  const [justAccepted, setJustAccepted] = useState(false);
+  const [justRejected, setJustRejected] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
 
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
@@ -290,6 +294,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       return await apiRequest("PATCH", `/api/requests/${request.id}/accept`, {});
     },
     onSuccess: () => {
+      setJustAccepted(true);
       toast({
         title: "Success",
         description: "Request accepted successfully",
@@ -313,6 +318,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       return await apiRequest("PATCH", `/api/requests/${request.id}/reject`, { rejectionReason: reason });
     },
     onSuccess: () => {
+      setJustRejected(true);
       toast({
         title: "Success",
         description: "Request rejected",
@@ -412,6 +418,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       return await apiRequest("PATCH", `/api/requests/${request.id}/complete`, {});
     },
     onSuccess: () => {
+      setJustCompleted(true);
       toast({
         title: "Success",
         description: "Request marked as completed successfully",
@@ -1079,25 +1086,47 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         {/* Data Lead: Accept/Reject Request */}
         {isTeamLead && request.status === "pending_review" && (
           <CollapsibleSection title="✅ Accept / Reject Request" open={true}>
-            <div className="flex gap-3">
-              <Button
-                onClick={() => acceptRequestMutation.mutate()}
-                disabled={acceptRequestMutation.isPending}
-                data-testid="button-accept-request"
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold h-12"
-              >
-                {acceptRequestMutation.isPending ? "Accepting..." : "✓ Accept Request"}
-              </Button>
-              <Button
-                onClick={() => setShowRejectDialog(true)}
-                disabled={rejectRequestMutation.isPending}
-                variant="destructive"
-                data-testid="button-reject-request"
-                className="flex-1 h-12"
-              >
-                ✕ Reject Request
-              </Button>
-            </div>
+            {justAccepted ? (
+              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border-2 border-green-200 dark:border-green-700">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <div>
+                  <p className="font-semibold text-green-700 dark:text-green-400" data-testid="text-request-accepted">Request Accepted</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    The request has been accepted successfully.
+                  </p>
+                </div>
+              </div>
+            ) : justRejected ? (
+              <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border-2 border-red-200 dark:border-red-700">
+                <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                <div>
+                  <p className="font-semibold text-red-700 dark:text-red-400" data-testid="text-request-rejected">Request Rejected</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    The request has been rejected.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => acceptRequestMutation.mutate()}
+                  disabled={acceptRequestMutation.isPending}
+                  data-testid="button-accept-request"
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold h-12"
+                >
+                  {acceptRequestMutation.isPending ? "Accepting..." : "✓ Accept Request"}
+                </Button>
+                <Button
+                  onClick={() => setShowRejectDialog(true)}
+                  disabled={rejectRequestMutation.isPending}
+                  variant="destructive"
+                  data-testid="button-reject-request"
+                  className="flex-1 h-12"
+                >
+                  ✕ Reject Request
+                </Button>
+              </div>
+            )}
           </CollapsibleSection>
         )}
 
@@ -1187,24 +1216,36 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             {/* Mark as Complete Button - For Team Lead or Analyst when in_progress */}
             {(isTeamLead || isAnalyst) && request.status === "in_progress" && (
               <div className="border-2 border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/20">
-                <Button
-                  onClick={() => completeRequestMutation.mutate()}
-                  disabled={completeRequestMutation.isPending}
-                  data-testid="button-mark-complete"
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12"
-                >
-                  {completeRequestMutation.isPending ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Completing...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark as Complete
-                    </>
-                  )}
-                </Button>
+                {justCompleted ? (
+                  <div className="flex items-center gap-3 p-2">
+                    <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    <div>
+                      <p className="font-semibold text-green-700 dark:text-green-400" data-testid="text-request-completed">Request Completed</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        The request has been marked as completed successfully.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => completeRequestMutation.mutate()}
+                    disabled={completeRequestMutation.isPending}
+                    data-testid="button-mark-complete"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12"
+                  >
+                    {completeRequestMutation.isPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Completing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark as Complete
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             )}
 
