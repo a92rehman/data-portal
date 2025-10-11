@@ -934,6 +934,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/requests/:id/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      // Both Data Lead and Analyst can complete requests
+      if (!user || !user.role || !['team_lead', 'analyst'].includes(user.role)) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      // For analysts, verify they're assigned to this request
+      if (user.role === 'analyst') {
+        const requestDetails = await storage.getDataRequest(req.params.id);
+        if (!requestDetails || requestDetails.assignedToId !== user.id) {
+          return res.status(403).json({ message: "You can only complete requests assigned to you" });
+        }
+      }
+
+      const request = await storage.completeRequest(req.params.id);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      // Notify all stakeholders
+      const requester = await storage.getUser(request.requestedById);
+      const completedBy = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '';
+      
+      // Notify requester
+      if (requester) {
+        try {
+          await storage.createNotification({
+            userId: requester.id,
+            type: 'request_completed',
+            title: 'Request Completed',
+            message: `Your request "${request.title}" has been successfully completed by ${completedBy}.`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (notifError) {
+          console.error('[notification] Failed to create requester notification:', notifError);
+        }
+      }
+
+      // Notify assigned analyst (if different from completer)
+      if (request.assignedToId && request.assignedToId !== user.id) {
+        try {
+          const analyst = await storage.getUser(request.assignedToId);
+          if (analyst) {
+            await storage.createNotification({
+              userId: analyst.id,
+              type: 'request_completed',
+              title: 'Request Completed',
+              message: `Request "${request.title}" has been completed by ${completedBy}.`,
+              requestId: request.id,
+              read: 'false',
+            });
+          }
+        } catch (notifError) {
+          console.error('[notification] Failed to create analyst notification:', notifError);
+        }
+      }
+
+      // Notify team lead (if different from completer)
+      if (request.reviewedById && request.reviewedById !== user.id) {
+        try {
+          const teamLead = await storage.getUser(request.reviewedById);
+          if (teamLead) {
+            await storage.createNotification({
+              userId: teamLead.id,
+              type: 'request_completed',
+              title: 'Request Completed',
+              message: `Request "${request.title}" has been completed by ${completedBy}.`,
+              requestId: request.id,
+              read: 'false',
+            });
+          }
+        } catch (notifError) {
+          console.error('[notification] Failed to create team lead notification:', notifError);
+        }
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error completing request:", error);
+      res.status(500).json({ message: "Failed to complete request" });
+    }
+  });
+
   app.patch('/api/requests/:id/assign-analyst', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);

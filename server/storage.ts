@@ -74,6 +74,7 @@ export interface IStorage {
   rejectRequest(id: string, reviewerId: string, rejectionReason: string): Promise<DataRequest | undefined>;
   assignToAnalyst(id: string, analystId: string, dueDate?: Date): Promise<DataRequest | undefined>;
   suggestDeadline(id: string, suggestedDeadline: Date): Promise<DataRequest | undefined>;
+  completeRequest(id: string): Promise<DataRequest | undefined>;
   
   // Blocker operations
   addBlocker(requestId: string, description: string, reportedById: string): Promise<Blocker>;
@@ -646,6 +647,18 @@ export class DatabaseStorage implements IStorage {
       .update(dataRequests)
       .set({
         suggestedDeadline,
+      })
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async completeRequest(id: string): Promise<DataRequest | undefined> {
+    const [request] = await db
+      .update(dataRequests)
+      .set({
+        status: 'completed',
+        updatedAt: new Date(),
       })
       .where(eq(dataRequests.id, id))
       .returning();
