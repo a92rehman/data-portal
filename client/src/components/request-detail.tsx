@@ -407,6 +407,26 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     },
   });
 
+  const completeRequestMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/complete`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request marked as completed successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to complete request",
+        variant: "destructive",
+      });
+    },
+  });
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -557,8 +577,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           {/* Basic Information - Always at Top */}
           <div className="mb-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-purple-200 dark:bg-purple-700 p-4 rounded-lg border-2 border-purple-400 dark:border-purple-500">
-                <p className="text-xs text-purple-800 dark:text-purple-200 uppercase font-bold mb-1 flex items-center gap-1">
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-1 flex items-center gap-1">
                   {getPriorityIcon(request.priority)}
                   Priority
                 </p>
@@ -566,20 +586,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   {formatPriority(request.priority)}
                 </p>
               </div>
-              <div className="bg-blue-200 dark:bg-blue-700 p-4 rounded-lg border-2 border-blue-400 dark:border-blue-500">
-                <p className="text-xs text-blue-800 dark:text-blue-200 uppercase font-bold mb-1">Department</p>
+              <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-bold mb-1">Department</p>
                 <p className="text-base font-bold text-gray-900 dark:text-white capitalize" data-testid="text-department">
                   {request.department}
                 </p>
               </div>
-              <div className="bg-green-200 dark:bg-green-700 p-4 rounded-lg border-2 border-green-400 dark:border-green-500">
-                <p className="text-xs text-green-800 dark:text-green-200 uppercase font-bold mb-1">Requested By</p>
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-600 dark:text-gray-400 uppercase font-bold mb-1">Requested By</p>
                 <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="text-requested-by">
                   {request.requestedBy.firstName} {request.requestedBy.lastName}
                 </p>
               </div>
-              <div className="bg-orange-200 dark:bg-orange-700 p-4 rounded-lg border-2 border-orange-400 dark:border-orange-500">
-                <p className="text-xs text-orange-800 dark:text-orange-200 uppercase font-bold mb-1">Due Date</p>
+              <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-bold mb-1">Due Date</p>
                 <p className="text-base font-bold text-gray-900 dark:text-white" data-testid="text-due-date">
                   {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                 </p>
@@ -594,55 +614,276 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               {/* Request Details */}
               <CollapsibleSection title="📝 Request Details & Business Impact" open={true}>
                 <div className="space-y-3">
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Primary Question</p>
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-foreground" data-testid="text-primary-question">
-                        {request.primaryQuestion}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Business Problem or Goal</p>
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-foreground" data-testid="text-business-problem">
-                        {request.businessProblem}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Decision or Action</p>
-                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-foreground" data-testid="text-decision-action">
-                        {request.decisionAction}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Common fields for most request types */}
+                  {(request.primaryQuestion || !['data_bug', 'bq_access', 'tracking', 'metric_change', 'pipeline_change'].includes(request.type)) && (
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Impact</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Primary Question</p>
                       <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm text-foreground capitalize" data-testid="text-impact">
-                          {request.impact}
+                        <p className="text-sm text-foreground" data-testid="text-primary-question">
+                          {request.primaryQuestion || 'N/A'}
                         </p>
                       </div>
                     </div>
+                  )}
 
+                  {(request.businessProblem || !['data_bug', 'bq_access', 'tracking', 'metric_change', 'pipeline_change'].includes(request.type)) && (
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Frequency</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Business Problem or Goal</p>
                       <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm text-foreground" data-testid="text-frequency">
-                          {request.frequency}
-                          {request.frequencyDuration && request.frequencyUnit && 
-                            ` (${request.frequencyDuration} ${request.frequencyUnit})`
-                          }
+                        <p className="text-sm text-foreground" data-testid="text-business-problem">
+                          {request.businessProblem || 'N/A'}
                         </p>
                       </div>
                     </div>
-                  </div>
+                  )}
+
+                  {(request.decisionAction || ['adhoc_analysis', 'new_dashboard', 'modify_dashboard'].includes(request.type)) && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Decision or Action</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-decision-action">
+                          {request.decisionAction || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.impact || request.frequency || ['adhoc_analysis', 'new_dashboard', 'modify_dashboard'].includes(request.type)) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {(request.impact || ['adhoc_analysis', 'new_dashboard', 'modify_dashboard'].includes(request.type)) && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Impact</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground capitalize" data-testid="text-impact">
+                              {request.impact || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {(request.frequency || ['adhoc_analysis', 'new_dashboard', 'modify_dashboard'].includes(request.type)) && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Frequency</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-frequency">
+                              {request.frequency || 'N/A'}
+                              {request.frequencyDuration && request.frequencyUnit && 
+                                ` (${request.frequencyDuration} ${request.frequencyUnit})`
+                              }
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Data Bug fields */}
+                  {(request.bugDescription || request.type === 'data_bug') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Bug Description</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bug-description">
+                          {request.bugDescription || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.bugLocation || request.type === 'data_bug') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Bug Location</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bug-location">
+                          {request.bugLocation || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BigQuery Access fields */}
+                  {(request.bqEmail || request.type === 'bq_access') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">BigQuery Email</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bq-email">
+                          {request.bqEmail || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.bqDatasets || request.type === 'bq_access') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Datasets Needed</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bq-datasets">
+                          {request.bqDatasets || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.bqPurpose || request.type === 'bq_access') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Purpose</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-bq-purpose">
+                          {request.bqPurpose || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tracking fields */}
+                  {(request.trackingEvent || request.type === 'tracking') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Tracking Event</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-tracking-event">
+                          {request.trackingEvent || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.trackingPlatform || request.type === 'tracking') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Tracking Platform</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-tracking-platform">
+                          {request.trackingPlatform || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.trackingDetails || request.type === 'tracking') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Tracking Details</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-tracking-details">
+                          {request.trackingDetails || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metric Change fields */}
+                  {(request.metricName || request.type === 'metric_change') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Metric Name</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-metric-name">
+                          {request.metricName || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.metricChangeType || request.type === 'metric_change') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Change Type</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-metric-change-type">
+                          {request.metricChangeType || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.metricReason || request.type === 'metric_change') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Reason</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-metric-reason">
+                          {request.metricReason || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Pipeline Change fields */}
+                  {(request.pipelineName || request.type === 'pipeline_change') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Pipeline Name</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-pipeline-name">
+                          {request.pipelineName || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.pipelineChangeType || request.type === 'pipeline_change') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Change Type</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-pipeline-change-type">
+                          {request.pipelineChangeType || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {(request.pipelineDetails || request.type === 'pipeline_change') && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Pipeline Details</p>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-foreground" data-testid="text-pipeline-details">
+                          {request.pipelineDetails || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dashboard fields - shown in Dashboard-Specific Details section */}
+                  {(request.type === "new_dashboard" || request.type === "modify_dashboard") && (
+                    <>
+                      {(request.dashboardAudience || request.type === "new_dashboard" || request.type === "modify_dashboard") && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Dashboard Audience</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-dashboard-audience">
+                              {request.dashboardAudience || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {(request.dashboardRefreshFrequency || request.type === "new_dashboard" || request.type === "modify_dashboard") && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Refresh Frequency</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground capitalize" data-testid="text-refresh-frequency">
+                              {request.dashboardRefreshFrequency || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {(request.keyMetrics || request.type === "new_dashboard" || request.type === "modify_dashboard") && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Key Metrics/KPIs</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-key-metrics">
+                              {request.keyMetrics || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {(request.filters || request.type === "new_dashboard" || request.type === "modify_dashboard") && (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 font-semibold">Filters</p>
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-foreground" data-testid="text-filters">
+                              {request.filters || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </CollapsibleSection>
 
@@ -836,7 +1077,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           )}
 
         {/* Data Lead: Accept/Reject Request */}
-        {isTeamLead && request.status === "under_review" && (
+        {isTeamLead && request.status === "pending_review" && (
           <CollapsibleSection title="✅ Accept / Reject Request" open={true}>
             <div className="flex gap-3">
               <Button
@@ -940,6 +1181,30 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                     )}
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* Mark as Complete Button - For Team Lead or Analyst when in_progress */}
+            {(isTeamLead || isAnalyst) && request.status === "in_progress" && (
+              <div className="border-2 border-green-200 dark:border-green-700 rounded-lg p-4 bg-green-50/50 dark:bg-green-900/20">
+                <Button
+                  onClick={() => completeRequestMutation.mutate()}
+                  disabled={completeRequestMutation.isPending}
+                  data-testid="button-mark-complete"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold h-12"
+                >
+                  {completeRequestMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Completing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Mark as Complete
+                    </>
+                  )}
+                </Button>
               </div>
             )}
 
