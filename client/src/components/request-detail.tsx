@@ -532,6 +532,36 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const isTeamLead = (user as any)?.role === "team_lead";
   const isRequester = (user as any)?.role === "requester";
 
+  const [deliveryType, setDeliveryType] = useState("attachment");
+  const [deliveryLink, setDeliveryLink] = useState("");
+
+  const deliveredRequestMutation = useMutation({
+    mutationFn: async (data: { deliveryType: string; deliveryLink?: string }) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/delivered`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request marked as delivered successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark request as delivered",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeliver = () => {
+    deliveredRequestMutation.mutate({
+      deliveryType,
+      deliveryLink: deliveryType === "link" ? deliveryLink : undefined,
+    });
+  };
+
   const isOnTime = () => {
     const dueDate = new Date(request.dueDate);
     const today = new Date();
@@ -541,7 +571,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       {/* 1. Header Row */}
-      <DialogHeader className="border-b px-6 py-4 -m-6 mb-0">
+      <DialogHeader className="border-b px-6 py-6 -m-6 mb-0">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Button
@@ -625,7 +655,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
         {/* 3. 3-Column Edit Row - Only for Team Lead */}
         {isTeamLead && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-6 py-4 border-b bg-blue-50 dark:bg-blue-950/30">
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-4 px-6 py-4 border-b bg-blue-50 dark:bg-blue-950/30">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
                 New Priority
@@ -1011,23 +1041,121 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   )}
                 </div>
 
-                {/* On Time Indicator */}
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Timeline Status</p>
-                  <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
-                    {isOnTime() ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                        <span className="text-sm font-semibold text-green-700 dark:text-green-400">On Time</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                        <span className="text-sm font-semibold text-red-700 dark:text-red-400">Overdue</span>
-                      </>
+                {/* Delivery Status Panel - Only for Analyst */}
+                {isAnalyst && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
+                    
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
+                        Delivery Type
+                      </label>
+                      <Select 
+                        value={deliveryType} 
+                        onValueChange={setDeliveryType}
+                        data-testid="select-delivery-type"
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="attachment">Attachment</SelectItem>
+                          <SelectItem value="link">Link</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {deliveryType === "attachment" && (
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
+                          Upload Delivery File
+                        </p>
+                        <ObjectUploader
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={handleUploadComplete}
+                          maxFileSize={10 * 1024 * 1024}
+                          maxNumberOfFiles={1}
+                          buttonVariant="outline"
+                          buttonSize="sm"
+                          buttonClassName="w-full"
+                        >
+                          <Paperclip className="w-4 h-4 mr-2" />
+                          Upload Delivery File
+                        </ObjectUploader>
+                      </div>
+                    )}
+
+                    {deliveryType === "link" && (
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
+                          Delivery Link
+                        </label>
+                        <Input
+                          value={deliveryLink}
+                          onChange={(e) => setDeliveryLink(e.target.value)}
+                          placeholder="Enter delivery link..."
+                          data-testid="input-delivery-link"
+                        />
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={handleDeliver}
+                      disabled={deliveredRequestMutation.isPending || (deliveryType === "link" && !deliveryLink.trim())}
+                      data-testid="button-delivered"
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    >
+                      {deliveredRequestMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Marking as Delivered...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Delivered
+                        </>
+                      )}
+                    </Button>
+
+                    {/* On Time/Late status - Show after delivered */}
+                    {request.deliveredAt && (
+                      <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+                        {isOnTime() ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-400" data-testid="status-on-time">On Time</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                            <span className="text-sm font-semibold text-red-700 dark:text-red-400" data-testid="status-late">Late</span>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
+
+                {/* On Time Indicator */}
+                {!isAnalyst && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Timeline Status</p>
+                    <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+                      {isOnTime() ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                          <span className="text-sm font-semibold text-green-700 dark:text-green-400">On Time</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                          <span className="text-sm font-semibold text-red-700 dark:text-red-400">Overdue</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Request Completed Button - For Team Lead/Analyst when in_progress */}
                 {(isTeamLead || isAnalyst) && request.status === "in_progress" && (
@@ -1085,38 +1213,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Add Comment Form */}
-              <form onSubmit={onCommentSubmit} className="space-y-2">
-                <Textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment or ask a question..."
-                  className="min-h-[80px]"
-                  data-testid="input-new-comment"
-                />
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    disabled={!newComment.trim() || addCommentMutation.isPending}
-                    data-testid="button-add-comment"
-                  >
-                    {addCommentMutation.isPending ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Posting...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Post Comment
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-
               {/* Comments List */}
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              <div className="max-h-[400px] overflow-y-auto space-y-3">
                 {request.comments.length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
                     <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/40 mb-2" />
@@ -1150,6 +1248,36 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   ))
                 )}
               </div>
+
+              {/* Add Comment Form */}
+              <form onSubmit={onCommentSubmit} className="space-y-2">
+                <Textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Write a comment or ask a question..."
+                  className="min-h-[80px]"
+                  data-testid="input-new-comment"
+                />
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    disabled={!newComment.trim() || addCommentMutation.isPending}
+                    data-testid="button-add-comment"
+                  >
+                    {addCommentMutation.isPending ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        Posting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Post Comment
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>

@@ -1022,6 +1022,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/requests/:id/delivered', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      // Only analysts can mark requests as delivered
+      if (!user || user.role !== 'analyst') {
+        return res.status(403).json({ message: "Only analysts can mark requests as delivered" });
+      }
+
+      const { deliveryType, deliveryLink } = req.body;
+      
+      if (!deliveryType || !['attachment', 'link'].includes(deliveryType)) {
+        return res.status(400).json({ message: "Valid delivery type is required (attachment or link)" });
+      }
+
+      if (deliveryType === 'link' && !deliveryLink) {
+        return res.status(400).json({ message: "Delivery link is required when delivery type is link" });
+      }
+
+      const request = await storage.deliverRequest(req.params.id, deliveryType, deliveryLink);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error marking request as delivered:", error);
+      res.status(500).json({ message: "Failed to mark request as delivered" });
+    }
+  });
+
   app.patch('/api/requests/:id/assign-analyst', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);

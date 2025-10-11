@@ -124,6 +124,11 @@ export const dataRequests = pgTable("data_requests", {
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
   
+  // Delivery fields
+  deliveryType: varchar("delivery_type"), // "attachment" or "link"
+  deliveryLink: text("delivery_link"), // Link if delivery type is link
+  deliveredAt: timestamp("delivered_at"), // When request was marked as delivered
+  
   // Common fields
   primaryQuestion: text("primary_question"),
   businessProblem: text("business_problem"),
