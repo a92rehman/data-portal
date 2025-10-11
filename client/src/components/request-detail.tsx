@@ -587,34 +587,34 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
 
           {/* Title and Status Banner Tile */}
-          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800/50">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl font-bold truncate" data-testid="text-request-title">
+                <DialogTitle className="text-xl font-bold truncate text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
                   {request.title}
                 </DialogTitle>
-                <span className="text-xs text-muted-foreground font-mono" data-testid="text-request-id">
+                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-mono" data-testid="text-request-id">
                   ID: {request.id.slice(0, 8)}
                 </span>
               </div>
 
               {/* Status Banners - Same line as title */}
               {request.status === "accepted" && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex-shrink-0" data-testid="banner-request-accepted">
-                  <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 flex-shrink-0" data-testid="banner-request-accepted">
+                  <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-green-700 dark:text-green-400 whitespace-nowrap">✓ Request Accepted</p>
-                    <p className="text-xs text-green-600 dark:text-green-500 whitespace-nowrap">Ready for assignment</p>
+                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">✓ Request Accepted</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Ready for assignment</p>
                   </div>
                 </div>
               )}
 
               {request.rejectionReason && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 flex-shrink-0" data-testid="banner-request-rejected">
-                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-700 flex-shrink-0" data-testid="banner-request-rejected">
+                  <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-red-700 dark:text-red-400 whitespace-nowrap">✗ Request Rejected</p>
-                    <p className="text-xs text-red-600 dark:text-red-500">{request.rejectionReason}</p>
+                    <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 whitespace-nowrap">✗ Request Rejected</p>
+                    <p className="text-xs text-rose-600 dark:text-rose-400">{request.rejectionReason}</p>
                   </div>
                 </div>
               )}
@@ -649,9 +649,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
       <ScrollArea className="flex-1">
         {/* 2. 4-Column Info Tiles Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 border-b bg-gray-50 dark:bg-gray-800/50">
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-            <p className="text-xs text-muted-foreground uppercase mb-1 flex items-center gap-1">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 border-b bg-indigo-50/50 dark:bg-indigo-950/20">
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50">
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1 flex items-center gap-1">
               {getPriorityIcon(request.priority)}
               Priority
             </p>
@@ -659,20 +659,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               {formatPriority(request.priority)}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-            <p className="text-xs text-muted-foreground uppercase mb-1">Due Date</p>
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50">
+            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1">Due Date</p>
             <p className="text-sm font-semibold truncate" data-testid="text-due-date">
               {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-            <p className="text-xs text-muted-foreground uppercase mb-1">Department</p>
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50">
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1">Department</p>
             <p className="text-sm font-semibold capitalize truncate" data-testid="text-department">
               {request.department}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
-            <p className="text-xs text-muted-foreground uppercase mb-1">Requested By</p>
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50">
+            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1">Requested By</p>
             <p className="text-sm font-semibold truncate" data-testid="text-requested-by">
               {request.requestedBy.firstName} {request.requestedBy.lastName}
             </p>
@@ -681,7 +681,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
         {/* 3. 3-Column Edit Row - Only for Team Lead */}
         {isTeamLead && (
-          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-4 px-6 py-4 border-b bg-blue-50 dark:bg-blue-950/30">
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-4 px-6 py-4 border-b bg-indigo-50 dark:bg-indigo-950/20">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
                 New Priority
@@ -1014,14 +1014,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <CardTitle className="text-base">Delivery Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Status Badge */}
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Status</p>
-                  <Badge className={`status-badge ${getStatusBadge(request.status)}`} data-testid="badge-status">
-                    {formatStatus(request.status)}
-                  </Badge>
-                </div>
-
                 {/* Request Type */}
                 <div>
                   <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Request Type</p>
