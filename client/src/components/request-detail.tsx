@@ -836,164 +836,165 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-          {/* Two-Column Main Area */}
-          <div className="grid grid-cols-10 gap-6">
-            {/* Left Column - Request Details */}
-            <div className="col-span-7">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Request Details</h3>
-              <Textarea 
-                value={(() => {
-                  let details = `Title: ${request.title}\n\n`;
-                  if (request.primaryQuestion) details += `Primary Question: ${request.primaryQuestion}\n\n`;
-                  if (request.businessProblem) details += `Business Problem: ${request.businessProblem}\n\n`;
-                  if (request.decisionAction) details += `Decision/Action: ${request.decisionAction}\n\n`;
-                  if (request.bugDescription) details += `Bug Description: ${request.bugDescription}\n\n`;
-                  if (request.bugLocation) details += `Bug Location: ${request.bugLocation}\n\n`;
-                  if (request.bqEmail) details += `BigQuery Email: ${request.bqEmail}\n\n`;
-                  if (request.bqDatasets) details += `Datasets: ${request.bqDatasets}\n\n`;
-                  if (request.bqPurpose) details += `Purpose: ${request.bqPurpose}\n\n`;
-                  if (request.trackingEvent) details += `Event: ${request.trackingEvent}\n\n`;
-                  if (request.trackingPlatform) details += `Platform: ${request.trackingPlatform}\n\n`;
-                  if (request.trackingDetails) details += `Tracking Details: ${request.trackingDetails}\n\n`;
-                  if (request.metricName) details += `Metric: ${request.metricName}\n\n`;
-                  if (request.metricChangeType) details += `Change Type: ${request.metricChangeType}\n\n`;
-                  if (request.metricReason) details += `Reason: ${request.metricReason}\n\n`;
-                  if (request.pipelineName) details += `Pipeline: ${request.pipelineName}\n\n`;
-                  if (request.pipelineChangeType) details += `Change Type: ${request.pipelineChangeType}\n\n`;
-                  if (request.pipelineDetails) details += `Details: ${request.pipelineDetails}\n\n`;
-                  return details.trim();
-                })()}
-                readOnly
-                className="min-h-[400px] bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-                data-testid="textarea-request-details"
-              />
+        {/* Two-Column Main Content Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Left Card - Request Details */}
+          <Card className="p-4 shadow-md border border-gray-200 dark:border-gray-700">
+            <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Request Details</h3>
+            <Textarea 
+              rows={6}
+              placeholder="Enter request details here..."
+              value={(() => {
+                let details = `Title: ${request.title}\n\n`;
+                if (request.primaryQuestion) details += `Primary Question: ${request.primaryQuestion}\n\n`;
+                if (request.businessProblem) details += `Business Problem: ${request.businessProblem}\n\n`;
+                if (request.decisionAction) details += `Decision/Action: ${request.decisionAction}\n\n`;
+                if (request.bugDescription) details += `Bug Description: ${request.bugDescription}\n\n`;
+                if (request.bugLocation) details += `Bug Location: ${request.bugLocation}\n\n`;
+                if (request.bqEmail) details += `BigQuery Email: ${request.bqEmail}\n\n`;
+                if (request.bqDatasets) details += `Datasets: ${request.bqDatasets}\n\n`;
+                if (request.bqPurpose) details += `Purpose: ${request.bqPurpose}\n\n`;
+                if (request.trackingEvent) details += `Event: ${request.trackingEvent}\n\n`;
+                if (request.trackingPlatform) details += `Platform: ${request.trackingPlatform}\n\n`;
+                if (request.trackingDetails) details += `Tracking Details: ${request.trackingDetails}\n\n`;
+                if (request.metricName) details += `Metric: ${request.metricName}\n\n`;
+                if (request.metricChangeType) details += `Change Type: ${request.metricChangeType}\n\n`;
+                if (request.metricReason) details += `Reason: ${request.metricReason}\n\n`;
+                if (request.pipelineName) details += `Pipeline: ${request.pipelineName}\n\n`;
+                if (request.pipelineChangeType) details += `Change Type: ${request.pipelineChangeType}\n\n`;
+                if (request.pipelineDetails) details += `Details: ${request.pipelineDetails}\n\n`;
+                return details.trim();
+              })()}
+              readOnly
+              className="bg-gray-50 dark:bg-gray-900"
+              data-testid="textarea-request-details"
+            />
+          </Card>
+
+          {/* Right Card - Delivery */}
+          <Card className="p-4 space-y-4 shadow-md border border-gray-200 dark:border-gray-700">
+            <h3 className="font-semibold text-gray-900 dark:text-white">Delivery</h3>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Type</label>
+              <Select value={deliveryType} onValueChange={(value) => setDeliveryType(value as "link" | "attachment")} data-testid="select-delivery-type">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select delivery type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="attachment">Attachment</SelectItem>
+                  <SelectItem value="link">Link</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Right Column - Delivery */}
-            <div className="col-span-3">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Delivery</h3>
-              <div className="space-y-4">
+            {deliveryType === "attachment" && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Attachment</label>
+                <Input type="file" data-testid="input-file-attachment" />
+              </div>
+            )}
+
+            {deliveryType === "link" && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Link URL</label>
+                <Input type="url" placeholder="https://..." data-testid="input-delivery-link" />
+              </div>
+            )}
+
+            {request.status === "completed" && (
+              <>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Type</label>
-                  <Select value={deliveryType} onValueChange={(value) => setDeliveryType(value as "link" | "attachment")} data-testid="select-delivery-type">
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select type..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="attachment">Attachment</SelectItem>
-                      <SelectItem value="link">Link</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <label className="block text-sm font-medium mb-1">Delivered On</label>
+                  <Input
+                    type="date"
+                    value={request.updatedAt ? new Date(request.updatedAt).toISOString().split('T')[0] : ""}
+                    readOnly
+                    data-testid="input-delivered-date"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Used to auto-calculate On Time vs Late using the (new) due date.
+                  </p>
                 </div>
 
-                {deliveryType === "attachment" && (
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Attachment</label>
-                    <Input type="file" className="w-full" data-testid="input-file-attachment" />
+                <div>
+                  <label className="block text-sm font-medium mb-1">On Time</label>
+                  <div className={`rounded-md border px-3 py-2 text-sm ${
+                    isDeliveryOnTime() === true 
+                      ? "border-green-300 text-green-700 bg-green-50 dark:bg-green-900/20 dark:text-green-400" 
+                      : isDeliveryOnTime() === false
+                      ? "border-red-300 text-red-700 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+                      : "bg-gray-50 text-gray-600 dark:bg-gray-900 dark:text-gray-400"
+                  }`}>
+                    {isDeliveryOnTime() === null ? "---" : isDeliveryOnTime() ? "On time" : "Late"}
                   </div>
-                )}
+                </div>
+              </>
+            )}
 
-                {deliveryType === "link" && (
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Links</label>
-                    <Input type="url" placeholder="https://..." className="w-full" data-testid="input-delivery-link" />
-                  </div>
-                )}
+            {request.status === "in_progress" && (isTeamLead || isAnalyst) && !justCompleted && (
+              <div className="pt-2">
+                <Button 
+                  onClick={() => completeRequestMutation.mutate()}
+                  disabled={completeRequestMutation.isPending}
+                  className="w-full bg-black hover:bg-gray-800 text-white"
+                  data-testid="button-mark-completed"
+                >
+                  {completeRequestMutation.isPending ? "Marking..." : "Mark as Completed"}
+                </Button>
+              </div>
+            )}
 
-                {request.status === "completed" && (
-                  <>
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Delivered On</label>
-                      <Input
-                        type="date"
-                        value={request.updatedAt ? new Date(request.updatedAt).toISOString().split('T')[0] : ""}
-                        readOnly
-                        className="bg-gray-100 dark:bg-gray-700"
-                        data-testid="input-delivered-date"
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Used to auto-calculate On Time vs Late using the (new) due date.
-                      </p>
-                    </div>
+            {justCompleted && (
+              <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <span className="font-semibold text-green-700 dark:text-green-400" data-testid="text-marked-completed">Marked as Completed</span>
+              </div>
+            )}
+          </Card>
+        </div>
 
-                    <div>
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">On Time</label>
-                      <Input
-                        value={isDeliveryOnTime() === null ? "---" : isDeliveryOnTime() ? "On Time" : "Late"}
-                        readOnly
-                        className={`font-semibold ${
-                          isDeliveryOnTime() === true 
-                            ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700" 
-                            : isDeliveryOnTime() === false
-                            ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700"
-                            : "bg-gray-100 dark:bg-gray-700"
-                        }`}
-                        data-testid="input-on-time-status"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {request.status === "in_progress" && (isTeamLead || isAnalyst) && !justCompleted && (
-                  <Button 
-                    onClick={() => completeRequestMutation.mutate()}
-                    disabled={completeRequestMutation.isPending}
-                    className="w-full bg-black hover:bg-gray-800 text-white font-semibold"
-                    data-testid="button-mark-completed"
-                  >
-                    {completeRequestMutation.isPending ? "Marking..." : "Mark as Completed"}
-                  </Button>
-                )}
-
-                {justCompleted && (
-                  <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
-                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                    <span className="font-semibold text-green-700 dark:text-green-400" data-testid="text-marked-completed">Marked as Completed</span>
-                  </div>
-                )}
-            </div>
+        {/* Bottom Full-Width - Messages/Comments Section */}
+        <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-6">
+          <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-4">Messages/Comments ({request.comments.length})</h3>
+          
+          {/* Add Comment Form */}
+          <div className="mb-4">
+            <form onSubmit={onCommentSubmit} className="space-y-2">
+              <Textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment or ask a question..."
+                className="w-full min-h-[90px] border-2 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 resize-none"
+                data-testid="input-new-comment"
+              />
+              <div className="flex justify-end">
+                <Button 
+                  type="submit" 
+                  disabled={!newComment.trim() || addCommentMutation.isPending}
+                  data-testid="button-add-comment"
+                  className="gradient-button-primary text-white font-semibold px-8"
+                  style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
+                >
+                  {addCommentMutation.isPending ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Posting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Post Comment
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
           </div>
 
-          {/* Bottom Full-Width - Messages/Comments Section */}
-          <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-6">
-            <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-4">Messages/Comments ({request.comments.length})</h3>
-            
-            {/* Add Comment Form */}
-            <div className="mb-4">
-              <form onSubmit={onCommentSubmit} className="space-y-2">
-                <Textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Write a comment or ask a question..."
-                  className="w-full min-h-[90px] border-2 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500 resize-none"
-                  data-testid="input-new-comment"
-                />
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    disabled={!newComment.trim() || addCommentMutation.isPending}
-                    data-testid="button-add-comment"
-                    className="gradient-button-primary text-white font-semibold px-8"
-                    style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
-                  >
-                    {addCommentMutation.isPending ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Posting...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Post Comment
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </div>
-
-            {/* Comments Thread */}
-            <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-4">
+          {/* Comments Thread */}
+          <div className="border-t-2 border-purple-200 dark:border-purple-700 pt-4">
               {request.comments.length === 0 ? (
                 <div className="text-center py-10 border-2 border-dashed border-purple-200 dark:border-purple-700 rounded-lg bg-purple-50/30 dark:bg-purple-900/10">
                   <MessageSquare className="w-14 h-14 mx-auto text-purple-400 dark:text-purple-600 mb-3" />
@@ -1037,7 +1038,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
           </div>
         </div>
-      </div>
 
       {/* Reject Request Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
