@@ -618,35 +618,31 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </Button>
             </div>
           )}
-        </div>
-      </DialogHeader>
 
-      <ScrollArea className="flex-1">
-        {/* Status Banners - Show after Accept/Reject actions */}
-        {request.status === "under_review" && (
-          <div className="px-6 pt-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800" data-testid="banner-request-accepted">
+          {/* Status Banners - Show in header after Accept/Reject actions */}
+          {request.status === "under_review" && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex-shrink-0" data-testid="banner-request-accepted">
               <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-green-700 dark:text-green-400">✓ Request Accepted</p>
-                <p className="text-xs text-green-600 dark:text-green-500">This request has been accepted and is ready for assignment</p>
+                <p className="text-xs text-green-600 dark:text-green-500">Ready for assignment</p>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {request.rejectionReason && (
-          <div className="px-6 pt-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800" data-testid="banner-request-rejected">
+          {request.rejectionReason && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 flex-shrink-0" data-testid="banner-request-rejected">
               <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-red-700 dark:text-red-400">✗ Request Rejected</p>
                 <p className="text-xs text-red-600 dark:text-red-500">{request.rejectionReason}</p>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </DialogHeader>
 
+      <ScrollArea className="flex-1">
         {/* 2. 4-Column Info Tiles Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 border-b bg-gray-50 dark:bg-gray-800/50">
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border">
