@@ -721,19 +721,19 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     <>
       {/* Header */}
       <DialogHeader className="border-b pb-4 -m-6 mb-0 p-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           {/* Left Side - Title and Subtitle */}
           <div className="flex-1">
-            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white mb-1" data-testid="text-request-title">
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white" data-testid="text-request-title">
               {formatRequestType(request.type)} - {request.requestedBy.firstName} {request.requestedBy.lastName}
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 mt-0">
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
               Request Type: {formatRequestType(request.type)} | ID: {request.id.slice(0, 8)}
             </DialogDescription>
           </div>
           
           {/* Right Side - Status and Buttons */}
-          <div className="flex flex-col items-end gap-3">
+          <div className="flex items-center gap-3">
             {/* Status Badge */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
@@ -750,7 +750,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             
             {/* Accept/Reject Buttons */}
             {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
-              <div className="flex gap-3">
+              <div className="flex items-center gap-2">
                 <Button
                   onClick={() => acceptRequestMutation.mutate()}
                   disabled={acceptRequestMutation.isPending}
