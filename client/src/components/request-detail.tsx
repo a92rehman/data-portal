@@ -732,29 +732,46 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </DialogDescription>
           </div>
           
-          {/* Right Side - Accept/Reject Buttons */}
-          {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
-            <div className="flex gap-3">
-              <Button
-                onClick={() => acceptRequestMutation.mutate()}
-                disabled={acceptRequestMutation.isPending}
-                variant="outline"
-                data-testid="button-accept-request"
-                className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
-              >
-                {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
-              </Button>
-              <Button
-                onClick={() => setShowRejectDialog(true)}
-                disabled={rejectRequestMutation.isPending}
-                variant="destructive"
-                data-testid="button-reject-request"
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Reject
-              </Button>
+          {/* Right Side - Status and Buttons */}
+          <div className="flex flex-col items-end gap-3">
+            {/* Status Badge */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Status:</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold capitalize ${
+                request.status === "submitted" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400" :
+                request.status === "accepted" || request.status === "under_review" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" :
+                request.status === "in_progress" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400" :
+                request.status === "completed" ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" :
+                "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-400"
+              }`} data-testid="text-request-status">
+                {request.status.replace('_', ' ')}
+              </span>
             </div>
-          )}
+            
+            {/* Accept/Reject Buttons */}
+            {isTeamLead && request.status === "submitted" && !justAccepted && !justRejected && (
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => acceptRequestMutation.mutate()}
+                  disabled={acceptRequestMutation.isPending}
+                  variant="outline"
+                  data-testid="button-accept-request"
+                  className="bg-white hover:bg-gray-50 text-gray-900 border-gray-300"
+                >
+                  {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
+                </Button>
+                <Button
+                  onClick={() => setShowRejectDialog(true)}
+                  disabled={rejectRequestMutation.isPending}
+                  variant="destructive"
+                  data-testid="button-reject-request"
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Reject
+                </Button>
+              </div>
+            )}
+          </div>
           
           {/* Success Messages */}
           {justAccepted && (
