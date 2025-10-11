@@ -572,79 +572,78 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     <>
       {/* 1. Header Row */}
       <DialogHeader className="border-b px-6 py-6 -m-6 mb-0">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-4 pr-8">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="flex-shrink-0"
-                data-testid="button-back"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
+        <div className="flex flex-col gap-4">
+          {/* Back and Close Button Row */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="flex-shrink-0"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Title and Status Banner Tile */}
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <DialogTitle className="text-xl font-bold truncate" data-testid="text-request-title">
                   {request.title}
                 </DialogTitle>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-muted-foreground font-mono" data-testid="text-request-id">
-                    ID: {request.id.slice(0, 8)}
-                  </span>
-                </div>
+                <span className="text-xs text-muted-foreground font-mono" data-testid="text-request-id">
+                  ID: {request.id.slice(0, 8)}
+                </span>
               </div>
-            </div>
 
-            {/* Accept/Reject Buttons - Only for Team Lead when status is submitted */}
-            {isTeamLead && request.status === "submitted" && (
-              <div className="flex gap-2 flex-shrink-0">
-                <Button
-                  onClick={() => acceptRequestMutation.mutate()}
-                  disabled={acceptRequestMutation.isPending}
-                  data-testid="button-accept-request"
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
-                </Button>
-                <Button
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={rejectRequestMutation.isPending}
-                  variant="destructive"
-                  data-testid="button-reject-request"
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject
-                </Button>
-              </div>
-            )}
+              {/* Status Banners - Same line as title */}
+              {request.status === "accepted" && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 flex-shrink-0" data-testid="banner-request-accepted">
+                  <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-400 whitespace-nowrap">✓ Request Accepted</p>
+                    <p className="text-xs text-green-600 dark:text-green-500 whitespace-nowrap">Ready for assignment</p>
+                  </div>
+                </div>
+              )}
+
+              {request.rejectionReason && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 flex-shrink-0" data-testid="banner-request-rejected">
+                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-red-700 dark:text-red-400 whitespace-nowrap">✗ Request Rejected</p>
+                    <p className="text-xs text-red-600 dark:text-red-500">{request.rejectionReason}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Accept/Reject Buttons - Only for Team Lead when status is submitted */}
+              {isTeamLead && request.status === "submitted" && (
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    onClick={() => acceptRequestMutation.mutate()}
+                    disabled={acceptRequestMutation.isPending}
+                    data-testid="button-accept-request"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
+                  </Button>
+                  <Button
+                    onClick={() => setShowRejectDialog(true)}
+                    disabled={rejectRequestMutation.isPending}
+                    variant="destructive"
+                    data-testid="button-reject-request"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Status Banners - Below title, aligned right */}
-          {request.status === "accepted" && (
-            <div className="flex justify-end pr-8">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800" data-testid="banner-request-accepted">
-                <Check className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-green-700 dark:text-green-400 whitespace-nowrap">✓ Request Accepted</p>
-                  <p className="text-xs text-green-600 dark:text-green-500 whitespace-nowrap">Ready for assignment</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {request.rejectionReason && (
-            <div className="flex justify-end pr-8">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800" data-testid="banner-request-rejected">
-                <XCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-red-700 dark:text-red-400 whitespace-nowrap">✗ Request Rejected</p>
-                  <p className="text-xs text-red-600 dark:text-red-500">{request.rejectionReason}</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </DialogHeader>
 
