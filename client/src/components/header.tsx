@@ -39,7 +39,7 @@ export default function Header({ user }: HeaderProps) {
     return false;
   });
 
-  const { sendTyping, typingUsers } = useWebSocket(user?.id);
+  const { sendTyping, typingUsers, connectionStatus } = useWebSocket(user?.id);
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
@@ -148,22 +148,37 @@ export default function Header({ user }: HeaderProps) {
             />
           </div>
 
-          <Popover open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="relative border-2 border-transparent hover:border-purple-300 rounded-lg transition-all" 
-                data-testid="button-notifications"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
+          <div className="flex items-center gap-2">
+            {/* WebSocket Connection Status Indicator */}
+            <div className="flex items-center gap-1.5" title={`Real-time updates: ${connectionStatus}`}>
+              <div className={`w-2 h-2 rounded-full transition-all ${
+                connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
+                connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                'bg-gray-400'
+              }`} />
+              <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
+                {connectionStatus === 'connected' ? 'Live' : 
+                 connectionStatus === 'connecting' ? 'Connecting...' : 
+                 'Offline'}
+              </span>
+            </div>
+
+            <Popover open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="relative border-2 border-transparent hover:border-purple-300 rounded-lg transition-all" 
+                  data-testid="button-notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
             <PopoverContent className="w-96 p-0" align="end" data-testid="popover-notifications">
               <div className="border-b px-4 py-3 flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
                 <h3 className="font-semibold text-lg">Notifications</h3>
@@ -224,6 +239,7 @@ export default function Header({ user }: HeaderProps) {
               </ScrollArea>
             </PopoverContent>
           </Popover>
+          </div>
 
           <Popover open={isProfileOpen} onOpenChange={setIsProfileOpen}>
             <PopoverTrigger asChild>
