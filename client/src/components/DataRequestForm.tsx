@@ -505,11 +505,12 @@ export default function DataRequestForm() {
       setReportMetrics('');
       setOtherDescription('');
       
-      // Reset section visibility and manual edit mode
+      // Reset section visibility, manual edit mode, and frequency interaction
       setSection1Open(true);
       setSection2Open(false);
       setSection3Open(false);
       setIsManualEdit(false);
+      setFrequencyInteracted(false);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -908,43 +909,26 @@ export default function DataRequestForm() {
             {renderByType()}
           </Section>
 
-          <Section 
-            title="3) Submit" 
-            isOpen={section3Open}
-            onToggle={() => {
-              const newState = !section3Open;
-              setSection3Open(newState);
-              if (newState) {
-                // User manually opened section 3 - enable manual edit mode and close others
-                setIsManualEdit(true);
-                setSection1Open(false);
-                setSection2Open(false);
-              } else {
-                // User closed section 3 - disable manual edit mode
-                setIsManualEdit(false);
-              }
-            }}
-          >
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-              <Button 
-                className="px-6 gradient-button-primary text-white font-semibold flex items-center justify-center gap-2" 
-                onClick={handleSubmit} 
-                disabled={isSubmitting || !section1Complete || !section2Complete}
-                data-testid="button-submit-request"
-              >
-                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isSubmitting ? 'Submitting...' : 'Submit Request'}
-              </Button>
-              <Button 
-                variant="outline" 
-                className="px-6 border-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900" 
-                onClick={() => setRequestType('')}
-                data-testid="button-reset-form"
-              >
-                Reset
-              </Button>
-            </div>
-          </Section>
+          {/* Action Buttons - Always Visible */}
+          <div className="mt-6 flex flex-col md:flex-row items-stretch md:items-center gap-3">
+            <Button 
+              className="px-6 gradient-button-primary text-white font-semibold flex items-center justify-center gap-2" 
+              onClick={handleSubmit} 
+              disabled={isSubmitting || !section1Complete || !section2Complete}
+              data-testid="button-submit-request"
+            >
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSubmitting ? 'Submitting...' : 'Submit Request'}
+            </Button>
+            <Button 
+              variant="outline" 
+              className="px-6 border-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900" 
+              onClick={() => setRequestType('')}
+              data-testid="button-reset-form"
+            >
+              Reset
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
