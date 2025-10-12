@@ -62,6 +62,9 @@ export default function DataRequestForm() {
   const [section2Open, setSection2Open] = useState(false);
   const [section3Open, setSection3Open] = useState(false);
   
+  // Track if user is manually editing (to prevent auto-jump)
+  const [isManualEdit, setIsManualEdit] = useState(false);
+  
   // Success dialog state
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
@@ -128,8 +131,11 @@ export default function DataRequestForm() {
     setTeamOther('');
   }, [department]);
 
-  // Auto-expand/collapse sections based on completion - only ONE section open at a time
+  // Auto-expand/collapse sections based on completion - only when NOT manually editing
   useEffect(() => {
+    // Skip auto-progression if user is manually editing
+    if (isManualEdit) return;
+    
     // Check if section 1 is complete
     const section1Complete = requester.name && requester.email && department && requestType && deadline && priority && impact;
     
@@ -144,11 +150,12 @@ export default function DataRequestForm() {
       setSection2Open(false);
       setSection3Open(false);
     }
-  }, [requester.name, requester.email, department, requestType, deadline, priority, impact]);
+  }, [requester.name, requester.email, department, requestType, deadline, priority, impact, isManualEdit]);
 
   // Check if section 2 (type-specific fields) is complete
   useEffect(() => {
-    if (!requestType) return;
+    // Skip auto-progression if user is manually editing
+    if (isManualEdit || !requestType) return;
     
     let section2Complete = false;
     
@@ -199,7 +206,7 @@ export default function DataRequestForm() {
     dashboardModification, exactChanges, hypothesis, datasets, dataExtraction,
     fileFormat, bugDescription, bugLocation, bqEmail, bqDatasets, bqPurpose,
     trackingFeature, trackingTrigger, metricName, currentDefinition, newDefinition,
-    pipelineDataset, pipelineModification, reportMetrics, otherDescription
+    pipelineDataset, pipelineModification, reportMetrics, otherDescription, isManualEdit
   ]);
 
 
@@ -439,10 +446,11 @@ export default function DataRequestForm() {
       setReportMetrics('');
       setOtherDescription('');
       
-      // Reset section visibility
+      // Reset section visibility and manual edit mode
       setSection1Open(true);
       setSection2Open(false);
       setSection3Open(false);
+      setIsManualEdit(false);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -669,10 +677,16 @@ export default function DataRequestForm() {
             title="1) Requester Info & Request Type" 
             isOpen={section1Open}
             onToggle={() => {
-              setSection1Open(!section1Open);
-              if (!section1Open) {
+              const newState = !section1Open;
+              setSection1Open(newState);
+              if (newState) {
+                // User manually opened section 1 - enable manual edit mode and close others
+                setIsManualEdit(true);
                 setSection2Open(false);
                 setSection3Open(false);
+              } else {
+                // User closed section 1 - disable manual edit mode
+                setIsManualEdit(false);
               }
             }}
           >
@@ -758,10 +772,16 @@ export default function DataRequestForm() {
             title="2) Request Details" 
             isOpen={section2Open}
             onToggle={() => {
-              setSection2Open(!section2Open);
-              if (!section2Open) {
+              const newState = !section2Open;
+              setSection2Open(newState);
+              if (newState) {
+                // User manually opened section 2 - enable manual edit mode and close others
+                setIsManualEdit(true);
                 setSection1Open(false);
                 setSection3Open(false);
+              } else {
+                // User closed section 2 - disable manual edit mode
+                setIsManualEdit(false);
               }
             }}
           >
@@ -772,10 +792,16 @@ export default function DataRequestForm() {
             title="3) Submit" 
             isOpen={section3Open}
             onToggle={() => {
-              setSection3Open(!section3Open);
-              if (!section3Open) {
+              const newState = !section3Open;
+              setSection3Open(newState);
+              if (newState) {
+                // User manually opened section 3 - enable manual edit mode and close others
+                setIsManualEdit(true);
                 setSection1Open(false);
                 setSection2Open(false);
+              } else {
+                // User closed section 3 - disable manual edit mode
+                setIsManualEdit(false);
               }
             }}
           >
