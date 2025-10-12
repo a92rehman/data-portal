@@ -7,6 +7,8 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
+import type { User } from "@shared/schema";
 import Landing from "@/pages/landing";
 import AuthSimple from "@/pages/auth-simple";
 import SetupPassword from "@/pages/setup-password";
@@ -24,7 +26,7 @@ import NewRequest from "@/pages/new-request";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return <Landing />;
@@ -60,6 +62,30 @@ function Router() {
   );
 }
 
+function AppContent() {
+  const { user } = useAuth() as { user: User | null };
+
+  return (
+    <WebSocketProvider userId={user?.id}>
+      <Toaster />
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        className="mt-16"
+      />
+      <Router />
+    </WebSocketProvider>
+  );
+}
+
 function App() {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -73,21 +99,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <ToastContainer
-          position="top-right"
-          autoClose={4000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          className="mt-16"
-        />
-        <Router />
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   );
