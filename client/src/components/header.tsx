@@ -44,6 +44,7 @@ export default function Header({ user }: HeaderProps) {
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
     enabled: !!user,
+    refetchInterval: connectionStatus !== 'connected' ? 5000 : false, // Poll every 5s when WebSocket offline
   });
 
   const unreadCount = notifications.filter(n => n.read === 'false').length;
