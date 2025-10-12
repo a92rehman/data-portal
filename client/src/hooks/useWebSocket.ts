@@ -12,8 +12,16 @@ export function useWebSocket(userId: string | undefined) {
   const wsRef = useRef<WebSocket | null>(null);
   const queryClient = useQueryClient();
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const userIdRef = useRef(userId);
+  const isConnectingRef = useRef(false);
   const [typingUsers, setTypingUsers] = useState<Map<string, TypingIndicator>>(new Map());
   const [typingByRequest, setTypingByRequest] = useState<Record<string, string[]>>({});
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+
+  // Update userId ref when it changes
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   // Convert Map to grouped object whenever typingUsers changes
   useEffect(() => {
@@ -32,23 +40,41 @@ export function useWebSocket(userId: string | undefined) {
   }, [typingUsers]);
 
   const connect = useCallback(() => {
-    if (!userId) return;
+    const currentUserId = userIdRef.current;
+    
+    // Don't connect if no userId or already connecting/connected
+    if (!currentUserId || isConnectingRef.current || wsRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
+    // Close existing connection if it's closing or closed
+    if (wsRef.current && wsRef.current.readyState !== WebSocket.OPEN) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    isConnectingRef.current = true;
+    setConnectionStatus('connecting');
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/notifications`;
+    
+    console.log('[WebSocket] Connecting to:', wsUrl);
     
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
-      ws.send(JSON.stringify({ type: 'auth', userId }));
+      console.log('[WebSocket] Connected successfully');
+      isConnectingRef.current = false;
+      setConnectionStatus('connected');
+      ws.send(JSON.stringify({ type: 'auth', userId: currentUserId }));
     };
 
     ws.onmessage = (event) => {
       try {
         const notification = JSON.parse(event.data);
-        console.log('Received notification:', notification);
+        console.log('[WebSocket] Received notification:', notification);
         
         if (notification.type === 'typing_indicator') {
           // Handle typing indicator
@@ -72,6 +98,7 @@ export function useWebSocket(userId: string | undefined) {
           });
         } else {
           // Handle other notifications
+          console.log('[WebSocket] Invalidating queries for notification');
           queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
           queryClient.invalidateQueries({ queryKey: ['/api/requests'] });
           
@@ -80,21 +107,28 @@ export function useWebSocket(userId: string | undefined) {
           }
         }
       } catch (error) {
-        console.error('Error processing WebSocket message:', error);
+        console.error('[WebSocket] Error processing message:', error);
       }
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('[WebSocket] Connection error:', error);
+      isConnectingRef.current = false;
     };
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected, reconnecting...');
-      reconnectTimeoutRef.current = setTimeout(connect, 3000);
+    ws.onclose = (event) => {
+      console.log('[WebSocket] Disconnected. Code:', event.code, 'Reason:', event.reason);
+      isConnectingRef.current = false;
+      setConnectionStatus('disconnected');
+      wsRef.current = null;
+      
+      // Only reconnect if we still have a userId and it wasn't a clean close
+      if (userIdRef.current && event.code !== 1000) {
+        console.log('[WebSocket] Reconnecting in 3 seconds...');
+        reconnectTimeoutRef.current = setTimeout(connect, 3000);
+      }
     };
-
-    return ws;
-  }, [userId, queryClient]);
+  }, [queryClient]);
 
   const sendTyping = useCallback((requestId: string, isTyping: boolean, userName: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -113,14 +147,22 @@ export function useWebSocket(userId: string | undefined) {
     }
 
     return () => {
+      console.log('[WebSocket] Cleanup - closing connection');
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
-        wsRef.current.close();
+        wsRef.current.close(1000, 'Component unmounting');
+        wsRef.current = null;
       }
+      isConnectingRef.current = false;
     };
   }, [userId, connect]);
 
-  return { ws: wsRef.current, sendTyping, typingUsers: typingByRequest };
+  return { 
+    ws: wsRef.current, 
+    sendTyping, 
+    typingUsers: typingByRequest,
+    connectionStatus 
+  };
 }
