@@ -308,7 +308,7 @@ export default function DataRequestForm() {
       
       // Redirect to dashboard after a short delay to show the toast
       setTimeout(() => {
-        setLocation('/dashboard');
+        setLocation('/');
       }, 500);
 
       // Reset all fields
