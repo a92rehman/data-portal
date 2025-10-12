@@ -39,7 +39,7 @@ export default function Header({ user }: HeaderProps) {
     return false;
   });
 
-  useWebSocket(user?.id);
+  const { sendTyping, typingUsers } = useWebSocket(user?.id);
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
