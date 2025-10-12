@@ -13,6 +13,23 @@ export function useWebSocket(userId: string | undefined) {
   const queryClient = useQueryClient();
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const [typingUsers, setTypingUsers] = useState<Map<string, TypingIndicator>>(new Map());
+  const [typingByRequest, setTypingByRequest] = useState<Record<string, string[]>>({});
+
+  // Convert Map to grouped object whenever typingUsers changes
+  useEffect(() => {
+    const grouped: Record<string, string[]> = {};
+    typingUsers.forEach((indicator) => {
+      if (indicator.isTyping) {
+        if (!grouped[indicator.requestId]) {
+          grouped[indicator.requestId] = [];
+        }
+        if (!grouped[indicator.requestId].includes(indicator.userName)) {
+          grouped[indicator.requestId].push(indicator.userName);
+        }
+      }
+    });
+    setTypingByRequest(grouped);
+  }, [typingUsers]);
 
   const connect = useCallback(() => {
     if (!userId) return;
@@ -105,5 +122,5 @@ export function useWebSocket(userId: string | undefined) {
     };
   }, [userId, connect]);
 
-  return { ws: wsRef.current, sendTyping, typingUsers };
+  return { ws: wsRef.current, sendTyping, typingUsers: typingByRequest };
 }
