@@ -15,6 +15,7 @@ import Sidebar from "@/components/sidebar";
 import RequestDetail from "@/components/request-detail";
 import { Search, Eye, CircleAlert, MinusCircle, InfoIcon } from "lucide-react";
 import type { DataRequestWithDetails } from "@shared/schema";
+import { calculateUrgency } from "@/lib/urgency";
 
 export default function AllRequests() {
   const { user, isLoading: authLoading } = useAuth();
@@ -257,7 +258,7 @@ export default function AllRequests() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>#</TableHead>
+                    <TableHead>Urgency</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Department</TableHead>
@@ -278,7 +279,9 @@ export default function AllRequests() {
                     filteredRequests.map((request) => (
                       <TableRow key={request.id} className="hover:bg-purple-50/50 transition-colors">
                         <TableCell className="font-mono text-xs" data-testid={`cell-id-${request.id}`}>
-                          #{request.requestNumber}
+                          <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${calculateUrgency(request).colorClass}`}>
+                            {calculateUrgency(request).label}
+                          </Badge>
                         </TableCell>
                         <TableCell className="font-medium" data-testid={`cell-title-${request.id}`}>
                           {request.title}
