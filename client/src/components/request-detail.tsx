@@ -40,6 +40,7 @@ import {
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
+import { calculateUrgency } from "@/lib/urgency";
 
 interface RequestDetailProps {
   request: DataRequestWithDetails;
@@ -641,9 +642,11 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <DialogTitle className="text-xl font-bold truncate text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
                   {request.title}
                 </DialogTitle>
-                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-mono" data-testid="text-request-number">
-                  Request #{request.requestNumber}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${calculateUrgency(request).colorClass}`}>
+                    {calculateUrgency(request).label}
+                  </Badge>
+                </div>
               </div>
 
               {/* Status Banners - Same line as title */}
