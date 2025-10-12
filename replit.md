@@ -6,6 +6,12 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
+**October 12, 2025 - Accept/Reject Button Fix for All Review Statuses**
+- Fixed Accept/Reject buttons to appear for ALL review-pending statuses (submitted, under_review, pending_review)
+- Previously only showed buttons for "submitted" status, causing buttons to not appear for "under_review" and "pending_review" requests in production
+- Updated request detail dialog condition to check all three review statuses for Data Lead role
+- This ensures Data Leads can accept/reject requests regardless of which legacy or current review status they have
+
 **October 11, 2025 - Test Email Support for Production Testing**
 - Added test email support for production testing purposes
 - Test emails: ar09info@gmail.com (requester), ar92info@gmail.com (analyst)
