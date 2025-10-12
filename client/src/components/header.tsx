@@ -223,21 +223,26 @@ export default function Header({ user }: HeaderProps) {
                       <div
                         key={notification.id}
                         onClick={() => handleNotificationClick(notification)}
-                        className={`p-4 cursor-pointer transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/30 ${
-                          notification.read === 'false' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
+                        className={`p-4 cursor-pointer transition-colors border-l-4 ${
+                          notification.read === 'false' 
+                            ? 'bg-blue-50 dark:bg-blue-900/20 border-purple-500 hover:bg-blue-100 dark:hover:bg-blue-900/30' 
+                            : 'bg-gray-50/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                         data-testid={`notification-${notification.id}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                            <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900 dark:text-purple-300' : 'text-gray-800 dark:text-gray-200'}`}>
                               {notification.title}
                             </p>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                               {notification.message}
                             </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-2">
                               {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                              {notification.read === 'true' && (
+                                <span className="text-gray-400 dark:text-gray-500">• Read</span>
+                              )}
                             </p>
                           </div>
                           {notification.read === 'false' && (
