@@ -886,24 +886,24 @@ export default function DataRequestForm() {
           </Section>
 
           {/* Action Buttons - Always Visible */}
-          <div className="mt-8 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4">
+          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Button 
-                className="px-8 py-6 text-lg gradient-button-primary text-white font-bold flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:transform-none disabled:opacity-50" 
+                className="px-6 py-2.5 gradient-button-primary text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50" 
                 onClick={handleSubmit} 
                 disabled={isSubmitting || !section1Complete || !section2Complete}
                 data-testid="button-submit-request"
               >
-                {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-                {isSubmitting ? 'Submitting Request...' : '✓ Submit Request'}
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isSubmitting ? 'Submitting...' : 'Submit Request'}
               </Button>
               <Button 
                 variant="outline" 
-                className="px-8 py-6 text-lg border-2 border-gray-400 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 font-semibold shadow-md hover:shadow-lg transition-all" 
+                className="px-6 py-2.5 border-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900 font-medium transition-colors" 
                 onClick={() => setRequestType('')}
                 data-testid="button-reset-form"
               >
-                ↺ Reset Form
+                Reset
               </Button>
             </div>
           </div>
