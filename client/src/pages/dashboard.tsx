@@ -590,7 +590,7 @@ export default function Dashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Request ID</TableHead>
+                    <TableHead>#</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Type</TableHead>
@@ -623,7 +623,7 @@ export default function Dashboard() {
                         onClick={() => setSelectedRequest(request)}
                         data-testid={`row-request-${request.id}`}
                       >
-                        <TableCell className="font-medium">{request.id.slice(0, 8)}...</TableCell>
+                        <TableCell className="font-medium">#{request.requestNumber}</TableCell>
                         <TableCell>{request.title}</TableCell>
                         <TableCell className="capitalize">{request.department}</TableCell>
                         <TableCell>{formatRequestType(request.type)}</TableCell>

@@ -641,8 +641,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <DialogTitle className="text-xl font-bold truncate text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
                   {request.title}
                 </DialogTitle>
-                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-mono" data-testid="text-request-id">
-                  ID: {request.id.slice(0, 8)}
+                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-mono" data-testid="text-request-number">
+                  Request #{request.requestNumber}
                 </span>
               </div>
 

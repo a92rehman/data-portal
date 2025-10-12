@@ -257,7 +257,7 @@ export default function AllRequests() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Request ID</TableHead>
+                    <TableHead>#</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Department</TableHead>
@@ -278,7 +278,7 @@ export default function AllRequests() {
                     filteredRequests.map((request) => (
                       <TableRow key={request.id} className="hover:bg-purple-50/50 transition-colors">
                         <TableCell className="font-mono text-xs" data-testid={`cell-id-${request.id}`}>
-                          {request.id.slice(0, 8)}...
+                          #{request.requestNumber}
                         </TableCell>
                         <TableCell className="font-medium" data-testid={`cell-title-${request.id}`}>
                           {request.title}

@@ -181,7 +181,7 @@ export default function PendingReviews() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Request ID</TableHead>
+                    <TableHead>#</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Type</TableHead>
@@ -202,7 +202,7 @@ export default function PendingReviews() {
                     filteredRequests.map((request) => (
                       <TableRow key={request.id} className="hover:bg-purple-50/50 transition-colors">
                         <TableCell className="font-mono text-xs" data-testid={`cell-id-${request.id}`}>
-                          {request.id.slice(0, 8)}...
+                          #{request.requestNumber}
                         </TableCell>
                         <TableCell className="font-medium" data-testid={`cell-title-${request.id}`}>
                           {request.title}
