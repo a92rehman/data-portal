@@ -781,11 +781,23 @@ export default function DataRequestForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Name *</label>
-                <Input placeholder="Your Name" value={requester.name} onChange={(e) => setRequester({ ...requester, name: e.target.value })} className="mt-1" />
+                <Input 
+                  placeholder="Your Name" 
+                  value={requester.name} 
+                  onChange={(e) => setRequester({ ...requester, name: e.target.value })} 
+                  className="mt-1 bg-gray-100 dark:bg-gray-800" 
+                  disabled 
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Email *</label>
-                <Input placeholder="you@org.org" value={requester.email} onChange={(e) => setRequester({ ...requester, email: e.target.value })} className="mt-1" />
+                <Input 
+                  placeholder="you@org.org" 
+                  value={requester.email} 
+                  onChange={(e) => setRequester({ ...requester, email: e.target.value })} 
+                  className="mt-1 bg-gray-100 dark:bg-gray-800" 
+                  disabled 
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Department *</label>
