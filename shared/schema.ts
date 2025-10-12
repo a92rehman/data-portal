@@ -101,7 +101,10 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "analyst_rejected_request",
   "comment_added",
   "blocker_added",
-  "request_completed"
+  "request_completed",
+  "status_changed",
+  "priority_changed",
+  "deadline_changed"
 ]);
 
 // Data requests table
