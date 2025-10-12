@@ -24,7 +24,7 @@ export default function Header({ user }: HeaderProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { logout } = useAuth();
-  const [_, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
@@ -72,18 +72,11 @@ export default function Header({ user }: HeaderProps) {
     }
     setIsNotificationOpen(false);
     
-    // Navigate to appropriate page with requestId param
+    // Stay on current page and add requestId param to open dialog
     if (notification.requestId) {
-      // Determine the correct page based on user role
-      let targetPage = '/dashboard'; // Default for requesters
-      
-      if (user?.role === 'team_lead') {
-        targetPage = '/all-requests';
-      } else if (user?.role === 'analyst') {
-        targetPage = '/my-assignments';
-      }
-      
-      setLocation(`${targetPage}?requestId=${notification.requestId}`);
+      // Get current path (remove any existing query params)
+      const currentPath = location.split('?')[0];
+      setLocation(`${currentPath}?requestId=${notification.requestId}`);
     }
   };
 
