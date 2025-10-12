@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -54,6 +55,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "");
   const [editedPriority, setEditedPriority] = useState(request.priority);
   const [editedDueDate, setEditedDueDate] = useState(new Date(request.dueDate).toISOString().split('T')[0]);
+  
+  const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
@@ -521,8 +525,39 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     });
   };
 
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setNewComment(value);
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Send typing indicator
+    if (value.trim() && user && sendTyping) {
+      const userName = `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || 'User';
+      sendTyping(request.id, true, userName);
+
+      // Auto-stop typing after 2 seconds of no typing
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTyping(request.id, false, userName);
+      }, 2000);
+    }
+  };
+
   const onCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear typing indicator
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    if (user && sendTyping) {
+      const userName = `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || 'User';
+      sendTyping(request.id, false, userName);
+    }
+
     if (newComment.trim()) {
       addCommentMutation.mutate(newComment.trim());
     }
@@ -1362,7 +1397,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               <form onSubmit={onCommentSubmit} className="space-y-3 pt-2">
                 <Textarea
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
+                  onChange={handleCommentChange}
                   placeholder="Write a comment or ask a question..."
                   className="min-h-[80px]"
                   data-testid="input-new-comment"
