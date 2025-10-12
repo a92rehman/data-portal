@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useLocation } from 'wouter';
 import { DEPARTMENTS, TEAM_OPTIONS } from '@shared/constants';
 
 function Section({ title, children, open = true }: { title: string; children: React.ReactNode; open?: boolean }) {
@@ -23,6 +24,7 @@ function Section({ title, children, open = true }: { title: string; children: Re
 export default function DataRequestForm() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [requestType, setRequestType] = useState('');
   const [department, setDepartment] = useState('');
   const [team, setTeam] = useState('');
@@ -35,7 +37,6 @@ export default function DataRequestForm() {
   const [impact, setImpact] = useState('');
   const [deadline, setDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   // State for all type-specific fields
   const [businessQuestion, setBusinessQuestion] = useState('');
@@ -100,11 +101,6 @@ export default function DataRequestForm() {
     setTeamOther('');
   }, [department]);
 
-  useEffect(() => {
-    if (requestType) {
-      setShowSuccessMessage(false);
-    }
-  }, [requestType]);
 
   // Map request types to database enum
   const mapRequestType = (type: string): string => {
@@ -304,13 +300,16 @@ export default function DataRequestForm() {
         throw new Error(error.message || 'Failed to submit request');
       }
 
-      // Success - show success message and reset form
-      setShowSuccessMessage(true);
-      
+      // Success - show toast and redirect to dashboard
       toast({
         title: "Success",
         description: "Request submitted successfully!",
       });
+      
+      // Redirect to dashboard after a short delay to show the toast
+      setTimeout(() => {
+        setLocation('/dashboard');
+      }, 500);
 
       // Reset all fields
       setRequestType('');
@@ -568,33 +567,6 @@ export default function DataRequestForm() {
         <CardContent className="p-6">
           <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Data Request Form</h2>
           
-          {showSuccessMessage && (
-            <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-xl p-6">
-              <div className="flex items-start gap-3">
-                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-3">What happens next?</h3>
-                  <ul className="space-y-2 text-blue-800 dark:text-blue-300">
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-                      <span>Your request will be reviewed by the Data & Impact team</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-                      <span>You'll receive an estimated completion time within 24 hours</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
-                      <span>Track progress and communicate through the request detail page</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
           <Section title="1) Requester Info & Request Type" open>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
@@ -697,8 +669,11 @@ export default function DataRequestForm() {
             </div>
           </Section>
 
-          <Section title="4) What's Next?" open={false}>
-            <div className="space-y-3 text-sm">
+          <div className="mb-6 border-2 border-purple-200 rounded-xl bg-white dark:bg-gray-800 dark:border-purple-700 shadow-sm">
+            <div className="px-4 py-3 bg-purple-50 dark:bg-gray-700 rounded-t-xl">
+              <h3 className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">4) What's Next?</h3>
+            </div>
+            <div className="px-4 pb-4 pt-2 space-y-3 text-sm">
               <div className="flex items-start gap-3">
                 <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">1</div>
                 <div>
@@ -728,7 +703,7 @@ export default function DataRequestForm() {
                 </div>
               </div>
             </div>
-          </Section>
+          </div>
         </CardContent>
       </Card>
     </div>
