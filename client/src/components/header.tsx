@@ -71,6 +71,20 @@ export default function Header({ user }: HeaderProps) {
       markAsReadMutation.mutate(notification.id);
     }
     setIsNotificationOpen(false);
+    
+    // Navigate to appropriate page with requestId param
+    if (notification.requestId) {
+      // Determine the correct page based on user role
+      let targetPage = '/dashboard'; // Default for requesters
+      
+      if (user?.role === 'team_lead') {
+        targetPage = '/all-requests';
+      } else if (user?.role === 'analyst') {
+        targetPage = '/my-assignments';
+      }
+      
+      setLocation(`${targetPage}?requestId=${notification.requestId}`);
+    }
   };
 
   const handleMarkAllRead = () => {
@@ -206,35 +220,31 @@ export default function Header({ user }: HeaderProps) {
                 ) : (
                   <div className="divide-y">
                     {notifications.map((notification) => (
-                      <Link
+                      <div
                         key={notification.id}
-                        href={notification.requestId ? `/request/${notification.requestId}` : '#'}
                         onClick={() => handleNotificationClick(notification)}
+                        className={`p-4 cursor-pointer transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/30 ${
+                          notification.read === 'false' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
+                        }`}
+                        data-testid={`notification-${notification.id}`}
                       >
-                        <div
-                          className={`p-4 cursor-pointer transition-colors hover:bg-purple-50 dark:hover:bg-purple-900/30 ${
-                            notification.read === 'false' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'
-                          }`}
-                          data-testid={`notification-${notification.id}`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                                {notification.title}
-                              </p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                                {notification.message}
-                              </p>
-                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                                {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                              </p>
-                            </div>
-                            {notification.read === 'false' && (
-                              <div className="w-2 h-2 bg-purple-600 rounded-full mt-1 flex-shrink-0" />
-                            )}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                              {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                            </p>
                           </div>
+                          {notification.read === 'false' && (
+                            <div className="w-2 h-2 bg-purple-600 rounded-full mt-1 flex-shrink-0" />
+                          )}
                         </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 )}
