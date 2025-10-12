@@ -42,7 +42,7 @@ export default function PendingReviews() {
 
   // Check for requestId URL param and fetch specific request
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
     const requestId = urlParams.get('requestId');
     
     if (requestId) {
@@ -59,14 +59,16 @@ export default function PendingReviews() {
             setSelectedRequest(request);
           }
           // Clear the URL param
-          window.history.replaceState({}, '', window.location.pathname);
+          const currentPath = location.split('?')[0];
+          setLocation(currentPath);
         })
         .catch(err => {
           console.error('Failed to fetch request:', err);
-          window.history.replaceState({}, '', window.location.pathname);
+          const currentPath = location.split('?')[0];
+          setLocation(currentPath);
         });
     }
-  }, [location]);
+  }, [location, setLocation]);
 
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
