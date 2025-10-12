@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import { useWebSocketContext } from "@/contexts/WebSocketContext";
@@ -30,6 +30,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
+  const searchString = useSearch();
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     status: "",
@@ -152,7 +153,7 @@ export default function Dashboard() {
 
   // Check for requestId URL param and fetch specific request
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+    const urlParams = new URLSearchParams(searchString);
     const requestId = urlParams.get('requestId');
     
     if (requestId) {
@@ -169,16 +170,15 @@ export default function Dashboard() {
             setSelectedRequest(request);
           }
           // Clear the URL param
-          const currentPath = location.split('?')[0];
-          setLocation(currentPath);
+          setLocation(location);
         })
         .catch(err => {
           console.error('Failed to fetch request:', err);
-          const currentPath = location.split('?')[0];
-          setLocation(currentPath);
+          // Clear the URL param
+          setLocation(location);
         });
     }
-  }, [location, setLocation]);
+  }, [searchString, location, setLocation]); // Re-run whenever search string changes
 
   // Fetch stats
   const { data: stats } = useQuery<{

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export default function PendingReviews() {
   const { user, isLoading: authLoading } = useAuth();
   const { connectionStatus } = useWebSocketContext();
   const [location, setLocation] = useLocation();
+  const searchString = useSearch();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
 
@@ -42,7 +43,7 @@ export default function PendingReviews() {
 
   // Check for requestId URL param and fetch specific request
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.includes('?') ? location.split('?')[1] : '');
+    const urlParams = new URLSearchParams(searchString);
     const requestId = urlParams.get('requestId');
     
     if (requestId) {
@@ -59,16 +60,15 @@ export default function PendingReviews() {
             setSelectedRequest(request);
           }
           // Clear the URL param
-          const currentPath = location.split('?')[0];
-          setLocation(currentPath);
+          setLocation(location);
         })
         .catch(err => {
           console.error('Failed to fetch request:', err);
-          const currentPath = location.split('?')[0];
-          setLocation(currentPath);
+          // Clear the URL param
+          setLocation(location);
         });
     }
-  }, [location, setLocation]);
+  }, [searchString, location, setLocation]);
 
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
