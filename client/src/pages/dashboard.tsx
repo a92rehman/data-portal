@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
+import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import RequestDetail from "@/components/request-detail";
@@ -25,6 +26,7 @@ const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { connectionStatus } = useWebSocketContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
@@ -134,6 +136,7 @@ export default function Dashboard() {
   const { data: requests = [], isLoading: isRequestsLoading } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", filters],
     enabled: isAuthenticated,
+    refetchInterval: connectionStatus !== 'connected' ? 5000 : false, // Poll every 5s when WebSocket offline
   });
 
   // Auto-update selectedRequest when requests data changes (for real-time updates)

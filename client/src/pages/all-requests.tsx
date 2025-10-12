@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
+import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import type { DataRequestWithDetails } from "@shared/schema";
 
 export default function AllRequests() {
   const { user, isLoading: authLoading } = useAuth();
+  const { connectionStatus } = useWebSocketContext();
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
@@ -31,6 +33,7 @@ export default function AllRequests() {
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", filters],
     staleTime: Infinity,
+    refetchInterval: connectionStatus !== 'connected' ? 5000 : false, // Poll every 5s when WebSocket offline
   });
 
   // Auto-update selectedRequest when requests data changes (for real-time updates)
