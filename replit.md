@@ -6,6 +6,30 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
+**October 12, 2025 - Comprehensive Real-Time Notification System**
+- Implemented comprehensive notification system for all platform actions
+- Added notification types: status_changed, priority_changed, deadline_changed (in addition to existing types)
+- Created notifications for all key actions:
+  - Comments: All stakeholders (requester, analyst, data lead) receive notifications when someone adds a comment
+  - Blockers: Requester and data lead receive notifications when analyst adds a blocker
+  - Status changes: Requester and data lead receive notifications when analyst updates status
+  - Priority/deadline changes: Requester and analyst receive notifications when data lead changes priority or deadline
+  - Request submission: All data leads receive notifications (already existed)
+  - Request assignment: Analyst and requester receive notifications (already existed)
+  - Accept/reject: Appropriate stakeholders receive notifications (already existed)
+- All notifications include actor identification, request context, and action details
+- WebSocket real-time broadcasting ensures instant notification delivery to all stakeholders
+- Bell icon with unread count badge in header shows notification status
+- Notification dropdown panel allows users to view and mark notifications as read
+- System excludes notification actors from receiving their own notifications
+
+**October 12, 2025 - Request Form UX Improvements**
+- Removed duplicate "What happens next?" blue info box from new request form
+- Made detailed "What's Next?" workflow section always visible (removed collapsible toggle)
+- Added success toast notification after form submission
+- Implemented auto-redirect to Dashboard after successful form submission (500ms delay to show toast)
+- All stakeholders (Requester, Data Lead, Analyst) benefit from improved form experience
+
 **October 12, 2025 - Real-Time Updates & Accept/Reject Button Fix**
 - Fixed real-time updates: Request detail dialogs now auto-refresh when data changes via WebSocket notifications
 - Added auto-update logic to all pages with request dialogs (Dashboard, All Requests, My Assignments, Pending Reviews)
