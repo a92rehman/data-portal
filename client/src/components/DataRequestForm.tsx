@@ -96,7 +96,6 @@ export default function DataRequestForm() {
   // Section visibility states - only ONE section open at a time
   const [section1Open, setSection1Open] = useState(true);
   const [section2Open, setSection2Open] = useState(false);
-  const [section3Open, setSection3Open] = useState(false);
   
   // Track if user is manually editing (to prevent auto-jump)
   const [isManualEdit, setIsManualEdit] = useState(false);
@@ -192,12 +191,10 @@ export default function DataRequestForm() {
       // Auto-collapse section 1 and auto-open section 2
       setSection1Open(false);
       setSection2Open(true);
-      setSection3Open(false);
     } else {
       // Keep section 1 open if not complete
       setSection1Open(true);
       setSection2Open(false);
-      setSection3Open(false);
     }
   }, [requester.name, requester.email, department, requestType, deadline, priority, impact, isManualEdit]);
 
@@ -254,10 +251,9 @@ export default function DataRequestForm() {
     if (isManualEdit) return;
     
     if (isSection2Complete) {
-      // Auto-collapse section 2 and auto-open section 3
+      // Auto-collapse section 2 when complete (buttons are always visible now)
       setSection1Open(false);
       setSection2Open(false);
-      setSection3Open(true);
     }
   }, [
     requestType, businessQuestion, keyMetrics, dashboardAudience, decisionAction,
@@ -508,7 +504,6 @@ export default function DataRequestForm() {
       // Reset section visibility, manual edit mode, and frequency interaction
       setSection1Open(true);
       setSection2Open(false);
-      setSection3Open(false);
       setIsManualEdit(false);
       setFrequencyInteracted(false);
     } catch (error: any) {
@@ -763,18 +758,7 @@ export default function DataRequestForm() {
                     <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
                   )}
                   <span className={`text-xs md:text-sm ${section2Complete ? 'text-green-700 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
-                    Details
-                  </span>
-                </div>
-                <div className="h-px bg-gray-300 dark:bg-gray-600 flex-1" />
-                <div className="flex items-center gap-2 flex-1">
-                  {section1Complete && section2Complete ? (
-                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  )}
-                  <span className={`text-xs md:text-sm ${section1Complete && section2Complete ? 'text-green-700 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
-                    Submit
+                    Request Details
                   </span>
                 </div>
               </div>
@@ -791,7 +775,6 @@ export default function DataRequestForm() {
                 // User manually opened section 1 - enable manual edit mode and close others
                 setIsManualEdit(true);
                 setSection2Open(false);
-                setSection3Open(false);
               } else {
                 // User closed section 1 - disable manual edit mode
                 setIsManualEdit(false);
@@ -899,7 +882,6 @@ export default function DataRequestForm() {
                 // User manually opened section 2 - enable manual edit mode and close others
                 setIsManualEdit(true);
                 setSection1Open(false);
-                setSection3Open(false);
               } else {
                 // User closed section 2 - disable manual edit mode
                 setIsManualEdit(false);
