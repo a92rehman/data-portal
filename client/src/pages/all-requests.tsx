@@ -33,7 +33,8 @@ export default function AllRequests() {
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", filters],
     staleTime: Infinity,
-    refetchInterval: connectionStatus !== 'connected' ? 5000 : false, // Poll every 5s when WebSocket offline
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
   });
 
   // Auto-update selectedRequest when requests data changes (for real-time updates)

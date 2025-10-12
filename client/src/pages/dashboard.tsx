@@ -136,7 +136,8 @@ export default function Dashboard() {
   const { data: requests = [], isLoading: isRequestsLoading } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", filters],
     enabled: isAuthenticated,
-    refetchInterval: connectionStatus !== 'connected' ? 5000 : false, // Poll every 5s when WebSocket offline
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
   });
 
   // Auto-update selectedRequest when requests data changes (for real-time updates)
