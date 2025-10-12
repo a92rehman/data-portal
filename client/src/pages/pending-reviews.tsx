@@ -28,8 +28,8 @@ export default function PendingReviews() {
 
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    request.primaryQuestion.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    request.businessProblem.toLowerCase().includes(searchQuery.toLowerCase())
+    request.primaryQuestion?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    request.businessProblem?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -205,7 +205,7 @@ export default function PendingReviews() {
       {/* Request Detail Dialog */}
       {selectedRequest && (
         <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-          <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden">
+          <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden" aria-describedby={undefined}>
             <RequestDetail
               request={selectedRequest}
               onClose={() => setSelectedRequest(null)}
