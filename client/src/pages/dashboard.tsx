@@ -136,6 +136,16 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
+  // Auto-update selectedRequest when requests data changes (for real-time updates)
+  useEffect(() => {
+    if (selectedRequest && requests.length > 0) {
+      const updatedRequest = requests.find(r => r.id === selectedRequest.id);
+      if (updatedRequest) {
+        setSelectedRequest(updatedRequest);
+      }
+    }
+  }, [requests, selectedRequest]);
+
   // Fetch stats
   const { data: stats } = useQuery<{
     totalRequests: number;

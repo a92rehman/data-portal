@@ -6,11 +6,13 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
-**October 12, 2025 - Accept/Reject Button Fix for All Review Statuses**
+**October 12, 2025 - Real-Time Updates & Accept/Reject Button Fix**
+- Fixed real-time updates: Request detail dialogs now auto-refresh when data changes via WebSocket notifications
+- Added auto-update logic to all pages with request dialogs (Dashboard, All Requests, My Assignments, Pending Reviews)
 - Fixed Accept/Reject buttons to appear for ALL review-pending statuses (submitted, under_review, pending_review)
 - Previously only showed buttons for "submitted" status, causing buttons to not appear for "under_review" and "pending_review" requests in production
 - Updated request detail dialog condition to check all three review statuses for Data Lead role
-- This ensures Data Leads can accept/reject requests regardless of which legacy or current review status they have
+- Users no longer need to refresh or reopen dialogs to see status changes - updates happen instantly
 
 **October 11, 2025 - Test Email Support for Production Testing**
 - Added test email support for production testing purposes

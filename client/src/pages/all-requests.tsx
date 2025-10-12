@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -32,6 +32,16 @@ export default function AllRequests() {
     queryKey: ["/api/requests", filters],
     staleTime: Infinity,
   });
+
+  // Auto-update selectedRequest when requests data changes (for real-time updates)
+  useEffect(() => {
+    if (selectedRequest && requests.length > 0) {
+      const updatedRequest = requests.find(r => r.id === selectedRequest.id);
+      if (updatedRequest) {
+        setSelectedRequest(updatedRequest);
+      }
+    }
+  }, [requests, selectedRequest]);
 
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
