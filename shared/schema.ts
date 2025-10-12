@@ -8,6 +8,7 @@ import {
   text,
   pgEnum,
   integer,
+  serial,
 } from "drizzle-orm/pg-core";
 import { relations } from 'drizzle-orm';
 import { createInsertSchema } from "drizzle-zod";
@@ -110,6 +111,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
 // Data requests table
 export const dataRequests = pgTable("data_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  requestNumber: serial("request_number").notNull().unique(),
   title: varchar("title").notNull(),
   type: requestTypeEnum("type").notNull(),
   priority: requestPriorityEnum("priority").notNull(),
