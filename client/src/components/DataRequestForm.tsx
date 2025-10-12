@@ -19,17 +19,13 @@ function Section({
   title, 
   children, 
   isOpen, 
-  isHidden = false,
   onToggle 
 }: { 
   title: string; 
   children: React.ReactNode; 
   isOpen: boolean; 
-  isHidden?: boolean;
   onToggle: () => void;
 }) {
-  if (isHidden) return null;
-  
   return (
     <div className="mb-6 border-2 border-purple-200 rounded-xl bg-white dark:bg-gray-800 dark:border-purple-700 shadow-sm">
       <div 
@@ -61,12 +57,10 @@ export default function DataRequestForm() {
   const [deadline, setDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Section visibility states
+  // Section visibility states - only ONE section open at a time
   const [section1Open, setSection1Open] = useState(true);
   const [section2Open, setSection2Open] = useState(false);
   const [section3Open, setSection3Open] = useState(false);
-  const [section1Hidden, setSection1Hidden] = useState(false);
-  const [section2Hidden, setSection2Hidden] = useState(false);
   
   // Success dialog state
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -134,20 +128,20 @@ export default function DataRequestForm() {
     setTeamOther('');
   }, [department]);
 
-  // Auto-expand and hide sections based on completion
+  // Auto-expand/collapse sections based on completion - only ONE section open at a time
   useEffect(() => {
     // Check if section 1 is complete
     const section1Complete = requester.name && requester.email && department && requestType && deadline && priority && impact;
     
     if (section1Complete) {
-      // Auto-hide section 1 and auto-expand section 2
-      setSection1Hidden(true);
+      // Auto-collapse section 1 and auto-open section 2
+      setSection1Open(false);
       setSection2Open(true);
+      setSection3Open(false);
     } else {
-      // Show section 1 if not complete
-      setSection1Hidden(false);
+      // Keep section 1 open if not complete
+      setSection1Open(true);
       setSection2Open(false);
-      setSection2Hidden(false);
       setSection3Open(false);
     }
   }, [requester.name, requester.email, department, requestType, deadline, priority, impact]);
@@ -195,13 +189,10 @@ export default function DataRequestForm() {
     }
     
     if (section2Complete) {
-      // Auto-hide section 2 and auto-expand section 3
-      setSection2Hidden(true);
+      // Auto-collapse section 2 and auto-open section 3
+      setSection1Open(false);
+      setSection2Open(false);
       setSection3Open(true);
-    } else {
-      // Show section 2 if not complete
-      setSection2Hidden(false);
-      setSection3Open(false);
     }
   }, [
     requestType, businessQuestion, keyMetrics, dashboardAudience, decisionAction,
@@ -452,8 +443,6 @@ export default function DataRequestForm() {
       setSection1Open(true);
       setSection2Open(false);
       setSection3Open(false);
-      setSection1Hidden(false);
-      setSection2Hidden(false);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -679,8 +668,13 @@ export default function DataRequestForm() {
           <Section 
             title="1) Requester Info & Request Type" 
             isOpen={section1Open}
-            isHidden={section1Hidden}
-            onToggle={() => setSection1Open(!section1Open)}
+            onToggle={() => {
+              setSection1Open(!section1Open);
+              if (!section1Open) {
+                setSection2Open(false);
+                setSection3Open(false);
+              }
+            }}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
@@ -763,8 +757,13 @@ export default function DataRequestForm() {
           <Section 
             title="2) Request Details" 
             isOpen={section2Open}
-            isHidden={section2Hidden}
-            onToggle={() => setSection2Open(!section2Open)}
+            onToggle={() => {
+              setSection2Open(!section2Open);
+              if (!section2Open) {
+                setSection1Open(false);
+                setSection3Open(false);
+              }
+            }}
           >
             {renderByType()}
           </Section>
@@ -772,7 +771,13 @@ export default function DataRequestForm() {
           <Section 
             title="3) Submit" 
             isOpen={section3Open}
-            onToggle={() => setSection3Open(!section3Open)}
+            onToggle={() => {
+              setSection3Open(!section3Open);
+              if (!section3Open) {
+                setSection1Open(false);
+                setSection2Open(false);
+              }
+            }}
           >
             <div className="flex items-center gap-3">
               <Button 
