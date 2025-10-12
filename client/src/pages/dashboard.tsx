@@ -150,6 +150,23 @@ export default function Dashboard() {
     }
   }, [requests, selectedRequest]);
 
+  // Check for requestId URL param and auto-open dialog
+  useEffect(() => {
+    if (requests.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestId = urlParams.get('requestId');
+      
+      if (requestId) {
+        const request = requests.find(r => r.id === requestId);
+        if (request) {
+          setSelectedRequest(request);
+          // Clear the URL param
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
+    }
+  }, [requests]);
+
   // Fetch stats
   const { data: stats } = useQuery<{
     totalRequests: number;
