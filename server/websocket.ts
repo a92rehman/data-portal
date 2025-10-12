@@ -41,6 +41,9 @@ class NotificationWebSocketServer {
             this.clients.set(data.userId, new Set());
           }
           this.clients.get(data.userId)!.add(ws);
+        } else if (data.type === 'typing' && ws.userId) {
+          // Broadcast typing indicator to other users
+          this.broadcastTyping(ws.userId, data.requestId, data.isTyping, data.userName);
         }
       } catch (error) {
         console.error('WebSocket message error:', error);
@@ -56,6 +59,25 @@ class NotificationWebSocketServer {
             this.clients.delete(ws.userId);
           }
         }
+      }
+    });
+  }
+
+  private broadcastTyping(senderId: string, requestId: string, isTyping: boolean, userName: string) {
+    // Broadcast to all connected users except the sender
+    this.clients.forEach((userClients, userId) => {
+      if (userId !== senderId) {
+        userClients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'typing_indicator',
+              requestId,
+              userId: senderId,
+              userName,
+              isTyping
+            }));
+          }
+        });
       }
     });
   }
