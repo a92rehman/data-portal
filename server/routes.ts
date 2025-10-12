@@ -723,6 +723,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
+      // Create notifications for status change
+      const analystName = `${user.firstName} ${user.lastName}`;
+      const statusDisplay = status.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+      
+      // Notify requester
+      if (request.requestedById && request.requestedById !== user.id) {
+        try {
+          await storage.createNotification({
+            userId: request.requestedById,
+            type: 'status_changed',
+            title: 'Request Status Updated',
+            message: `${analystName} changed the status of "${request.title}" to ${statusDisplay}`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (error) {
+          console.error('Failed to create notification for requester:', error);
+        }
+      }
+      
+      // Notify data lead (reviewer)
+      if (request.reviewedById && request.reviewedById !== user.id) {
+        try {
+          await storage.createNotification({
+            userId: request.reviewedById,
+            type: 'status_changed',
+            title: 'Request Status Updated',
+            message: `${analystName} changed the status of "${request.title}" to ${statusDisplay}`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (error) {
+          console.error('Failed to create notification for data lead:', error);
+        }
+      }
+      
+      // Send WebSocket notifications
+      const wsServer = getWebSocketServer();
+      if (wsServer) {
+        const recipients = [];
+        if (request.requestedById && request.requestedById !== user.id) {
+          recipients.push(request.requestedById);
+        }
+        if (request.reviewedById && request.reviewedById !== user.id) {
+          recipients.push(request.reviewedById);
+        }
+        
+        if (recipients.length > 0) {
+          wsServer.notifyMultipleUsers(recipients, {
+            type: 'status_changed',
+            requestId: request.id,
+            message: `Status changed to ${statusDisplay}`,
+          });
+        }
+      }
+
       res.json(request);
     } catch (error) {
       console.error("Error updating request status:", error);
@@ -801,6 +857,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
+      }
+
+      // Create notifications for priority/deadline change
+      const dataLeadName = `${user.firstName} ${user.lastName}`;
+      const priorityDisplay = priority.replace(/_/g, '-').toUpperCase();
+      const deadlineDisplay = new Date(dueDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+      
+      // Notify requester
+      if (request.requestedById && request.requestedById !== user.id) {
+        try {
+          await storage.createNotification({
+            userId: request.requestedById,
+            type: 'priority_changed',
+            title: 'Request Priority/Deadline Updated',
+            message: `${dataLeadName} updated "${request.title}" - Priority: ${priorityDisplay}, Deadline: ${deadlineDisplay}`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (error) {
+          console.error('Failed to create notification for requester:', error);
+        }
+      }
+      
+      // Notify analyst if assigned
+      if (request.assignedToId && request.assignedToId !== user.id) {
+        try {
+          await storage.createNotification({
+            userId: request.assignedToId,
+            type: 'deadline_changed',
+            title: 'Request Priority/Deadline Updated',
+            message: `${dataLeadName} updated "${request.title}" - Priority: ${priorityDisplay}, Deadline: ${deadlineDisplay}`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (error) {
+          console.error('Failed to create notification for analyst:', error);
+        }
+      }
+      
+      // Send WebSocket notifications
+      const wsServer = getWebSocketServer();
+      if (wsServer) {
+        const recipients = [];
+        if (request.requestedById && request.requestedById !== user.id) {
+          recipients.push(request.requestedById);
+        }
+        if (request.assignedToId && request.assignedToId !== user.id) {
+          recipients.push(request.assignedToId);
+        }
+        
+        if (recipients.length > 0) {
+          wsServer.notifyMultipleUsers(recipients, {
+            type: 'priority_deadline_changed',
+            requestId: request.id,
+            message: `Priority and deadline updated`,
+          });
+        }
       }
 
       res.json(request);
@@ -1256,6 +1373,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
+      // Create notifications for request stakeholders
+      const request = await storage.getDataRequest(req.params.id);
+      if (request) {
+        const analystName = `${user.firstName} ${user.lastName}`;
+        
+        // Notify requester
+        if (request.requestedById) {
+          try {
+            await storage.createNotification({
+              userId: request.requestedById,
+              type: 'blocker_added',
+              title: 'Blocker Added to Your Request',
+              message: `${analystName} added a blocker to "${request.title}": ${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`,
+              requestId: request.id,
+              read: 'false',
+            });
+          } catch (error) {
+            console.error('Failed to create notification for requester:', error);
+          }
+        }
+        
+        // Notify data lead (reviewer)
+        if (request.reviewedById && request.reviewedById !== user.id) {
+          try {
+            await storage.createNotification({
+              userId: request.reviewedById,
+              type: 'blocker_added',
+              title: 'Blocker Added to Request',
+              message: `${analystName} added a blocker to "${request.title}": ${description.substring(0, 100)}${description.length > 100 ? '...' : ''}`,
+              requestId: request.id,
+              read: 'false',
+            });
+          } catch (error) {
+            console.error('Failed to create notification for data lead:', error);
+          }
+        }
+        
+        // Send WebSocket notifications
+        const wsServer = getWebSocketServer();
+        if (wsServer) {
+          const recipients = [request.requestedById];
+          if (request.reviewedById && request.reviewedById !== user.id) {
+            recipients.push(request.reviewedById);
+          }
+          
+          wsServer.notifyMultipleUsers(recipients, {
+            type: 'blocker_added',
+            requestId: request.id,
+            message: `A blocker was added to "${request.title}"`,
+          });
+        }
+      }
+
       res.status(201).json(blocker);
     } catch (error) {
       console.error("Error adding blocker:", error);
@@ -1301,14 +1471,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const request = await storage.getDataRequest(req.params.id);
       if (request) {
+        const commenter = await storage.getUser(userId);
+        const commenterName = commenter ? `${commenter.firstName} ${commenter.lastName}` : 'Someone';
+        
+        // Create notifications for all stakeholders
+        const participants = [request.requestedById];
+        if (request.assignedToId) participants.push(request.assignedToId);
+        if (request.reviewedById) participants.push(request.reviewedById);
+        
+        const uniqueParticipants = Array.from(new Set(participants)).filter(id => id !== userId);
+        
+        for (const participantId of uniqueParticipants) {
+          try {
+            await storage.createNotification({
+              userId: participantId,
+              type: 'comment_added',
+              title: 'New Comment Added',
+              message: `${commenterName} commented on "${request.title}": ${validatedData.content.substring(0, 100)}${validatedData.content.length > 100 ? '...' : ''}`,
+              requestId: request.id,
+              read: 'false',
+            });
+          } catch (error) {
+            console.error(`Failed to create notification for user ${participantId}:`, error);
+          }
+        }
+        
         const wsServer = getWebSocketServer();
         if (wsServer) {
-          const participants = [request.requestedById];
-          if (request.assignedToId) participants.push(request.assignedToId);
-          if (request.reviewedById) participants.push(request.reviewedById);
-          
-          const uniqueParticipants = Array.from(new Set(participants)).filter(id => id !== userId);
-          
           wsServer.notifyMultipleUsers(uniqueParticipants, {
             type: 'new_comment',
             requestId: request.id,
