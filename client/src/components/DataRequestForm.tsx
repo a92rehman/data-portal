@@ -7,12 +7,35 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { DEPARTMENTS, TEAM_OPTIONS } from '@shared/constants';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
-function Section({ title, children, open = true }: { title: string; children: React.ReactNode; open?: boolean }) {
-  const [isOpen, setIsOpen] = useState(open);
+function Section({ 
+  title, 
+  children, 
+  isOpen, 
+  isHidden = false,
+  onToggle 
+}: { 
+  title: string; 
+  children: React.ReactNode; 
+  isOpen: boolean; 
+  isHidden?: boolean;
+  onToggle: () => void;
+}) {
+  if (isHidden) return null;
+  
   return (
     <div className="mb-6 border-2 border-purple-200 rounded-xl bg-white dark:bg-gray-800 dark:border-purple-700 shadow-sm">
-      <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors rounded-t-xl" onClick={() => setIsOpen(!isOpen)}>
+      <div 
+        className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors rounded-t-xl" 
+        onClick={onToggle}
+      >
         <h3 className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{title}</h3>
         <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">{isOpen ? '▼ Hide' : '▶ Show'}</span>
       </div>
@@ -37,6 +60,16 @@ export default function DataRequestForm() {
   const [impact, setImpact] = useState('');
   const [deadline, setDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Section visibility states
+  const [section1Open, setSection1Open] = useState(true);
+  const [section2Open, setSection2Open] = useState(false);
+  const [section3Open, setSection3Open] = useState(false);
+  const [section1Hidden, setSection1Hidden] = useState(false);
+  const [section2Hidden, setSection2Hidden] = useState(false);
+  
+  // Success dialog state
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // State for all type-specific fields
   const [businessQuestion, setBusinessQuestion] = useState('');
@@ -100,6 +133,83 @@ export default function DataRequestForm() {
     setTeam('');
     setTeamOther('');
   }, [department]);
+
+  // Auto-expand and hide sections based on completion
+  useEffect(() => {
+    // Check if section 1 is complete
+    const section1Complete = requester.name && requester.email && department && requestType && deadline && priority && impact;
+    
+    if (section1Complete) {
+      // Auto-hide section 1 and auto-expand section 2
+      setSection1Hidden(true);
+      setSection2Open(true);
+    } else {
+      // Show section 1 if not complete
+      setSection1Hidden(false);
+      setSection2Open(false);
+      setSection2Hidden(false);
+      setSection3Open(false);
+    }
+  }, [requester.name, requester.email, department, requestType, deadline, priority, impact]);
+
+  // Check if section 2 (type-specific fields) is complete
+  useEffect(() => {
+    if (!requestType) return;
+    
+    let section2Complete = false;
+    
+    switch (requestType) {
+      case 'newDashboard':
+        section2Complete = !!(businessQuestion && keyMetrics && dashboardAudience && decisionAction);
+        break;
+      case 'modifyDashboard':
+        section2Complete = !!(dashboardModification && exactChanges && decisionAction);
+        break;
+      case 'adhoc':
+        section2Complete = !!(hypothesis && datasets && decisionAction);
+        break;
+      case 'extraction':
+        section2Complete = !!(dataExtraction && fileFormat);
+        break;
+      case 'bug':
+        section2Complete = !!(bugDescription && bugLocation);
+        break;
+      case 'bqaccess':
+        section2Complete = !!(bqEmail && bqDatasets && bqPurpose);
+        break;
+      case 'tracking':
+        section2Complete = !!(trackingFeature && trackingTrigger);
+        break;
+      case 'metricChange':
+        section2Complete = !!(metricName && currentDefinition && newDefinition && decisionAction);
+        break;
+      case 'pipelineChange':
+        section2Complete = !!(pipelineDataset && pipelineModification);
+        break;
+      case 'recurringReport':
+        section2Complete = !!(reportMetrics && decisionAction);
+        break;
+      case 'other':
+        section2Complete = !!otherDescription;
+        break;
+    }
+    
+    if (section2Complete) {
+      // Auto-hide section 2 and auto-expand section 3
+      setSection2Hidden(true);
+      setSection3Open(true);
+    } else {
+      // Show section 2 if not complete
+      setSection2Hidden(false);
+      setSection3Open(false);
+    }
+  }, [
+    requestType, businessQuestion, keyMetrics, dashboardAudience, decisionAction,
+    dashboardModification, exactChanges, hypothesis, datasets, dataExtraction,
+    fileFormat, bugDescription, bugLocation, bqEmail, bqDatasets, bqPurpose,
+    trackingFeature, trackingTrigger, metricName, currentDefinition, newDefinition,
+    pipelineDataset, pipelineModification, reportMetrics, otherDescription
+  ]);
 
 
   // Map request types to database enum
@@ -300,18 +410,10 @@ export default function DataRequestForm() {
         throw new Error(error.message || 'Failed to submit request');
       }
 
-      // Success - show toast and redirect to dashboard
-      toast({
-        title: "Success",
-        description: "Request submitted successfully!",
-      });
-      
-      // Redirect to dashboard after a short delay to show the toast
-      setTimeout(() => {
-        setLocation('/');
-      }, 500);
+      // Success - show the success dialog with "What's Next" content
+      setShowSuccessDialog(true);
 
-      // Reset all fields
+      // Reset all fields and sections
       setRequestType('');
       setTeam('');
       setTeamOther('');
@@ -345,6 +447,13 @@ export default function DataRequestForm() {
       setPipelineModification('');
       setReportMetrics('');
       setOtherDescription('');
+      
+      // Reset section visibility
+      setSection1Open(true);
+      setSection2Open(false);
+      setSection3Open(false);
+      setSection1Hidden(false);
+      setSection2Hidden(false);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -567,7 +676,12 @@ export default function DataRequestForm() {
         <CardContent className="p-6">
           <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Data Request Form</h2>
           
-          <Section title="1) Requester Info & Request Type" open>
+          <Section 
+            title="1) Requester Info & Request Type" 
+            isOpen={section1Open}
+            isHidden={section1Hidden}
+            onToggle={() => setSection1Open(!section1Open)}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="text-sm font-medium">Name *</label>
@@ -646,16 +760,26 @@ export default function DataRequestForm() {
             </div>
           </Section>
 
-          <Section title="2) Request Details" open={!!requestType}>
+          <Section 
+            title="2) Request Details" 
+            isOpen={section2Open}
+            isHidden={section2Hidden}
+            onToggle={() => setSection2Open(!section2Open)}
+          >
             {renderByType()}
           </Section>
 
-          <Section title="3) Submit" open={!!requestType}>
+          <Section 
+            title="3) Submit" 
+            isOpen={section3Open}
+            onToggle={() => setSection3Open(!section3Open)}
+          >
             <div className="flex items-center gap-3">
               <Button 
                 className="px-6 gradient-button-primary text-white font-semibold" 
                 onClick={handleSubmit} 
                 disabled={isSubmitting}
+                data-testid="button-submit-request"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Request'}
               </Button>
@@ -663,49 +787,76 @@ export default function DataRequestForm() {
                 variant="outline" 
                 className="px-6 border-2 border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900" 
                 onClick={() => setRequestType('')}
+                data-testid="button-reset-form"
               >
                 Reset
               </Button>
             </div>
           </Section>
+        </CardContent>
+      </Card>
 
-          <div className="mb-6 border-2 border-purple-200 rounded-xl bg-white dark:bg-gray-800 dark:border-purple-700 shadow-sm">
-            <div className="px-4 py-3 bg-purple-50 dark:bg-gray-700 rounded-t-xl">
-              <h3 className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">4) What's Next?</h3>
-            </div>
-            <div className="px-4 pb-4 pt-2 space-y-3 text-sm">
+      {/* Success Dialog with What's Next */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Request Submitted Successfully! 🎉
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <p className="text-muted-foreground">Your data request has been submitted. Here's what happens next:</p>
+            
+            <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">1</div>
+                <div className="mt-1 w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">1</div>
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">Review by Data Lead</h4>
-                  <p className="text-muted-foreground">Your request will be reviewed by the Data Lead team. They will assess priority, feasibility, and assign it to the right analyst.</p>
+                  <p className="text-sm text-muted-foreground">Your request will be reviewed by the Data Lead team. They will assess priority, feasibility, and assign it to the right analyst.</p>
                 </div>
               </div>
+              
               <div className="flex items-start gap-3">
-                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">2</div>
+                <div className="mt-1 w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">2</div>
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">Assignment to Analyst</h4>
-                  <p className="text-muted-foreground">Once approved, your request will be assigned to a data analyst who will begin working on it.</p>
+                  <p className="text-sm text-muted-foreground">Once approved, your request will be assigned to a data analyst who will begin working on it.</p>
                 </div>
               </div>
+              
               <div className="flex items-start gap-3">
-                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">3</div>
+                <div className="mt-1 w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">3</div>
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">Collaboration & Updates</h4>
-                  <p className="text-muted-foreground">You'll receive notifications and can track progress in your dashboard. Feel free to add comments or ask questions anytime.</p>
+                  <p className="text-sm text-muted-foreground">You'll receive notifications and can track progress in your dashboard. Feel free to add comments or ask questions anytime.</p>
                 </div>
               </div>
+              
               <div className="flex items-start gap-3">
-                <div className="mt-1 w-6 h-6 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">4</div>
+                <div className="mt-1 w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">4</div>
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">Delivery</h4>
-                  <p className="text-muted-foreground">The analyst will deliver the results according to your requirements. You'll be notified once your request is completed.</p>
+                  <p className="text-sm text-muted-foreground">The analyst will deliver the results according to your requirements. You'll be notified once your request is completed.</p>
                 </div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          <DialogFooter>
+            <Button 
+              className="w-full gradient-button-primary text-white font-semibold"
+              onClick={() => {
+                setShowSuccessDialog(false);
+                setLocation('/');
+              }}
+              data-testid="button-ok-return-dashboard"
+            >
+              OK - Return to Dashboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
