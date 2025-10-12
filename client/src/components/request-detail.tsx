@@ -59,6 +59,19 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
+  // Cleanup typing indicator on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (user && sendTyping) {
+        const userName = `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || 'User';
+        sendTyping(request.id, false, userName);
+      }
+    };
+  }, [user, sendTyping, request.id]);
+
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
     enabled: (user as any)?.role === "team_lead" || (user as any)?.role === "analyst",
@@ -1392,6 +1405,25 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   ))
                 )}
               </div>
+
+              {/* Typing Indicator */}
+              {typingUsers[request.id] && typingUsers[request.id].length > 0 && (
+                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground animate-in fade-in duration-200" data-testid="typing-indicator">
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </div>
+                  <span>
+                    {typingUsers[request.id].length === 1 
+                      ? `${typingUsers[request.id][0]} is typing...`
+                      : typingUsers[request.id].length === 2
+                      ? `${typingUsers[request.id][0]} and ${typingUsers[request.id][1]} are typing...`
+                      : `${typingUsers[request.id].slice(0, -1).join(', ')}, and ${typingUsers[request.id].slice(-1)} are typing...`
+                    }
+                  </span>
+                </div>
+              )}
 
               {/* Add Comment Form */}
               <form onSubmit={onCommentSubmit} className="space-y-3 pt-2">
