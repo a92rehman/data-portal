@@ -107,6 +107,9 @@ export default function DataRequestForm() {
   // Track section completion states
   const [section1Complete, setSection1Complete] = useState(false);
   const [section2Complete, setSection2Complete] = useState(false);
+  
+  // Track if user has interacted with frequency fields
+  const [frequencyInteracted, setFrequencyInteracted] = useState(false);
 
   // State for all type-specific fields
   const [businessQuestion, setBusinessQuestion] = useState('');
@@ -171,6 +174,11 @@ export default function DataRequestForm() {
     setTeamOther('');
   }, [department]);
 
+  // Reset frequency interaction when request type changes
+  useEffect(() => {
+    setFrequencyInteracted(false);
+  }, [requestType]);
+
   // Auto-expand/collapse sections based on completion - only when NOT manually editing
   useEffect(() => {
     // Check if section 1 is complete
@@ -204,7 +212,8 @@ export default function DataRequestForm() {
     
     switch (requestType) {
       case 'newDashboard':
-        isSection2Complete = !!(businessQuestion && keyMetrics && dashboardAudience && decisionAction);
+        // For newDashboard, check if frequency fields have been interacted with
+        isSection2Complete = !!(businessQuestion && keyMetrics && dashboardAudience && decisionAction && frequencyInteracted);
         break;
       case 'modifyDashboard':
         isSection2Complete = !!(dashboardModification && exactChanges && decisionAction);
@@ -231,7 +240,8 @@ export default function DataRequestForm() {
         isSection2Complete = !!(pipelineDataset && pipelineModification);
         break;
       case 'recurringReport':
-        isSection2Complete = !!(reportMetrics && decisionAction);
+        // For recurringReport, check if frequency fields have been interacted with
+        isSection2Complete = !!(reportMetrics && decisionAction && frequencyInteracted);
         break;
       case 'other':
         isSection2Complete = !!otherDescription;
@@ -254,7 +264,8 @@ export default function DataRequestForm() {
     dashboardModification, exactChanges, hypothesis, datasets, dataExtraction,
     fileFormat, bugDescription, bugLocation, bqEmail, bqDatasets, bqPurpose,
     trackingFeature, trackingTrigger, metricName, currentDefinition, newDefinition,
-    pipelineDataset, pipelineModification, reportMetrics, otherDescription, isManualEdit
+    pipelineDataset, pipelineModification, reportMetrics, otherDescription, isManualEdit,
+    frequencyInteracted
   ]);
 
 
@@ -514,7 +525,15 @@ export default function DataRequestForm() {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
       <div>
         <label className="text-sm">Frequency *</label>
-        <select className="w-full mt-1 border rounded-md p-2" value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+        <select 
+          className="w-full mt-1 border rounded-md p-2" 
+          value={frequency} 
+          onChange={(e) => {
+            setFrequency(e.target.value);
+            setFrequencyInteracted(true);
+          }}
+          onFocus={() => setFrequencyInteracted(true)}
+        >
           <option value="">Select Frequency</option>
           <option value="daily">Daily</option>
           <option value="weekly">Weekly</option>
