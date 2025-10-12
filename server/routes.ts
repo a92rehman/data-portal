@@ -956,6 +956,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
+      // Get user names for notifications
+      const dataLeadName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Data Lead';
+
+      // Create persistent notification for requester
+      if (request.requestedById) {
+        try {
+          await storage.createNotification({
+            userId: request.requestedById,
+            type: 'request_accepted',
+            title: 'Request Accepted',
+            message: `${dataLeadName} accepted your request "${request.title}". Click to view details.`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (error) {
+          console.error('Failed to create notification for requester:', error);
+        }
+      }
+
+      // If analyst is already assigned, notify them too
+      if (request.assignedToId) {
+        try {
+          await storage.createNotification({
+            userId: request.assignedToId,
+            type: 'request_accepted',
+            title: 'Request Accepted - Ready to Work',
+            message: `The request "${request.title}" has been accepted and is ready for you to complete.`,
+            requestId: request.id,
+            read: 'false',
+          });
+        } catch (error) {
+          console.error('Failed to create notification for analyst:', error);
+        }
+      }
+
       const wsServer = getWebSocketServer();
       if (wsServer) {
         wsServer.notifyUser(request.requestedById, {
@@ -963,6 +998,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           requestId: request.id,
           message: `Your request "${request.title}" has been accepted`,
         });
+        
+        // Also notify analyst via WebSocket if assigned
+        if (request.assignedToId) {
+          wsServer.notifyUser(request.assignedToId, {
+            type: 'request_accepted',
+            requestId: request.id,
+            message: `Request "${request.title}" is ready to work on`,
+          });
+        }
       }
 
       res.json(request);
