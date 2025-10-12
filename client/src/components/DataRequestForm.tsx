@@ -10,32 +10,68 @@ import { DEPARTMENTS, TEAM_OPTIONS } from '@shared/constants';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { CheckCircle, Circle, HelpCircle, Loader2 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 function Section({ 
   title, 
   children, 
   isOpen, 
+  isCompleted = false,
   onToggle 
 }: { 
   title: string; 
   children: React.ReactNode; 
-  isOpen: boolean; 
+  isOpen: boolean;
+  isCompleted?: boolean;
   onToggle: () => void;
 }) {
   return (
-    <div className="mb-6 border-2 border-purple-200 rounded-xl bg-white dark:bg-gray-800 dark:border-purple-700 shadow-sm">
+    <div className={`mb-6 border-2 rounded-xl shadow-sm transition-all ${
+      isCompleted 
+        ? 'border-green-300 bg-green-50/50 dark:bg-green-900/10 dark:border-green-700' 
+        : isOpen
+        ? 'border-purple-300 bg-white dark:bg-gray-800 dark:border-purple-600'
+        : 'border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700'
+    }`}>
       <div 
         className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors rounded-t-xl" 
         onClick={onToggle}
+        role="button"
+        aria-expanded={isOpen}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
       >
-        <h3 className="font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{title}</h3>
+        <div className="flex items-center gap-2">
+          {isCompleted ? (
+            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+          ) : (
+            <Circle className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          )}
+          <h3 className={`font-semibold ${
+            isCompleted 
+              ? 'text-green-700 dark:text-green-400'
+              : 'bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent'
+          }`}>{title}</h3>
+        </div>
         <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">{isOpen ? '▼ Hide' : '▶ Show'}</span>
       </div>
-      {isOpen && <div className="px-4 pb-4 pt-2">{children}</div>}
+      {isOpen && <div className="px-4 pb-4 pt-3">{children}</div>}
     </div>
   );
 }
@@ -67,6 +103,10 @@ export default function DataRequestForm() {
   
   // Success dialog state
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  
+  // Track section completion states
+  const [section1Complete, setSection1Complete] = useState(false);
+  const [section2Complete, setSection2Complete] = useState(false);
 
   // State for all type-specific fields
   const [businessQuestion, setBusinessQuestion] = useState('');
@@ -133,13 +173,14 @@ export default function DataRequestForm() {
 
   // Auto-expand/collapse sections based on completion - only when NOT manually editing
   useEffect(() => {
+    // Check if section 1 is complete
+    const isSection1Complete = !!(requester.name && requester.email && department && requestType && deadline && priority && impact);
+    setSection1Complete(isSection1Complete);
+    
     // Skip auto-progression if user is manually editing
     if (isManualEdit) return;
     
-    // Check if section 1 is complete
-    const section1Complete = requester.name && requester.email && department && requestType && deadline && priority && impact;
-    
-    if (section1Complete) {
+    if (isSection1Complete) {
       // Auto-collapse section 1 and auto-open section 2
       setSection1Open(false);
       setSection2Open(true);
@@ -154,48 +195,55 @@ export default function DataRequestForm() {
 
   // Check if section 2 (type-specific fields) is complete
   useEffect(() => {
-    // Skip auto-progression if user is manually editing
-    if (isManualEdit || !requestType) return;
+    if (!requestType) {
+      setSection2Complete(false);
+      return;
+    }
     
-    let section2Complete = false;
+    let isSection2Complete = false;
     
     switch (requestType) {
       case 'newDashboard':
-        section2Complete = !!(businessQuestion && keyMetrics && dashboardAudience && decisionAction);
+        isSection2Complete = !!(businessQuestion && keyMetrics && dashboardAudience && decisionAction);
         break;
       case 'modifyDashboard':
-        section2Complete = !!(dashboardModification && exactChanges && decisionAction);
+        isSection2Complete = !!(dashboardModification && exactChanges && decisionAction);
         break;
       case 'adhoc':
-        section2Complete = !!(hypothesis && datasets && decisionAction);
+        isSection2Complete = !!(hypothesis && datasets && decisionAction);
         break;
       case 'extraction':
-        section2Complete = !!(dataExtraction && fileFormat);
+        isSection2Complete = !!(dataExtraction && fileFormat);
         break;
       case 'bug':
-        section2Complete = !!(bugDescription && bugLocation);
+        isSection2Complete = !!(bugDescription && bugLocation);
         break;
       case 'bqaccess':
-        section2Complete = !!(bqEmail && bqDatasets && bqPurpose);
+        isSection2Complete = !!(bqEmail && bqDatasets && bqPurpose);
         break;
       case 'tracking':
-        section2Complete = !!(trackingFeature && trackingTrigger);
+        isSection2Complete = !!(trackingFeature && trackingTrigger);
         break;
       case 'metricChange':
-        section2Complete = !!(metricName && currentDefinition && newDefinition && decisionAction);
+        isSection2Complete = !!(metricName && currentDefinition && newDefinition && decisionAction);
         break;
       case 'pipelineChange':
-        section2Complete = !!(pipelineDataset && pipelineModification);
+        isSection2Complete = !!(pipelineDataset && pipelineModification);
         break;
       case 'recurringReport':
-        section2Complete = !!(reportMetrics && decisionAction);
+        isSection2Complete = !!(reportMetrics && decisionAction);
         break;
       case 'other':
-        section2Complete = !!otherDescription;
+        isSection2Complete = !!otherDescription;
         break;
     }
     
-    if (section2Complete) {
+    setSection2Complete(isSection2Complete);
+    
+    // Skip auto-progression if user is manually editing
+    if (isManualEdit) return;
+    
+    if (isSection2Complete) {
       // Auto-collapse section 2 and auto-open section 3
       setSection1Open(false);
       setSection2Open(false);
@@ -668,14 +716,54 @@ export default function DataRequestForm() {
   };
 
   return (
-    <div className="p-8 flex justify-center min-h-screen">
-      <Card className="w-full max-w-3xl shadow-xl border-2 border-purple-200 dark:border-purple-700">
-        <CardContent className="p-6">
-          <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Data Request Form</h2>
-          
-          <Section 
-            title="1) Requester Info & Request Type" 
-            isOpen={section1Open}
+    <TooltipProvider>
+      <div className="p-4 md:p-8 flex justify-center min-h-screen">
+        <Card className="w-full max-w-3xl shadow-xl border-2 border-purple-200 dark:border-purple-700">
+          <CardContent className="p-4 md:p-6">
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Data Request Form</h2>
+            
+            {/* Progress Indicator */}
+            <div className="mb-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-1">
+                  {section1Complete ? (
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  )}
+                  <span className={`text-xs md:text-sm ${section1Complete ? 'text-green-700 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                    Basic Info
+                  </span>
+                </div>
+                <div className="h-px bg-gray-300 dark:bg-gray-600 flex-1" />
+                <div className="flex items-center gap-2 flex-1">
+                  {section2Complete ? (
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  )}
+                  <span className={`text-xs md:text-sm ${section2Complete ? 'text-green-700 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                    Details
+                  </span>
+                </div>
+                <div className="h-px bg-gray-300 dark:bg-gray-600 flex-1" />
+                <div className="flex items-center gap-2 flex-1">
+                  {section1Complete && section2Complete ? (
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  )}
+                  <span className={`text-xs md:text-sm ${section1Complete && section2Complete ? 'text-green-700 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
+                    Submit
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <Section 
+              title="1) Requester Info & Request Type" 
+              isOpen={section1Open}
+              isCompleted={section1Complete}
             onToggle={() => {
               const newState = !section1Open;
               setSection1Open(newState);
@@ -771,6 +859,7 @@ export default function DataRequestForm() {
           <Section 
             title="2) Request Details" 
             isOpen={section2Open}
+            isCompleted={section2Complete}
             onToggle={() => {
               const newState = !section2Open;
               setSection2Open(newState);
@@ -805,13 +894,14 @@ export default function DataRequestForm() {
               }
             }}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
               <Button 
-                className="px-6 gradient-button-primary text-white font-semibold" 
+                className="px-6 gradient-button-primary text-white font-semibold flex items-center justify-center gap-2" 
                 onClick={handleSubmit} 
-                disabled={isSubmitting}
+                disabled={isSubmitting || !section1Complete || !section2Complete}
                 data-testid="button-submit-request"
               >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isSubmitting ? 'Submitting...' : 'Submit Request'}
               </Button>
               <Button 
@@ -827,17 +917,19 @@ export default function DataRequestForm() {
         </CardContent>
       </Card>
 
-      {/* Success Dialog with What's Next */}
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Request Submitted Successfully! 🎉
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <p className="text-muted-foreground">Your data request has been submitted. Here's what happens next:</p>
+        {/* Success Dialog with What's Next */}
+        <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Request Submitted Successfully! 🎉
+              </DialogTitle>
+              <DialogDescription>
+                Your data request has been submitted successfully. Follow the steps below to understand what happens next.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
             
             <div className="space-y-3">
               <div className="flex items-start gap-3">
@@ -888,6 +980,7 @@ export default function DataRequestForm() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
