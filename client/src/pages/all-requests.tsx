@@ -19,7 +19,7 @@ import type { DataRequestWithDetails } from "@shared/schema";
 export default function AllRequests() {
   const { user, isLoading: authLoading } = useAuth();
   const { connectionStatus } = useWebSocketContext();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
   const [filters, setFilters] = useState({
@@ -47,22 +47,33 @@ export default function AllRequests() {
     }
   }, [requests, selectedRequest]);
 
-  // Check for requestId URL param and auto-open dialog
+  // Check for requestId URL param and fetch specific request
   useEffect(() => {
-    if (requests.length > 0) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const requestId = urlParams.get('requestId');
-      
-      if (requestId) {
-        const request = requests.find(r => r.id === requestId);
-        if (request) {
-          setSelectedRequest(request);
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestId = urlParams.get('requestId');
+    
+    if (requestId) {
+      // Fetch the specific request directly to bypass any filters
+      fetch(`/api/requests/${requestId}`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch request: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(request => {
+          if (request && request.id) {
+            setSelectedRequest(request);
+          }
           // Clear the URL param
           window.history.replaceState({}, '', window.location.pathname);
-        }
-      }
+        })
+        .catch(err => {
+          console.error('Failed to fetch request:', err);
+          window.history.replaceState({}, '', window.location.pathname);
+        });
     }
-  }, [requests]);
+  }, [location]);
 
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
