@@ -667,8 +667,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </div>
               )}
 
-              {/* Accept/Reject Buttons - Only for Team Lead when status is submitted */}
-              {isTeamLead && request.status === "submitted" && (
+              {/* Accept/Reject Buttons - Only for Team Lead when status is pending review */}
+              {isTeamLead && (request.status === "submitted" || request.status === "under_review" || request.status === "pending_review") && (
                 <div className="flex gap-2 flex-shrink-0">
                   <Button
                     onClick={() => acceptRequestMutation.mutate()}
