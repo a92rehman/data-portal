@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
-import { useWebSocket } from "@/hooks/useWebSocket";
+import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import type { User, Notification } from "@shared/schema";
 
 interface HeaderProps {
@@ -39,7 +39,7 @@ export default function Header({ user }: HeaderProps) {
     return false;
   });
 
-  const { sendTyping, typingUsers, connectionStatus } = useWebSocket(user?.id);
+  const { sendTyping, typingUsers, connectionStatus } = useWebSocketContext();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ['/api/notifications'],
