@@ -21,6 +21,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search, Trash2, Calendar as CalendarIcon } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { format } from "date-fns";
+import { calculateUrgency } from "@/lib/urgency";
 
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
 
@@ -590,7 +591,7 @@ export default function Dashboard() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>#</TableHead>
+                    <TableHead>Urgency</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Type</TableHead>
@@ -623,7 +624,11 @@ export default function Dashboard() {
                         onClick={() => setSelectedRequest(request)}
                         data-testid={`row-request-${request.id}`}
                       >
-                        <TableCell className="font-medium">#{request.requestNumber}</TableCell>
+                        <TableCell className="font-medium">
+                          <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${calculateUrgency(request).colorClass}`}>
+                            {calculateUrgency(request).label}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{request.title}</TableCell>
                         <TableCell className="capitalize">{request.department}</TableCell>
                         <TableCell>{formatRequestType(request.type)}</TableCell>
