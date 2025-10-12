@@ -887,9 +887,9 @@ export default function DataRequestForm() {
 
           {/* Action Buttons - Always Visible */}
           <div className="mt-6 pt-5 border-t-2 border-purple-100 dark:border-purple-900/30">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
               <Button 
-                className="flex-1 sm:flex-initial px-8 py-3 gradient-button-primary text-white font-semibold rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="sm:flex-initial px-8 py-3 gradient-button-primary text-white font-semibold rounded-lg shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed" 
                 onClick={handleSubmit} 
                 disabled={isSubmitting || !section1Complete || !section2Complete}
                 data-testid="button-submit-request"
@@ -899,7 +899,7 @@ export default function DataRequestForm() {
               </Button>
               <Button 
                 variant="outline" 
-                className="flex-1 sm:flex-initial px-8 py-3 border-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/30 font-medium rounded-lg transition-all" 
+                className="sm:flex-initial px-8 py-3 border-2 border-purple-200 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/30 font-medium rounded-lg transition-all" 
                 onClick={() => setRequestType('')}
                 data-testid="button-reset-form"
               >
