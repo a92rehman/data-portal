@@ -348,16 +348,24 @@ export default function Dashboard() {
   };
 
   const getDeliveryStatus = (request: DataRequestWithDetails) => {
-    if (!request.deliveredAt) {
-      return null;
+    // If delivered, check if on time or late
+    if (request.deliveredAt) {
+      const dueDate = new Date(request.dueDate);
+      const deliveredDate = new Date(request.deliveredAt);
+      
+      // Compare only dates, not time - if delivered on same day or before, it's on time
+      dueDate.setHours(23, 59, 59, 999);
+      const isOnTime = deliveredDate <= dueDate;
+      return { status: 'delivered', isOnTime, deliveredAt: request.deliveredAt };
     }
-    const dueDate = new Date(request.dueDate);
-    const deliveredDate = new Date(request.deliveredAt);
     
-    // Compare only dates, not time - if delivered on same day or before, it's on time
-    dueDate.setHours(23, 59, 59, 999);
-    const isOnTime = deliveredDate <= dueDate;
-    return { isOnTime, deliveredAt: request.deliveredAt };
+    // If assigned but not delivered, show in progress
+    if (request.assignedToId) {
+      return { status: 'in_progress' };
+    }
+    
+    // Not assigned and not delivered
+    return null;
   };
 
   if (isLoading) {
@@ -674,6 +682,20 @@ export default function Dashboard() {
                             if (!deliveryStatus) {
                               return <span className="text-xs text-muted-foreground">—</span>;
                             }
+                            
+                            // In Progress state (assigned but not delivered)
+                            if (deliveryStatus.status === 'in_progress') {
+                              return (
+                                <Badge 
+                                  className="px-2 py-1 text-xs font-semibold bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700"
+                                  data-testid={`delivery-status-${request.id}`}
+                                >
+                                  In Progress
+                                </Badge>
+                              );
+                            }
+                            
+                            // Delivered state (on time or late)
                             return (
                               <Badge 
                                 className={`px-2 py-1 text-xs font-semibold ${
