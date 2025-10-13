@@ -28,8 +28,8 @@ export default function MyAssignments() {
 
   // Fetch requests assigned to current user (analyst or data lead)
   // For data leads, we pass assignedToId filter to get only their assigned requests
-  const queryParams = user?.role === 'team_lead' 
-    ? { assignedToId: user?.id, status: statusFilter }
+  const queryParams = (user as any)?.role === 'team_lead' 
+    ? { assignedToId: (user as any)?.id, status: statusFilter }
     : { status: statusFilter };
     
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({

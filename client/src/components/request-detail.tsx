@@ -580,6 +580,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const isAnalyst = (user as any)?.role === "analyst";
   const isTeamLead = (user as any)?.role === "team_lead";
   const isRequester = (user as any)?.role === "requester";
+  const isAssignedToMe = request.assignedToId === (user as any)?.id;
 
   const [deliveryType, setDeliveryType] = useState("attachment");
   const [deliveryLink, setDeliveryLink] = useState("");
@@ -1115,8 +1116,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   )}
                 </div>
 
-                {/* Delivery Status Panel - Only for Analyst */}
-                {isAnalyst && (
+                {/* Delivery Status Panel - For Analyst or Team Lead when assigned */}
+                {(isAnalyst || (isTeamLead && isAssignedToMe)) && (
                   <div className="space-y-3">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
                     
@@ -1297,8 +1298,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </div>
                 )}
 
-                {/* On Time Indicator */}
-                {!isAnalyst && !isTeamLead && (
+                {/* On Time Indicator - For Requester or Team Lead when NOT assigned */}
+                {(isRequester || (isTeamLead && !isAssignedToMe)) && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Timeline Status</p>
                     <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
@@ -1317,8 +1318,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </div>
                 )}
 
-                {/* Request Completed Button - For Team Lead/Analyst when in_progress */}
-                {(isTeamLead || isAnalyst) && request.status === "in_progress" && (
+                {/* Request Completed Button - For Analyst or Team Lead when assigned and in_progress */}
+                {(isAnalyst || (isTeamLead && isAssignedToMe)) && request.status === "in_progress" && (
                   <Button
                     onClick={() => completeRequestMutation.mutate()}
                     disabled={completeRequestMutation.isPending}
