@@ -347,6 +347,16 @@ export default function Dashboard() {
     return status.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  const getDeliveryStatus = (request: DataRequestWithDetails) => {
+    if (!request.deliveredAt) {
+      return null;
+    }
+    const dueDate = new Date(request.dueDate);
+    const deliveredDate = new Date(request.deliveredAt);
+    const isOnTime = deliveredDate <= dueDate;
+    return { isOnTime, deliveredAt: request.deliveredAt };
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -600,6 +610,7 @@ export default function Dashboard() {
                     <TableHead>Type</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Delivery</TableHead>
                     <TableHead>Assigned To</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Actions</TableHead>
@@ -608,14 +619,14 @@ export default function Dashboard() {
                 <TableBody>
                   {isRequestsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={10} className="text-center py-8">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                         Loading requests...
                       </TableCell>
                     </TableRow>
                   ) : filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         No requests found matching your criteria
                       </TableCell>
                     </TableRow>
@@ -653,6 +664,26 @@ export default function Dashboard() {
                           <Badge className={`status-badge ${getStatusBadge(request.status)}`}>
                             {formatStatus(request.status)}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const deliveryStatus = getDeliveryStatus(request);
+                            if (!deliveryStatus) {
+                              return <span className="text-xs text-muted-foreground">—</span>;
+                            }
+                            return (
+                              <Badge 
+                                className={`px-2 py-1 text-xs font-semibold ${
+                                  deliveryStatus.isOnTime 
+                                    ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700' 
+                                    : 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700'
+                                }`}
+                                data-testid={`delivery-status-${request.id}`}
+                              >
+                                {deliveryStatus.isOnTime ? '✓ On Time' : '⚠ Late'}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {request.assignedTo ? (
