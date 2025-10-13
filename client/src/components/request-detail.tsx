@@ -36,6 +36,7 @@ import {
   Check,
   XCircle,
   AlertCircle,
+  AlertTriangle,
   Trash2,
   User2,
   Package,
@@ -470,17 +471,21 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      submitted: "gradient-badge-submitted",
-      pending_review: "gradient-badge-review",
+      // Yellow - Pending/Initial state
+      pending_review: "gradient-badge-progress",
+      
+      // Green - Positive/Accepted/Completed states
       accepted: "gradient-badge-completed",
-      rejected: "gradient-badge-cancelled",
-      assigned: "gradient-badge-progress",
-      in_progress: "gradient-badge-progress",
-      blocked: "gradient-badge-cancelled",
       completed: "gradient-badge-completed",
-      cancelled: "gradient-badge-cancelled",
+      
+      // Yellow - Active/In-Progress state
+      in_progress: "gradient-badge-progress",
+      
+      // Red - Negative/Blocked/Rejected states
+      rejected: "gradient-badge-cancelled",
+      blocked: "gradient-badge-cancelled",
     };
-    return variants[status as keyof typeof variants] || "gradient-badge-submitted";
+    return variants[status as keyof typeof variants] || "gradient-badge-progress";
   };
 
   const getPriorityIcon = (priority: string) => {
@@ -497,14 +502,16 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "submitted":
-        return <Send className="w-4 h-4" />;
       case "pending_review":
-      case "under_review":
         return <Eye className="w-4 h-4" />;
+      case "accepted":
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
       case "in_progress":
-      case "assigned":
         return <Settings className="w-4 h-4" />;
+      case "blocked":
+        return <AlertTriangle className="w-4 h-4 text-red-600" />;
+      case "rejected":
+        return <XCircle className="w-4 h-4 text-red-600" />;
       case "completed":
         return <CheckCircle className="w-4 h-4" />;
       default:
@@ -736,9 +743,17 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   {request.title}
                 </DialogTitle>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${calculateUrgency(request).colorClass}`}>
-                    {calculateUrgency(request).label}
-                  </Badge>
+                  {(() => {
+                    const urgency = calculateUrgency(request);
+                    if (!urgency.label) {
+                      return null;
+                    }
+                    return (
+                      <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${urgency.colorClass}`}>
+                        {urgency.label}
+                      </Badge>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -764,7 +779,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               )}
 
               {/* Accept/Reject Buttons - Only for Team Lead when status is pending review */}
-              {isTeamLead && (request.status === "submitted" || request.status === "under_review" || request.status === "pending_review") && (
+              {isTeamLead && request.status === "pending_review" && (
                 <div className="flex gap-2 flex-shrink-0">
                   <Button
                     onClick={() => acceptRequestMutation.mutate()}
