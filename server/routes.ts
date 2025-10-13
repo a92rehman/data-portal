@@ -595,9 +595,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Send password reset email
-      const appUrl = process.env.REPL_SLUG 
-        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-        : `http://localhost:5000`;
+      // Use REPLIT_DOMAINS for production, fallback to development URL
+      let appUrl = `http://localhost:5000`;
+      if (process.env.REPLIT_DOMAINS) {
+        const domains = process.env.REPLIT_DOMAINS.split(',');
+        appUrl = `https://${domains[0]}`;
+      } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+        appUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+      }
 
       await sendPasswordResetEmail({
         userName: user.firstName || user.email,
