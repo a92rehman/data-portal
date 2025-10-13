@@ -291,13 +291,22 @@ export default function Dashboard() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
+      // Blue - Neutral/Initial states
+      submitted: "gradient-badge-submitted",
       pending_review: "gradient-badge-review",
-      accepted: "gradient-badge-progress",
-      rejected: "gradient-badge-cancelled",
+      under_review: "gradient-badge-review",
+      
+      // Green - Positive/Completed states
+      accepted: "gradient-badge-completed",
+      completed: "gradient-badge-completed",
+      
+      // Yellow - Active/In-Progress states
       assigned: "gradient-badge-progress",
       in_progress: "gradient-badge-progress",
+      
+      // Red - Negative/Blocked states
+      rejected: "gradient-badge-cancelled",
       blocked: "gradient-badge-cancelled",
-      completed: "gradient-badge-completed",
       cancelled: "gradient-badge-cancelled",
     };
     return variants[status as keyof typeof variants] || "gradient-badge-submitted";
