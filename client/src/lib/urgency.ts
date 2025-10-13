@@ -10,14 +10,14 @@ export interface UrgencyInfo {
 }
 
 export function calculateUrgency(request: Partial<DataRequest>): UrgencyInfo {
-  const { dueDate, priority, deliveredAt } = request;
+  const { dueDate, priority, deliveredAt, status } = request;
   
-  // If request is delivered, show Completed status
-  if (deliveredAt) {
+  // If request is completed/delivered, don't show urgency (return null-like values)
+  if (deliveredAt || status === 'completed' || status === 'rejected') {
     return {
       level: 'low',
-      label: 'COMPLETED',
-      colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      label: '',
+      colorClass: '',
       daysRemaining: null,
     };
   }

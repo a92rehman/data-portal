@@ -291,25 +291,21 @@ export default function Dashboard() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      // Blue - Neutral/Initial states
-      submitted: "gradient-badge-submitted",
-      pending_review: "gradient-badge-review",
-      under_review: "gradient-badge-review",
+      // Yellow - Pending/Initial state
+      pending_review: "gradient-badge-progress",
       
-      // Green - Positive/Completed states
+      // Green - Positive/Accepted/Completed states
       accepted: "gradient-badge-completed",
       completed: "gradient-badge-completed",
       
-      // Yellow - Active/In-Progress states
-      assigned: "gradient-badge-progress",
+      // Yellow - Active/In-Progress state
       in_progress: "gradient-badge-progress",
       
-      // Red - Negative/Blocked states
+      // Red - Negative/Blocked/Rejected states
       rejected: "gradient-badge-cancelled",
       blocked: "gradient-badge-cancelled",
-      cancelled: "gradient-badge-cancelled",
     };
-    return variants[status as keyof typeof variants] || "gradient-badge-submitted";
+    return variants[status as keyof typeof variants] || "gradient-badge-progress";
   };
 
   const getPriorityIcon = (priority: string) => {
@@ -365,17 +361,36 @@ export default function Dashboard() {
       // Compare only dates, not time - if delivered on same day or before, it's on time
       dueDate.setHours(23, 59, 59, 999);
       const isOnTime = deliveredDate <= dueDate;
-      return { status: 'delivered', isOnTime, deliveredAt: request.deliveredAt };
+      return { status: 'delivered', isOnTime };
     }
     
-    // If assigned but not delivered, show in progress
-    if (request.assignedToId) {
-      return { status: 'in_progress' };
-    }
-    
-    // Not assigned and not delivered
-    return null;
+    // Not delivered yet
+    return { status: 'not_yet' };
   };
+
+  // Sort requests by workflow order
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
+    const statusOrder = {
+      'pending_review': 1,
+      'accepted': 2,
+      'in_progress': 3,
+      'blocked': 4,
+      'completed': 5,
+      'rejected': 6,
+    };
+    
+    const orderA = statusOrder[a.status as keyof typeof statusOrder] || 999;
+    const orderB = statusOrder[b.status as keyof typeof statusOrder] || 999;
+    
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    
+    // If same status, sort by creation date (newest first)
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
 
   if (isLoading) {
     return (
@@ -483,11 +498,9 @@ export default function Dashboard() {
                       <SelectItem value="pending_review">Pending Review</SelectItem>
                       <SelectItem value="accepted">Accepted</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="blocked">Blocked</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -643,14 +656,14 @@ export default function Dashboard() {
                         Loading requests...
                       </TableCell>
                     </TableRow>
-                  ) : filteredRequests.length === 0 ? (
+                  ) : sortedRequests.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         No requests found matching your criteria
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredRequests.map((request: DataRequestWithDetails) => (
+                    sortedRequests.map((request: DataRequestWithDetails) => (
                       <TableRow 
                         key={request.id} 
                         className="table-row"
@@ -658,9 +671,17 @@ export default function Dashboard() {
                         data-testid={`row-request-${request.id}`}
                       >
                         <TableCell className="font-medium">
-                          <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${calculateUrgency(request).colorClass}`}>
-                            {calculateUrgency(request).label}
-                          </Badge>
+                          {(() => {
+                            const urgency = calculateUrgency(request);
+                            if (!urgency.label) {
+                              return <span className="text-xs text-muted-foreground">—</span>;
+                            }
+                            return (
+                              <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${urgency.colorClass}`}>
+                                {urgency.label}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {request.requestedBy ? (
@@ -681,18 +702,15 @@ export default function Dashboard() {
                         <TableCell>
                           {(() => {
                             const deliveryStatus = getDeliveryStatus(request);
-                            if (!deliveryStatus) {
-                              return <span className="text-xs text-muted-foreground">—</span>;
-                            }
                             
-                            // In Progress state (assigned but not delivered)
-                            if (deliveryStatus.status === 'in_progress') {
+                            // Not Yet delivered
+                            if (deliveryStatus.status === 'not_yet') {
                               return (
                                 <Badge 
                                   className="px-2 py-1 text-xs font-semibold bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700"
                                   data-testid={`delivery-status-${request.id}`}
                                 >
-                                  In Progress
+                                  Not Yet
                                 </Badge>
                               );
                             }
@@ -707,7 +725,7 @@ export default function Dashboard() {
                                 }`}
                                 data-testid={`delivery-status-${request.id}`}
                               >
-                                {deliveryStatus.isOnTime ? '✓ On Time' : '⚠ Late'}
+                                {deliveryStatus.isOnTime ? 'On Time' : 'Late'}
                               </Badge>
                             );
                           })()}
