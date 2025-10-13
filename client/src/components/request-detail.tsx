@@ -36,7 +36,14 @@ import {
   Check,
   XCircle,
   AlertCircle,
-  Trash2
+  Trash2,
+  User2,
+  Package,
+  Link as LinkIcon,
+  FileText,
+  Calendar,
+  RefreshCw,
+  Edit
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -612,6 +619,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [deliveryContent, setDeliveryContent] = useState("");
   const [deliveryFileUrl, setDeliveryFileUrl] = useState("");
   const [deliveryFileName, setDeliveryFileName] = useState("");
+  const [isDeliverAgainMode, setIsDeliverAgainMode] = useState(false);
 
   const deliveredRequestMutation = useMutation({
     mutationFn: async (data: { 
@@ -628,6 +636,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         title: "Success",
         description: "Request marked as delivered successfully",
       });
+      setIsDeliverAgainMode(false);
+      // Reset form fields
+      setDeliveryLink("");
+      setDeliveryContent("");
+      setDeliveryFileUrl("");
+      setDeliveryFileName("");
       onUpdate();
     },
     onError: (error: Error) => {
@@ -1228,205 +1242,446 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   )}
                 </div>
 
-                {/* Delivery Status Panel - For Analyst or Team Lead when assigned */}
-                {(isAnalyst || (isTeamLead && isAssignedToMe)) && !request.deliveredAt && (
-                  <div className="space-y-3">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold">Mark as Delivered</p>
-                    
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                        Delivery Type
-                      </label>
-                      <Select 
-                        value={deliveryType} 
-                        onValueChange={setDeliveryType}
-                        data-testid="select-delivery-type"
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="attachment">Attachment</SelectItem>
-                          <SelectItem value="link">Link</SelectItem>
-                          <SelectItem value="text">Text</SelectItem>
-                        </SelectContent>
-                      </Select>
+                {/* Unified Delivery Box - Reorganized Layout */}
+                {(isAnalyst || (isTeamLead && isAssignedToMe)) && (
+                  <div className="space-y-3 border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
+                      {request.deliveredAt && !isDeliverAgainMode && (
+                        <Button
+                          onClick={() => setIsDeliverAgainMode(true)}
+                          variant="outline"
+                          size="sm"
+                          data-testid="button-deliver-again"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Deliver Again
+                        </Button>
+                      )}
                     </div>
 
-                    {deliveryType === "attachment" && (
-                      <div>
-                        <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
-                          Upload Delivery File
-                        </p>
-                        <ObjectUploader
-                          onGetUploadParameters={handleGetUploadParameters}
-                          onComplete={handleDeliveryFileUpload}
-                          maxFileSize={10 * 1024 * 1024}
-                          maxNumberOfFiles={1}
-                          buttonVariant="outline"
-                          buttonSize="sm"
-                          buttonClassName="w-full"
-                        >
-                          <Paperclip className="w-4 h-4 mr-2" />
-                          {deliveryFileName ? `Uploaded: ${deliveryFileName}` : "Upload Delivery File"}
-                        </ObjectUploader>
-                        {deliveryFileName && (
-                          <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                            ✓ File ready: {deliveryFileName}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {deliveryType === "link" && (
-                      <div>
-                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                          Delivery Link
+                    {/* 1. Assigned Analyst */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User2 className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Assigned Analyst
                         </label>
-                        <Input
-                          value={deliveryLink}
-                          onChange={(e) => setDeliveryLink(e.target.value)}
-                          placeholder="Enter delivery link..."
-                          data-testid="input-delivery-link"
-                        />
                       </div>
-                    )}
+                      <div className="flex items-center gap-2 pl-6">
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">
+                            {request.assignedTo ? `${request.assignedTo.firstName?.[0] || ''}${request.assignedTo.lastName?.[0] || ''}`.toUpperCase() || request.assignedTo.email[0].toUpperCase() : 'NA'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium" data-testid="text-assigned-analyst">
+                          {request.assignedTo ? `${request.assignedTo.firstName || ''} ${request.assignedTo.lastName || ''}`.trim() || request.assignedTo.email : 'Not assigned'}
+                        </span>
+                      </div>
+                    </div>
 
-                    {deliveryType === "text" && (
-                      <div>
-                        <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                          Delivery Content
+                    {/* 2. Request Type */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Request Type
                         </label>
-                        <Textarea
-                          value={deliveryContent}
-                          onChange={(e) => setDeliveryContent(e.target.value)}
-                          placeholder="Enter delivery content or notes..."
-                          rows={4}
-                          data-testid="textarea-delivery-content"
-                        />
                       </div>
+                      <Badge variant="secondary" className="ml-6" data-testid="badge-request-type">
+                        {request.type?.replace(/_/g, ' ') || 'Not specified'}
+                      </Badge>
+                    </div>
+
+                    {/* Show Edit Form if: not delivered yet OR in deliver-again mode */}
+                    {(!request.deliveredAt || isDeliverAgainMode) && (
+                      <>
+                        {/* 3. Delivery Type Selector */}
+                        <div className="pb-3 border-b">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Package className="w-4 h-4 text-muted-foreground" />
+                            <label className="text-xs font-semibold text-muted-foreground uppercase">
+                              Delivery Type
+                            </label>
+                          </div>
+                          <div className="ml-6">
+                            <Select 
+                              value={deliveryType} 
+                              onValueChange={setDeliveryType}
+                              data-testid="select-delivery-type"
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="attachment">📎 Attachment</SelectItem>
+                                <SelectItem value="link">🔗 Link</SelectItem>
+                                <SelectItem value="text">📝 Text</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* 4. Delivery Content Input */}
+                        <div className="pb-3 border-b">
+                          <div className="flex items-center gap-2 mb-2">
+                            {deliveryType === "attachment" ? <Paperclip className="w-4 h-4 text-muted-foreground" /> :
+                             deliveryType === "link" ? <LinkIcon className="w-4 h-4 text-muted-foreground" /> :
+                             <FileText className="w-4 h-4 text-muted-foreground" />}
+                            <label className="text-xs font-semibold text-muted-foreground uppercase">
+                              Content
+                            </label>
+                          </div>
+
+                          <div className="ml-6">
+                            {deliveryType === "attachment" && (
+                              <div>
+                                <ObjectUploader
+                                  onGetUploadParameters={handleGetUploadParameters}
+                                  onComplete={handleDeliveryFileUpload}
+                                  maxFileSize={10 * 1024 * 1024}
+                                  maxNumberOfFiles={1}
+                                  buttonVariant="outline"
+                                  buttonSize="sm"
+                                  buttonClassName="w-full"
+                                >
+                                  <Paperclip className="w-4 h-4 mr-2" />
+                                  {deliveryFileName ? `Uploaded: ${deliveryFileName}` : "Upload Delivery File"}
+                                </ObjectUploader>
+                                {deliveryFileName && (
+                                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                                    ✓ File ready: {deliveryFileName}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {deliveryType === "link" && (
+                              <Input
+                                value={deliveryLink}
+                                onChange={(e) => setDeliveryLink(e.target.value)}
+                                placeholder="Enter delivery link..."
+                                data-testid="input-delivery-link"
+                              />
+                            )}
+
+                            {deliveryType === "text" && (
+                              <Textarea
+                                value={deliveryContent}
+                                onChange={(e) => setDeliveryContent(e.target.value)}
+                                placeholder="Enter delivery content or notes..."
+                                rows={4}
+                                data-testid="textarea-delivery-content"
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Deliver/Cancel Buttons */}
+                        <div className="flex gap-2">
+                          {isDeliverAgainMode && (
+                            <Button
+                              onClick={() => {
+                                setIsDeliverAgainMode(false);
+                                setDeliveryLink("");
+                                setDeliveryContent("");
+                                setDeliveryFileUrl("");
+                                setDeliveryFileName("");
+                              }}
+                              variant="outline"
+                              className="flex-1"
+                              data-testid="button-cancel-deliver"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                          <Button
+                            onClick={handleDeliver}
+                            disabled={
+                              deliveredRequestMutation.isPending || 
+                              (deliveryType === "link" && !deliveryLink.trim()) ||
+                              (deliveryType === "text" && !deliveryContent.trim()) ||
+                              (deliveryType === "attachment" && !deliveryFileUrl)
+                            }
+                            data-testid="button-delivered"
+                            className={`${isDeliverAgainMode ? 'flex-1' : 'w-full'} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white`}
+                          >
+                            {deliveredRequestMutation.isPending ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                {isDeliverAgainMode ? 'Updating...' : 'Marking as Delivered...'}
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                {isDeliverAgainMode ? 'Update Delivery' : 'Mark as Delivered'}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </>
                     )}
 
-                    <Button
-                      onClick={handleDeliver}
-                      disabled={
-                        deliveredRequestMutation.isPending || 
-                        (deliveryType === "link" && !deliveryLink.trim()) ||
-                        (deliveryType === "text" && !deliveryContent.trim()) ||
-                        (deliveryType === "attachment" && !deliveryFileUrl)
-                      }
-                      data-testid="button-delivered"
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                    >
-                      {deliveredRequestMutation.isPending ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                          Marking as Delivered...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Mark as Delivered
-                        </>
-                      )}
-                    </Button>
+                    {/* Show Read-Only View if delivered and NOT in deliver-again mode */}
+                    {request.deliveredAt && !isDeliverAgainMode && (
+                      <>
+                        {/* 3. Delivery Type (Read-Only) */}
+                        <div className="pb-3 border-b">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Package className="w-4 h-4 text-muted-foreground" />
+                            <label className="text-xs font-semibold text-muted-foreground uppercase">
+                              Delivery Type
+                            </label>
+                          </div>
+                          <Badge variant="outline" className="ml-6" data-testid="badge-delivery-type">
+                            {request.deliveryType === "attachment" ? "📎 Attachment" : 
+                             request.deliveryType === "link" ? "🔗 Link" : 
+                             "📝 Text"}
+                          </Badge>
+                        </div>
+
+                        {/* 4. Delivered Content (Read-Only) */}
+                        <div className="pb-3 border-b">
+                          <div className="flex items-center gap-2 mb-2">
+                            {request.deliveryType === "attachment" ? <Paperclip className="w-4 h-4 text-muted-foreground" /> :
+                             request.deliveryType === "link" ? <LinkIcon className="w-4 h-4 text-muted-foreground" /> :
+                             <FileText className="w-4 h-4 text-muted-foreground" />}
+                            <label className="text-xs font-semibold text-muted-foreground uppercase">
+                              Content
+                            </label>
+                          </div>
+                          <div className="ml-6">
+                            {request.deliveryType === "link" && request.deliveryLink ? (
+                              <a 
+                                href={request.deliveryLink} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
+                                data-testid="link-delivery-content"
+                              >
+                                {request.deliveryLink}
+                              </a>
+                            ) : request.deliveryType === "text" && request.deliveryContent ? (
+                              <div className="text-sm bg-gray-50 dark:bg-gray-900 p-3 rounded-lg whitespace-pre-wrap" data-testid="text-delivery-content">
+                                {request.deliveryContent}
+                              </div>
+                            ) : request.deliveryType === "attachment" && request.deliveryFileUrl ? (
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={request.deliveryFileUrl}
+                                  download={request.deliveryFileName || "delivery-file"}
+                                  className="flex-1"
+                                  data-testid="link-download-delivery"
+                                >
+                                  <Button variant="outline" size="sm" className="w-full justify-start">
+                                    <FileIcon className="w-4 h-4 mr-2" />
+                                    <span className="truncate">{request.deliveryFileName || "Download File"}</span>
+                                  </Button>
+                                </a>
+                                <a
+                                  href={request.deliveryFileUrl}
+                                  download={request.deliveryFileName || "delivery-file"}
+                                  data-testid="button-download-delivery"
+                                >
+                                  <Button variant="ghost" size="sm">
+                                    <Download className="w-4 h-4" />
+                                  </Button>
+                                </a>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-muted-foreground" data-testid="text-no-delivery-content">
+                                No delivery content available
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 5. Delivered On */}
+                        <div className="pb-3 border-b">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <label className="text-xs font-semibold text-muted-foreground uppercase">
+                              Delivered On
+                            </label>
+                          </div>
+                          <div className="flex items-center gap-2 ml-6">
+                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm text-green-700 dark:text-green-400" data-testid="text-delivered-date">
+                              {new Date(request.deliveredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 6. Delivery Status */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <label className="text-xs font-semibold text-muted-foreground uppercase">
+                              Delivery Status
+                            </label>
+                          </div>
+                          <div className={`ml-6 flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+                            {isOnTime() ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                <span className="text-sm font-semibold text-green-700 dark:text-green-400" data-testid="status-delivery-on-time">On Time</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                <span className="text-sm font-semibold text-red-700 dark:text-red-400" data-testid="status-delivery-late">Late</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
-                {/* Delivered Content Display - For everyone when delivered */}
-                {request.deliveredAt && (
+                {/* Read-Only Delivery View for Non-Assignees */}
+                {!(isAnalyst || (isTeamLead && isAssignedToMe)) && request.deliveredAt && (
                   <div className="space-y-3 border-t pt-4">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold">Delivered Content</p>
-                    
-                    {/* Delivery Type Badge */}
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                        Delivery Type
-                      </label>
-                      <Badge variant="outline" data-testid="badge-delivery-type">
+                    <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
+
+                    {/* 1. Assigned Analyst */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <User2 className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Assigned Analyst
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2 pl-6">
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">
+                            {request.assignedTo ? `${request.assignedTo.firstName?.[0] || ''}${request.assignedTo.lastName?.[0] || ''}`.toUpperCase() || request.assignedTo.email[0].toUpperCase() : 'NA'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium" data-testid="text-assigned-analyst-readonly">
+                          {request.assignedTo ? `${request.assignedTo.firstName || ''} ${request.assignedTo.lastName || ''}`.trim() || request.assignedTo.email : 'Not assigned'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. Request Type */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Request Type
+                        </label>
+                      </div>
+                      <Badge variant="secondary" className="ml-6" data-testid="badge-request-type-readonly">
+                        {request.type?.replace(/_/g, ' ') || 'Not specified'}
+                      </Badge>
+                    </div>
+
+                    {/* 3. Delivery Type */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Delivery Type
+                        </label>
+                      </div>
+                      <Badge variant="outline" className="ml-6" data-testid="badge-delivery-type-readonly">
                         {request.deliveryType === "attachment" ? "📎 Attachment" : 
                          request.deliveryType === "link" ? "🔗 Link" : 
                          "📝 Text"}
                       </Badge>
                     </div>
 
-                    {/* Delivery Content Based on Type */}
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                        Content
-                      </label>
-                      {request.deliveryType === "link" && request.deliveryLink ? (
-                        <a 
-                          href={request.deliveryLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
-                          data-testid="link-delivery-content"
-                        >
-                          {request.deliveryLink}
-                        </a>
-                      ) : request.deliveryType === "text" && request.deliveryContent ? (
-                        <div className="text-sm bg-gray-50 dark:bg-gray-900 p-3 rounded-lg whitespace-pre-wrap" data-testid="text-delivery-content">
-                          {request.deliveryContent}
-                        </div>
-                      ) : request.deliveryType === "attachment" && request.deliveryFileUrl ? (
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={request.deliveryFileUrl}
-                            download={request.deliveryFileName || "delivery-file"}
-                            className="flex-1"
-                            data-testid="link-download-delivery"
+                    {/* 4. Delivered Content */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        {request.deliveryType === "attachment" ? <Paperclip className="w-4 h-4 text-muted-foreground" /> :
+                         request.deliveryType === "link" ? <LinkIcon className="w-4 h-4 text-muted-foreground" /> :
+                         <FileText className="w-4 h-4 text-muted-foreground" />}
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Content
+                        </label>
+                      </div>
+                      <div className="ml-6">
+                        {request.deliveryType === "link" && request.deliveryLink ? (
+                          <a 
+                            href={request.deliveryLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
+                            data-testid="link-delivery-content-readonly"
                           >
-                            <Button variant="outline" size="sm" className="w-full justify-start">
-                              <FileIcon className="w-4 h-4 mr-2" />
-                              <span className="truncate">{request.deliveryFileName || "Download File"}</span>
-                            </Button>
+                            {request.deliveryLink}
                           </a>
-                          <a
-                            href={request.deliveryFileUrl}
-                            download={request.deliveryFileName || "delivery-file"}
-                            data-testid="button-download-delivery"
-                          >
-                            <Button variant="ghost" size="sm">
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </a>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground" data-testid="text-no-delivery-content">
-                          No delivery content available
-                        </p>
-                      )}
+                        ) : request.deliveryType === "text" && request.deliveryContent ? (
+                          <div className="text-sm bg-gray-50 dark:bg-gray-900 p-3 rounded-lg whitespace-pre-wrap" data-testid="text-delivery-content-readonly">
+                            {request.deliveryContent}
+                          </div>
+                        ) : request.deliveryType === "attachment" && request.deliveryFileUrl ? (
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={request.deliveryFileUrl}
+                              download={request.deliveryFileName || "delivery-file"}
+                              className="flex-1"
+                              data-testid="link-download-delivery-readonly"
+                            >
+                              <Button variant="outline" size="sm" className="w-full justify-start">
+                                <FileIcon className="w-4 h-4 mr-2" />
+                                <span className="truncate">{request.deliveryFileName || "Download File"}</span>
+                              </Button>
+                            </a>
+                            <a
+                              href={request.deliveryFileUrl}
+                              download={request.deliveryFileName || "delivery-file"}
+                              data-testid="button-download-delivery-readonly"
+                            >
+                              <Button variant="ghost" size="sm">
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </a>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground" data-testid="text-no-delivery-content-readonly">
+                            No delivery content available
+                          </p>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Delivered Date */}
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                        Delivered On
-                      </label>
-                      <div className="flex items-center gap-2">
+                    {/* 5. Delivered On */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Delivered On
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2 ml-6">
                         <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                        <span className="text-sm text-green-700 dark:text-green-400" data-testid="text-delivered-date">
+                        <span className="text-sm text-green-700 dark:text-green-400" data-testid="text-delivered-date-readonly">
                           {new Date(request.deliveredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
                         </span>
                       </div>
                     </div>
 
-                    {/* On Time/Late Indicator */}
+                    {/* 6. Delivery Status */}
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                        Delivery Status
-                      </label>
-                      <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Delivery Status
+                        </label>
+                      </div>
+                      <div className={`ml-6 flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
                         {isOnTime() ? (
                           <>
                             <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                            <span className="text-sm font-semibold text-green-700 dark:text-green-400" data-testid="status-delivery-on-time">On Time</span>
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-400" data-testid="status-delivery-on-time-readonly">On Time</span>
                           </>
                         ) : (
                           <>
                             <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                            <span className="text-sm font-semibold text-red-700 dark:text-red-400" data-testid="status-delivery-late">Late</span>
+                            <span className="text-sm font-semibold text-red-700 dark:text-red-400" data-testid="status-delivery-late-readonly">Late</span>
                           </>
                         )}
                       </div>
