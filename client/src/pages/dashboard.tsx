@@ -620,8 +620,8 @@ export default function Dashboard() {
                     <TableHead>Department</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Priority</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Delivery</TableHead>
+                    <TableHead>Request Status</TableHead>
+                    <TableHead>Delivery Status</TableHead>
                     <TableHead>Assigned To</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Actions</TableHead>
