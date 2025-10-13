@@ -1958,6 +1958,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin route to fix delivered requests with incorrect status
+  app.post('/api/admin/fix-delivered-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      // Only allow team_lead (Data Lead) to run this
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Unauthorized - Data Lead only" });
+      }
+
+      const result = await storage.fixDeliveredRequestsStatus();
+      res.json(result);
+    } catch (error) {
+      console.error("Error fixing delivered requests:", error);
+      res.status(500).json({ message: "Failed to fix delivered requests" });
+    }
+  });
+
   const httpServer = createServer(app);
   setupWebSocketServer(httpServer);
   return httpServer;

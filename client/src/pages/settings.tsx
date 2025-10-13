@@ -509,6 +509,41 @@ export default function SettingsPage() {
           </Form>
         </CardContent>
       </Card>
+
+      {(user as any)?.role === 'team_lead' && (
+        <Card className="border-orange-200 dark:border-orange-900">
+          <CardHeader>
+            <CardTitle className="text-orange-600 dark:text-orange-400">Admin Tools</CardTitle>
+            <CardDescription>Data Lead administrative functions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-2">Fix Delivered Request Status</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Updates all delivered requests to have "Completed" status. Use this if you see requests 
+                  that show "On Time" delivery but still have "Accepted" status.
+                </p>
+                <Button
+                  onClick={async () => {
+                    try {
+                      const result = await apiRequest('POST', '/api/admin/fix-delivered-status');
+                      notify.success(`Fixed ${result.updated} request(s). Status updated to Completed.`);
+                    } catch (error: any) {
+                      notify.error(error.message || "Failed to fix requests");
+                    }
+                  }}
+                  variant="outline"
+                  className="border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950"
+                  data-testid="button-fix-delivered-status"
+                >
+                  Fix Delivered Requests
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -68,6 +68,7 @@ export interface IStorage {
   updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined>;
   deleteDataRequest(id: string): Promise<void>;
   purgeAllRequests(): Promise<{ deleted: number }>;
+  fixDeliveredRequestsStatus(): Promise<{ updated: number; requestIds: string[] }>;
   
   // New three-role workflow operations
   acceptRequest(id: string, reviewerId: string): Promise<DataRequest | undefined>;
@@ -630,6 +631,22 @@ export class DatabaseStorage implements IStorage {
     await db.delete(dataRequests);
     
     return { deleted: total };
+  }
+
+  async fixDeliveredRequestsStatus(): Promise<{ updated: number; requestIds: string[] }> {
+    const requests = await db
+      .update(dataRequests)
+      .set({
+        status: 'completed',
+        updatedAt: new Date()
+      })
+      .where(sql`${dataRequests.deliveredAt} IS NOT NULL AND ${dataRequests.status} != 'completed'`)
+      .returning({ id: dataRequests.id });
+    
+    return {
+      updated: requests.length,
+      requestIds: requests.map(r => r.id)
+    };
   }
 
   // New three-role workflow implementations
