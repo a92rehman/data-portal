@@ -223,7 +223,7 @@ export default function MyAssignments() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Urgency</TableHead>
-                    <TableHead>Title</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Priority</TableHead>
@@ -247,8 +247,8 @@ export default function MyAssignments() {
                             {calculateUrgency(request).label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-medium" data-testid={`cell-title-${request.id}`}>
-                          {request.title}
+                        <TableCell className="font-medium" data-testid={`cell-type-${request.id}`}>
+                          {formatRequestType(request.type)}
                         </TableCell>
                         <TableCell data-testid={`cell-status-${request.id}`}>
                           <Badge className={`status-badge ${getStatusBadge(request.status)}`}>
