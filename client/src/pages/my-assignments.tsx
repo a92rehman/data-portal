@@ -26,9 +26,14 @@ export default function MyAssignments() {
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
 
-  // Fetch requests assigned to current analyst (backend filters by role automatically)
+  // Fetch requests assigned to current user (analyst or data lead)
+  // For data leads, we pass assignedToId filter to get only their assigned requests
+  const queryParams = user?.role === 'team_lead' 
+    ? { assignedToId: user?.id, status: statusFilter }
+    : { status: statusFilter };
+    
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({
-    queryKey: ["/api/requests", { status: statusFilter }],
+    queryKey: ["/api/requests", queryParams],
     staleTime: Infinity,
     refetchInterval: 3000,
     refetchIntervalInBackground: true,
