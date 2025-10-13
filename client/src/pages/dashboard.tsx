@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search, Trash2, Calendar as CalendarIcon, AlertTriangle } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
+import { DEPARTMENTS } from "@shared/constants";
 import { format } from "date-fns";
 import { calculateUrgency } from "@/lib/urgency";
 
@@ -512,16 +513,9 @@ export default function Dashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Departments</SelectItem>
-                      <SelectItem value="Program">Program</SelectItem>
-                      <SelectItem value="P&C">P&C</SelectItem>
-                      <SelectItem value="Product">Product</SelectItem>
-                      <SelectItem value="LP">LP</SelectItem>
-                      <SelectItem value="Training">Training</SelectItem>
-                      <SelectItem value="ERP">ERP</SelectItem>
-                      <SelectItem value="Finance">Finance</SelectItem>
-                      <SelectItem value="Leadership">Leadership</SelectItem>
-                      <SelectItem value="Strategy">Strategy</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
