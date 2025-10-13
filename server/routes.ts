@@ -1262,35 +1262,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Allow analysts OR team leads who are assigned to the request
-      const isAnalyst = user?.role === 'analyst';
+      const isAnalyst = user?.role === 'analyst' || user?.role === 'data_analyst';
       const isAssignedTeamLead = user?.role === 'team_lead' && requestToDeliver.assignedToId === user.id;
       
       if (!user || (!isAnalyst && !isAssignedTeamLead)) {
-        return res.status(403).json({ message: "Only analysts or assigned team leads can mark requests as delivered" });
+        return res.status(403).json({ message: "Only assigned users (analysts or assigned team leads) can mark requests as delivered" });
       }
 
-      const { deliveryType, deliveryLink } = req.body;
+      const { deliveryType, deliveryLink, deliveryContent, deliveryFileUrl, deliveryFileName } = req.body;
       
-      if (!deliveryType || !['attachment', 'link'].includes(deliveryType)) {
-        return res.status(400).json({ message: "Valid delivery type is required (attachment or link)" });
+      if (!deliveryType || !['attachment', 'link', 'text'].includes(deliveryType)) {
+        return res.status(400).json({ message: "Valid delivery type is required (attachment, link, or text)" });
       }
 
+      // Validate required fields based on delivery type
       if (deliveryType === 'link' && !deliveryLink) {
         return res.status(400).json({ message: "Delivery link is required when delivery type is link" });
       }
+      
+      if (deliveryType === 'text' && !deliveryContent) {
+        return res.status(400).json({ message: "Delivery content is required when delivery type is text" });
+      }
+      
+      if (deliveryType === 'attachment' && (!deliveryFileUrl || !deliveryFileName)) {
+        return res.status(400).json({ message: "File URL and file name are required when delivery type is attachment" });
+      }
 
-      const request = await storage.deliverRequest(req.params.id, deliveryType, deliveryLink);
+      const request = await storage.deliverRequest(
+        req.params.id, 
+        deliveryType, 
+        deliveryLink,
+        deliveryContent,
+        deliveryFileUrl,
+        deliveryFileName
+      );
       
       if (!request) {
         return res.status(404).json({ message: "Request not found" });
       }
 
+      // Notify stakeholders
       const wsServer = getWebSocketServer();
-      if (wsServer && request.reviewedById) {
-        wsServer.notifyUser(request.reviewedById, {
-          type: 'request_delivered',
-          requestId: request.id,
-          message: `Request "${request.title}" has been delivered`,
+      const notifyUsers = [];
+      
+      // Notify requester
+      if (request.requestedById && request.requestedById !== user.id) {
+        notifyUsers.push(request.requestedById);
+      }
+      
+      // Notify Data Lead if reviewed
+      if (request.reviewedById && request.reviewedById !== user.id) {
+        notifyUsers.push(request.reviewedById);
+      }
+      
+      // Send WebSocket notifications
+      if (wsServer && notifyUsers.length > 0) {
+        notifyUsers.forEach(userId => {
+          wsServer.notifyUser(userId, {
+            type: 'request_delivered',
+            requestId: request.id,
+            message: `Request "${request.title}" has been delivered`,
+          });
         });
       }
 

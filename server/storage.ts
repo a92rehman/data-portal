@@ -75,7 +75,7 @@ export interface IStorage {
   assignToAnalyst(id: string, analystId: string, dueDate?: Date): Promise<DataRequest | undefined>;
   suggestDeadline(id: string, suggestedDeadline: Date): Promise<DataRequest | undefined>;
   completeRequest(id: string): Promise<DataRequest | undefined>;
-  deliverRequest(id: string, deliveryType: string, deliveryLink?: string): Promise<DataRequest | undefined>;
+  deliverRequest(id: string, deliveryType: string, deliveryLink?: string, deliveryContent?: string, deliveryFileUrl?: string, deliveryFileName?: string): Promise<DataRequest | undefined>;
   
   // Blocker operations
   addBlocker(requestId: string, description: string, reportedById: string): Promise<Blocker>;
@@ -447,9 +447,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined> {
+    // First get the current request to track original values
+    const [currentRequest] = await db
+      .select()
+      .from(dataRequests)
+      .where(eq(dataRequests.id, id))
+      .limit(1);
+    
+    if (!currentRequest) {
+      return undefined;
+    }
+    
+    // Prepare update data - track original values if not already set
+    const updateData: any = {
+      priority: priority as "p0_critical" | "p1_high" | "p2_medium" | "p3_low",
+      dueDate,
+      updatedAt: new Date()
+    };
+    
+    // Store original priority if not already stored
+    if (!currentRequest.originalPriority) {
+      updateData.originalPriority = currentRequest.priority;
+    }
+    
+    // Store original due date if not already stored
+    if (!currentRequest.originalDueDate) {
+      updateData.originalDueDate = currentRequest.dueDate;
+    }
+    
     const [updated] = await db
       .update(dataRequests)
-      .set({ priority: priority as "p0_critical" | "p1_high" | "p2_medium" | "p3_low", dueDate, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(dataRequests.id, id))
       .returning();
     return updated;
@@ -668,15 +696,34 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  async deliverRequest(id: string, deliveryType: string, deliveryLink?: string): Promise<DataRequest | undefined> {
+  async deliverRequest(id: string, deliveryType: string, deliveryLink?: string, deliveryContent?: string, deliveryFileUrl?: string, deliveryFileName?: string): Promise<DataRequest | undefined> {
+    const updateData: any = {
+      deliveryType,
+      deliveredAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    // Set appropriate fields based on delivery type
+    if (deliveryType === 'link') {
+      updateData.deliveryLink = deliveryLink || null;
+      updateData.deliveryContent = null;
+      updateData.deliveryFileUrl = null;
+      updateData.deliveryFileName = null;
+    } else if (deliveryType === 'text') {
+      updateData.deliveryContent = deliveryContent || null;
+      updateData.deliveryLink = null;
+      updateData.deliveryFileUrl = null;
+      updateData.deliveryFileName = null;
+    } else if (deliveryType === 'attachment') {
+      updateData.deliveryFileUrl = deliveryFileUrl || null;
+      updateData.deliveryFileName = deliveryFileName || null;
+      updateData.deliveryLink = null;
+      updateData.deliveryContent = null;
+    }
+    
     const [request] = await db
       .update(dataRequests)
-      .set({
-        deliveryType,
-        deliveryLink: deliveryLink || null,
-        deliveredAt: new Date(),
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(dataRequests.id, id))
       .returning();
     return request;
