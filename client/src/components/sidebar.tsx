@@ -29,6 +29,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
       return [
         { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-my-requests" },
+        { href: "/my-assignments", icon: UserCheck, label: "My Assignments", testId: "nav-my-assignments" },
         { href: "/pending-reviews", icon: ClipboardCheck, label: "Pending Reviews", testId: "nav-pending-reviews" },
         { href: "/all-requests", icon: FileText, label: "All Requests", testId: "nav-all-requests" },
         { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
