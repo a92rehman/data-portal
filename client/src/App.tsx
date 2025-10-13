@@ -12,6 +12,8 @@ import type { User } from "@shared/schema";
 import Landing from "@/pages/landing";
 import AuthSimple from "@/pages/auth-simple";
 import SetupPassword from "@/pages/setup-password";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
 import ProfileSetup from "@/pages/profile-setup";
@@ -39,6 +41,8 @@ function Router() {
         <Route path="/" component={Landing} />
         <Route path="/auth" component={AuthSimple} />
         <Route path="/setup-password" component={SetupPassword} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route component={Landing} />
       </Switch>
     );
