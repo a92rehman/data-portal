@@ -23,7 +23,7 @@ import {
   type DataRequestWithDetails,
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, count, sql } from "drizzle-orm";
+import { eq, desc, and, or, count, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -160,7 +160,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDataAnalysts(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, 'analyst'));
+    return await db.select().from(users).where(
+      or(eq(users.role, 'analyst'), eq(users.role, 'team_lead'))
+    );
   }
 
   async getAllUsers(): Promise<User[]> {
