@@ -474,8 +474,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       // Yellow - Pending/Initial state
       pending_review: "gradient-badge-progress",
       
-      // Green - Positive/Accepted/Completed states
-      accepted: "gradient-badge-completed",
+      // Blue - Accepted/Ready state
+      accepted: "gradient-badge-review",
+      
+      // Green - Completed state
       completed: "gradient-badge-completed",
       
       // Yellow - Active/In-Progress state
