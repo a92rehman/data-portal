@@ -35,7 +35,8 @@ import {
   ArrowLeft,
   Check,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -332,6 +333,29 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     },
   });
 
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  const deleteRequestMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("DELETE", `/api/requests/${request.id}`, {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request deleted successfully",
+      });
+      setShowDeleteDialog(false);
+      onClose(); // Close the dialog after deletion
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete request",
+        variant: "destructive",
+      });
+    },
+  });
+
   const [assignAnalystId, setAssignAnalystId] = useState("");
   const [assignDueDate, setAssignDueDate] = useState("");
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -581,6 +605,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const isTeamLead = (user as any)?.role === "team_lead";
   const isRequester = (user as any)?.role === "requester";
   const isAssignedToMe = request.assignedToId === (user as any)?.id;
+  const isPrimaryDataLead = (user as any)?.email === "abdur.rehman@taleemabad.com" && (user as any)?.role === "team_lead";
 
   const [deliveryType, setDeliveryType] = useState("attachment");
   const [deliveryLink, setDeliveryLink] = useState("");
@@ -693,6 +718,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                     Reject
                   </Button>
                 </div>
+              )}
+
+              {/* Delete Button - Only for Primary Data Lead */}
+              {isPrimaryDataLead && (
+                <Button
+                  onClick={() => setShowDeleteDialog(true)}
+                  variant="destructive"
+                  size="sm"
+                  data-testid="button-delete-request"
+                  className="flex-shrink-0"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
               )}
             </div>
           </div>
@@ -1500,6 +1539,35 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               data-testid="button-confirm-reject"
             >
               {rejectRequestMutation.isPending ? "Rejecting..." : "Reject Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Request Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent data-testid="dialog-delete-request">
+          <DialogHeader>
+            <DialogTitle>Delete Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this request? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteRequestMutation.mutate()}
+              disabled={deleteRequestMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteRequestMutation.isPending ? "Deleting..." : "Delete Request"}
             </Button>
           </DialogFooter>
         </DialogContent>
