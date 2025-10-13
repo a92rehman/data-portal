@@ -695,12 +695,19 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   };
 
   const isOnTime = () => {
-    if (!request.deliveredAt) return false;
     const dueDate = new Date(request.dueDate);
-    const deliveredDate = new Date(request.deliveredAt);
-    // Compare only dates, not time - if delivered on same day or before, it's on time
+    // Set due date to end of day for comparison
     dueDate.setHours(23, 59, 59, 999);
-    return deliveredDate <= dueDate;
+    
+    if (request.deliveredAt) {
+      // If delivered, check if delivered on or before due date
+      const deliveredDate = new Date(request.deliveredAt);
+      return deliveredDate <= dueDate;
+    } else {
+      // If not delivered yet, check if current time is still before due date
+      const now = new Date();
+      return now <= dueDate;
+    }
   };
 
   return (
