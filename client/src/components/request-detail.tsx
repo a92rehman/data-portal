@@ -745,16 +745,34 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1 flex items-center gap-1">
               {getPriorityIcon(request.priority)}
               Priority
+              {request.originalPriority && request.originalPriority !== request.priority && (
+                <span className="inline-flex items-center justify-center w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" title="Priority has been changed" />
+              )}
             </p>
             <p className="text-sm font-semibold truncate" data-testid="priority-display">
               {formatPriority(request.priority)}
             </p>
+            {request.originalPriority && request.originalPriority !== request.priority && (
+              <p className="text-xs text-muted-foreground line-through mt-1" title="Original priority">
+                was {formatPriority(request.originalPriority)}
+              </p>
+            )}
           </div>
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50">
-            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1">Due Date</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
+              Due Date
+              {request.originalDueDate && new Date(request.originalDueDate).getTime() !== new Date(request.dueDate).getTime() && (
+                <span className="inline-flex items-center justify-center w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" title="Due date has been changed" />
+              )}
+            </p>
             <p className="text-sm font-semibold truncate" data-testid="text-due-date">
               {new Date(request.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </p>
+            {request.originalDueDate && new Date(request.originalDueDate).getTime() !== new Date(request.dueDate).getTime() && (
+              <p className="text-xs text-muted-foreground line-through mt-1" title="Original due date">
+                was {new Date(request.originalDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            )}
           </div>
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50">
             <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1">Department</p>
@@ -774,8 +792,13 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         {isTeamLead && (
           <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-4 px-6 py-4 border-b bg-indigo-50 dark:bg-indigo-950/20">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                New Priority
+              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block flex items-center gap-2">
+                Edit Priority
+                {editedPriority !== request.priority && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-normal normal-case">
+                    (Modified)
+                  </span>
+                )}
               </label>
               <div className="flex gap-2">
                 <Select 
@@ -783,7 +806,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   onValueChange={(value) => setEditedPriority(value as any)}
                   data-testid="select-edit-priority"
                 >
-                  <SelectTrigger className="flex-1">
+                  <SelectTrigger className={`flex-1 ${editedPriority !== request.priority ? 'border-amber-500 dark:border-amber-600' : ''}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -801,9 +824,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       dueDate: editedDueDate,
                     });
                   }}
-                  disabled={updatePriorityDeadlineMutation.isPending}
+                  disabled={updatePriorityDeadlineMutation.isPending || (editedPriority === request.priority && editedDueDate === new Date(request.dueDate).toISOString().split('T')[0])}
                   data-testid="button-save-priority"
                   className="bg-primary hover:bg-primary/90"
+                  title="Save changes"
                 >
                   <Save className="w-4 h-4" />
                 </Button>
@@ -811,15 +835,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                New Due Date
+              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block flex items-center gap-2">
+                Edit Due Date
+                {editedDueDate !== new Date(request.dueDate).toISOString().split('T')[0] && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-normal normal-case">
+                    (Modified)
+                  </span>
+                )}
               </label>
               <div className="flex gap-2">
                 <Input 
                   type="date" 
                   value={editedDueDate}
                   onChange={(e) => setEditedDueDate(e.target.value)}
-                  className="flex-1"
+                  className={`flex-1 ${editedDueDate !== new Date(request.dueDate).toISOString().split('T')[0] ? 'border-amber-500 dark:border-amber-600' : ''}`}
                   data-testid="input-edit-due-date"
                 />
                 <Button
@@ -830,9 +859,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       dueDate: editedDueDate,
                     });
                   }}
-                  disabled={updatePriorityDeadlineMutation.isPending}
+                  disabled={updatePriorityDeadlineMutation.isPending || (editedPriority === request.priority && editedDueDate === new Date(request.dueDate).toISOString().split('T')[0])}
                   data-testid="button-save-deadline"
                   className="bg-primary hover:bg-primary/90"
+                  title="Save changes"
                 >
                   <Save className="w-4 h-4" />
                 </Button>
