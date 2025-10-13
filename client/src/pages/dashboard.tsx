@@ -16,9 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import { Inbox, Clock, CheckCircle, BarChart3, Plus, Eye, CircleAlert, MinusCircle, InfoIcon, Search, Trash2, Calendar as CalendarIcon, AlertTriangle } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { format } from "date-fns";
 import { calculateUrgency } from "@/lib/urgency";
@@ -48,6 +49,7 @@ export default function Dashboard() {
     to: undefined,
   });
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
+  const [requestToDelete, setRequestToDelete] = useState<DataRequestWithDetails | null>(null);
 
   // Fetch analysts for filter (only for team leads and analysts)
   const { data: analysts = [] } = useQuery<User[]>({
@@ -206,6 +208,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/stats"] });
       setSelectedRequest(null);
+      setRequestToDelete(null);
     },
     onError: (error: any) => {
       if (isUnauthorizedError(error)) {
@@ -674,18 +677,17 @@ export default function Dashboard() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            {(user as any)?.role === "data_analyst" && (
+                            {(user as any)?.role === "team_lead" && (user as any)?.email === "abdur.rehman@taleemabad.com" && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (confirm(`Are you sure you want to delete "${request.title}"?`)) {
-                                    deleteRequestMutation.mutate(request.id);
-                                  }
+                                  setRequestToDelete(request);
                                 }}
                                 data-testid={`button-delete-${request.id}`}
                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                title="Delete Request (Admin Only)"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -718,6 +720,61 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!requestToDelete} onOpenChange={(open) => !open && setRequestToDelete(null)}>
+        <AlertDialogContent className="bg-white dark:bg-gray-800">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-500" />
+              </div>
+              <AlertDialogTitle className="text-xl">Delete Request</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4 text-base">
+              Are you sure you want to delete this request? This action cannot be undone.
+              {requestToDelete && (
+                <div className="mt-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4">
+                  <p className="font-semibold text-gray-900 dark:text-white">{requestToDelete.title}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Requested by: {requestToDelete.requestedBy?.firstName} {requestToDelete.requestedBy?.lastName}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Type: {requestToDelete.type}
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => setRequestToDelete(null)}
+              data-testid="button-cancel-delete"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (requestToDelete) {
+                  deleteRequestMutation.mutate(requestToDelete.id);
+                }
+              }}
+              disabled={deleteRequestMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="button-confirm-delete"
+            >
+              {deleteRequestMutation.isPending ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                "Delete Request"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
