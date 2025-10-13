@@ -122,16 +122,23 @@ export const dataRequests = pgTable("data_requests", {
   reviewedById: varchar("reviewed_by_id").references(() => users.id), // Team lead who reviewed
   assignedToId: varchar("assigned_to_id").references(() => users.id), // Analyst assigned
   dueDate: timestamp("due_date").notNull(),
+  originalDueDate: timestamp("original_due_date"), // Original due date before any changes
   suggestedDeadline: timestamp("suggested_deadline"), // Analyst's suggested deadline
   estimatedCompletionDays: integer("estimated_completion_days"),
+  
+  // Priority tracking
+  originalPriority: requestPriorityEnum("original_priority"), // Original priority before any changes
   
   // Review fields
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
   
   // Delivery fields
-  deliveryType: varchar("delivery_type"), // "attachment" or "link"
+  deliveryType: varchar("delivery_type"), // "attachment", "link", or "text"
   deliveryLink: text("delivery_link"), // Link if delivery type is link
+  deliveryContent: text("delivery_content"), // Text content if delivery type is text
+  deliveryFileUrl: text("delivery_file_url"), // File URL if delivery type is attachment
+  deliveryFileName: varchar("delivery_file_name"), // File name if delivery type is attachment
   deliveredAt: timestamp("delivered_at"), // When request was marked as delivered
   
   // Common fields
