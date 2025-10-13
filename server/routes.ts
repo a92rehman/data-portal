@@ -940,8 +940,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/requests/:id', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
-      if (!user || user.role !== 'analyst') {
-        return res.status(403).json({ message: "Only analysts can delete requests" });
+      
+      // Only primary Data Lead can delete requests
+      const isPrimaryDataLead = user?.email === 'abdur.rehman@taleemabad.com' && user?.role === 'team_lead';
+      
+      if (!user || !isPrimaryDataLead) {
+        return res.status(403).json({ message: "Only the primary Data Lead can delete requests" });
       }
 
       await storage.deleteDataRequest(req.params.id);
