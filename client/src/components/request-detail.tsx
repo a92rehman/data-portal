@@ -695,9 +695,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   };
 
   const isOnTime = () => {
+    if (!request.deliveredAt) return false;
     const dueDate = new Date(request.dueDate);
-    const today = new Date();
-    return today <= dueDate;
+    const deliveredDate = new Date(request.deliveredAt);
+    return deliveredDate <= dueDate;
   };
 
   return (
