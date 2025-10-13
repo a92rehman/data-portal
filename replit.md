@@ -6,6 +6,18 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
+**October 13, 2025 - Enhanced Delete Functionality for Primary Data Lead**
+- Implemented professional delete confirmation dialog using shadcn AlertDialog
+- Delete functionality exclusively available on Dashboard for primary Data Lead only (abdur.rehman@taleemabad.com)
+- Replaced basic browser confirm() with polished AlertDialog showing:
+  - Warning icon and clear "Delete Request" title
+  - Request details (title, requester, type) before deletion
+  - Cancel and Delete buttons with loading state
+  - Success/error toast notifications
+- Security: Backend verifies user email and role before allowing deletion
+- UX: Delete button has tooltip "Delete Request (Admin Only)" and red destructive styling
+- Other portals (All Requests, My Requests, My Assignments) have no delete functionality
+
 **October 13, 2025 - Column Layout Updates Across All Portals**
 - Updated Dashboard table: Changed "Description" column to "Requester" to display requester name
 - Updated All Requests table: Changed "Title" column to "Requester" to display requester name
