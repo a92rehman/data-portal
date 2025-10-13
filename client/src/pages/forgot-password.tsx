@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,17 @@ export default function ForgotPassword() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Initialize EmailJS
+  useEffect(() => {
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    if (publicKey) {
+      emailjs.init(publicKey);
+      console.log('[forgot-password] EmailJS initialized');
+    } else {
+      console.error('[forgot-password] EmailJS public key not found');
+    }
+  }, []);
 
   const form = useForm({
     resolver: zodResolver(forgotPasswordSchema),
@@ -49,7 +60,7 @@ export default function ForgotPassword() {
         const { userName, userEmail, resetUrl } = result.emailData;
         
         // Send email using EmailJS with template_1hb8p6b
-        await emailjs.send(
+        const emailResult = await emailjs.send(
           import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
           'template_1hb8p6b', // Password reset template ID
           {
@@ -57,11 +68,10 @@ export default function ForgotPassword() {
             to_email: userEmail,
             reset_link: resetUrl,
             from_name: 'DataHub Team',
-          },
-          import.meta.env.VITE_EMAILJS_PUBLIC_KEY || ''
+          }
         );
 
-        console.log('[forgot-password] Reset email sent via EmailJS to:', userEmail);
+        console.log('[forgot-password] Reset email sent via EmailJS to:', userEmail, 'Status:', emailResult.status);
       }
 
       setIsSubmitted(true);
