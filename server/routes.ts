@@ -594,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passwordResetExpires: resetExpires,
       });
 
-      // Send password reset email
+      // Build reset URL
       // Use REPLIT_DOMAINS for production, fallback to development URL
       let appUrl = `http://localhost:5000`;
       if (process.env.REPLIT_DOMAINS) {
@@ -604,14 +604,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         appUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
       }
 
-      await sendPasswordResetEmail({
-        userName: user.firstName || user.email,
-        userEmail: user.email,
-        resetToken,
-        appUrl,
-      });
+      const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
 
-      console.log(`[forgot-password] Reset email sent to ${email}, token expires in 1 hour`);
+      console.log(`[forgot-password] Reset token generated for ${email}, expires in 1 hour`);
 
       // Log password reset request
       await storage.logAuthEvent(
@@ -621,7 +616,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.headers['user-agent']
       );
 
-      res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
+      // Return data for frontend to send email via EmailJS
+      res.json({ 
+        success: true, 
+        message: "If an account exists with this email, you will receive a password reset link",
+        // Include data for EmailJS (only returned if user exists)
+        emailData: {
+          userName: user.firstName || user.email.split('@')[0],
+          userEmail: user.email,
+          resetUrl,
+        }
+      });
     } catch (error) {
       console.error("[forgot-password] Error:", error);
       res.status(500).json({ message: "Failed to process password reset request" });

@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import emailjs from '@emailjs/browser';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -30,6 +31,7 @@ export default function ForgotPassword() {
   const handleSubmit = async (data: z.infer<typeof forgotPasswordSchema>) => {
     setIsLoading(true);
     try {
+      // Call backend to generate reset token
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,8 +44,29 @@ export default function ForgotPassword() {
         throw new Error(result.message || "Failed to send reset link");
       }
 
+      // If emailData is returned, send email via EmailJS
+      if (result.emailData) {
+        const { userName, userEmail, resetUrl } = result.emailData;
+        
+        // Send email using EmailJS with template_1hb8p6b
+        await emailjs.send(
+          import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
+          'template_1hb8p6b', // Password reset template ID
+          {
+            to_name: userName,
+            to_email: userEmail,
+            reset_link: resetUrl,
+            from_name: 'DataHub Team',
+          },
+          import.meta.env.VITE_EMAILJS_PUBLIC_KEY || ''
+        );
+
+        console.log('[forgot-password] Reset email sent via EmailJS to:', userEmail);
+      }
+
       setIsSubmitted(true);
     } catch (error: any) {
+      console.error('[forgot-password] Error:', error);
       toast({
         variant: "destructive",
         title: "Error",
