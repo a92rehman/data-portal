@@ -19,6 +19,7 @@ import RequesterSignup from "@/pages/requester-signup";
 import PendingReviews from "@/pages/pending-reviews";
 import AllRequests from "@/pages/all-requests";
 import MyAssignments from "@/pages/my-assignments";
+import MyRequests from "@/pages/my-requests";
 import Team from "@/pages/team";
 import Settings from "@/pages/settings";
 import RequestWorkspace from "@/pages/request-workspace";
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/">{() => <Dashboard />}</Route>
       <Route path="/auth">{() => <Redirect to="/" />}</Route>
       <Route path="/requests/new">{() => <NewRequest />}</Route>
+      <Route path="/requests/mine">{() => <MyRequests />}</Route>
       <Route path="/requests/:id">{() => <RequestWorkspace />}</Route>
       <Route path="/requester-signup">{() => <RequesterSignup />}</Route>
       <Route path="/pending-reviews">{() => <PendingReviews />}</Route>
