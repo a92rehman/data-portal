@@ -701,6 +701,7 @@ export class DatabaseStorage implements IStorage {
       deliveryType,
       deliveredAt: new Date(),
       updatedAt: new Date(),
+      status: 'completed', // Automatically set status to completed when delivery is made
     };
     
     // Set appropriate fields based on delivery type
