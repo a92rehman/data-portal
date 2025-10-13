@@ -664,7 +664,7 @@ export class DatabaseStorage implements IStorage {
     const [request] = await db
       .update(dataRequests)
       .set({
-        status: 'assigned',
+        status: 'in_progress', // Automatically set to In Progress when assigned
         assignedToId: analystId,
         dueDate: dueDate || undefined,
       })
