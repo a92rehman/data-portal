@@ -10,7 +10,17 @@ export interface UrgencyInfo {
 }
 
 export function calculateUrgency(request: Partial<DataRequest>): UrgencyInfo {
-  const { dueDate, priority } = request;
+  const { dueDate, priority, deliveredAt } = request;
+  
+  // If request is delivered, show Completed status
+  if (deliveredAt) {
+    return {
+      level: 'low',
+      label: 'COMPLETED',
+      colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      daysRemaining: null,
+    };
+  }
   
   // Calculate days remaining
   let daysRemaining: number | null = null;
