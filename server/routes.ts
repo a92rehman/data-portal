@@ -712,8 +712,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/status', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
-      if (!user || user.role !== 'analyst') {
-        return res.status(403).json({ message: "Only analysts can update request status" });
+      const requestToUpdate = await storage.getDataRequest(req.params.id);
+      
+      if (!requestToUpdate) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      // Allow analysts OR team leads who are assigned to the request
+      const isAnalyst = user?.role === 'analyst';
+      const isAssignedTeamLead = user?.role === 'team_lead' && requestToUpdate.assignedToId === user.id;
+      
+      if (!user || (!isAnalyst && !isAssignedTeamLead)) {
+        return res.status(403).json({ message: "Only analysts or assigned team leads can update request status" });
       }
 
       const { status, estimatedDays } = req.body;
@@ -1241,10 +1251,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/requests/:id/delivered', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
+      const requestToDeliver = await storage.getDataRequest(req.params.id);
       
-      // Only analysts can mark requests as delivered
-      if (!user || user.role !== 'analyst') {
-        return res.status(403).json({ message: "Only analysts can mark requests as delivered" });
+      if (!requestToDeliver) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      // Allow analysts OR team leads who are assigned to the request
+      const isAnalyst = user?.role === 'analyst';
+      const isAssignedTeamLead = user?.role === 'team_lead' && requestToDeliver.assignedToId === user.id;
+      
+      if (!user || (!isAnalyst && !isAssignedTeamLead)) {
+        return res.status(403).json({ message: "Only analysts or assigned team leads can mark requests as delivered" });
       }
 
       const { deliveryType, deliveryLink } = req.body;
