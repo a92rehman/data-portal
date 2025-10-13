@@ -385,11 +385,30 @@ export default function Dashboard() {
     const orderA = statusOrder[a.status as keyof typeof statusOrder] || 999;
     const orderB = statusOrder[b.status as keyof typeof statusOrder] || 999;
     
+    // Primary sort: by status
     if (orderA !== orderB) {
       return orderA - orderB;
     }
     
-    // If same status, sort by creation date (newest first)
+    // Secondary sort: by urgency (within same status)
+    const urgencyA = calculateUrgency(a);
+    const urgencyB = calculateUrgency(b);
+    
+    const urgencyOrder = {
+      'urgent': 1,
+      'high': 2,
+      'medium': 3,
+      'low': 4,
+    };
+    
+    const urgencyOrderA = urgencyOrder[urgencyA.level as keyof typeof urgencyOrder] || 5;
+    const urgencyOrderB = urgencyOrder[urgencyB.level as keyof typeof urgencyOrder] || 5;
+    
+    if (urgencyOrderA !== urgencyOrderB) {
+      return urgencyOrderA - urgencyOrderB;
+    }
+    
+    // Tertiary sort: by creation date (newest first)
     const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return bTime - aTime;
