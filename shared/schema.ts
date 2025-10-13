@@ -90,7 +90,9 @@ export const requestTypeEnum = pgEnum("request_type", [
 export const authEventTypeEnum = pgEnum("auth_event_type", [
   "signup",
   "signin",
-  "signout"
+  "signout",
+  "password_reset_requested",
+  "password_reset_completed"
 ]);
 
 // Notification type enum

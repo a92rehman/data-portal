@@ -102,7 +102,7 @@ export interface IStorage {
   getPriorityStats(): Promise<{ priority: string; count: number }[]>;
   
   // Auth logging operations
-  logAuthEvent(userId: string, eventType: 'signup' | 'signin' | 'signout', ipAddress?: string, userAgent?: string): Promise<AuthLog>;
+  logAuthEvent(userId: string, eventType: 'signup' | 'signin' | 'signout' | 'password_reset_requested' | 'password_reset_completed', ipAddress?: string, userAgent?: string): Promise<AuthLog>;
   getRecentAuthLogs(limit?: number): Promise<(AuthLog & { user: User })[]>;
   
   // Notification operations
@@ -761,7 +761,7 @@ export class DatabaseStorage implements IStorage {
   // Auth logging operations
   async logAuthEvent(
     userId: string, 
-    eventType: 'signup' | 'signin' | 'signout', 
+    eventType: 'signup' | 'signin' | 'signout' | 'password_reset_requested' | 'password_reset_completed', 
     ipAddress?: string, 
     userAgent?: string
   ): Promise<AuthLog> {
