@@ -1192,56 +1192,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <CardTitle className="text-base">Delivery Status</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Request Type */}
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Request Type</p>
-                  <p className="text-sm font-medium" data-testid="text-request-type">
-                    {formatRequestType(request.type)}
-                  </p>
-                </div>
-
-                {/* Attachments */}
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">
-                    Attachments ({request.attachments?.length || 0})
-                  </p>
-                  <ObjectUploader
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={handleUploadComplete}
-                    maxFileSize={10 * 1024 * 1024}
-                    maxNumberOfFiles={5}
-                    buttonVariant="outline"
-                    buttonSize="sm"
-                    buttonClassName="w-full"
-                  >
-                    <Paperclip className="w-4 h-4 mr-2" />
-                    Upload File
-                  </ObjectUploader>
-                  {request.attachments && request.attachments.length > 0 && (
-                    <div className="space-y-2 mt-2">
-                      {request.attachments.map((attachment) => (
-                        <div key={attachment.id} className="border rounded-lg p-2 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <FileIcon className="w-4 h-4 flex-shrink-0" />
-                            <span className="text-xs truncate" data-testid={`attachment-name-${attachment.id}`}>
-                              {attachment.fileName}
-                            </span>
-                          </div>
-                          <a
-                            href={attachment.filePath}
-                            download={attachment.fileName}
-                            data-testid={`button-download-${attachment.id}`}
-                          >
-                            <Button variant="ghost" size="sm">
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
                 {/* Unified Delivery Box - Reorganized Layout */}
                 {(isAnalyst || (isTeamLead && isAssignedToMe)) && (
                   <div className="space-y-3 border-t pt-4">
@@ -1729,26 +1679,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       </>
                     )}
                   </Button>
-                )}
-
-                {/* Assigned Analyst Display */}
-                {request.assignedTo && (
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Assigned Analyst</p>
-                    <div className="flex items-center gap-2 p-2 border rounded-lg">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={request.assignedTo.profileImageUrl ?? ""} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                          {getInitials(request.assignedTo.firstName ?? undefined, request.assignedTo.lastName ?? undefined)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" data-testid="text-assigned-analyst">
-                          {request.assignedTo.firstName} {request.assignedTo.lastName}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
                 )}
               </CardContent>
             </Card>
