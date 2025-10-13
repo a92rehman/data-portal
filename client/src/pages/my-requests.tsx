@@ -205,7 +205,7 @@ export default function MyRequests() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <Header user={user as any} />
       
       <div className="flex">
         <Sidebar onNewRequest={() => setLocation("/requests/new")} user={user} />
