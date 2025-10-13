@@ -259,7 +259,7 @@ export default function AllRequests() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Urgency</TableHead>
-                    <TableHead>Title</TableHead>
+                    <TableHead>Requester</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Priority</TableHead>
@@ -283,8 +283,14 @@ export default function AllRequests() {
                             {calculateUrgency(request).label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-medium" data-testid={`cell-title-${request.id}`}>
-                          {request.title}
+                        <TableCell className="font-medium" data-testid={`cell-requester-${request.id}`}>
+                          {request.requestedBy ? (
+                            <span className="text-sm">
+                              {request.requestedBy.firstName} {request.requestedBy.lastName}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Unknown</span>
+                          )}
                         </TableCell>
                         <TableCell data-testid={`cell-status-${request.id}`}>
                           <Badge className={`status-badge ${getStatusBadge(request.status)}`}>
