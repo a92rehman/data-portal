@@ -602,7 +602,7 @@ export default function Dashboard() {
                     className="gradient-button-primary text-white font-semibold"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    New Request
+                    New Data Request
                   </Button>
                 )}
               </div>
@@ -619,7 +619,6 @@ export default function Dashboard() {
                     <TableHead>Requester</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Priority</TableHead>
                     <TableHead>Request Status</TableHead>
                     <TableHead>Delivery Status</TableHead>
                     <TableHead>Assigned To</TableHead>
@@ -630,14 +629,14 @@ export default function Dashboard() {
                 <TableBody>
                   {isRequestsLoading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                      <TableCell colSpan={9} className="text-center py-8">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                         Loading requests...
                       </TableCell>
                     </TableRow>
                   ) : filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         No requests found matching your criteria
                       </TableCell>
                     </TableRow>
@@ -665,12 +664,6 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell className="capitalize">{request.department}</TableCell>
                         <TableCell>{formatRequestType(request.type)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {getPriorityIcon(request.priority)}
-                            <span className="capitalize">{request.priority}</span>
-                          </div>
-                        </TableCell>
                         <TableCell>
                           <Badge className={`status-badge ${getStatusBadge(request.status)}`}>
                             {formatStatus(request.status)}
@@ -719,7 +712,21 @@ export default function Dashboard() {
                             <span className="text-sm text-muted-foreground italic">Unassigned</span>
                           )}
                         </TableCell>
-                        <TableCell>{formatDate(request.dueDate.toString())}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            const dueDate = new Date(request.dueDate);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            dueDate.setHours(0, 0, 0, 0);
+                            const isOverdue = dueDate < today && !request.deliveredAt;
+                            
+                            return (
+                              <span className={isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : ''}>
+                                {formatDate(request.dueDate.toString())}
+                              </span>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Button
