@@ -2,98 +2,7 @@
 
 ## Overview
 
-This is a full-stack data request management system for managing data requests and analytics workflows. It enables team leads to submit data requests and data analysts to manage, review, and complete them. The system provides request tracking with status management, commenting, email/password authentication, and analytics dashboards. It is built with React, shadcn/ui, Express, and PostgreSQL, focusing on a modern, responsive user experience. The business vision is to streamline data request workflows, improve transparency, and provide actionable insights into data operations.
-
-## Recent Changes
-
-**October 13, 2025 - Enhanced Delete Functionality for Primary Data Lead**
-- Implemented professional delete confirmation dialog using shadcn AlertDialog
-- Delete functionality exclusively available on Dashboard for primary Data Lead only (abdur.rehman@taleemabad.com)
-- Replaced basic browser confirm() with polished AlertDialog showing:
-  - Warning icon and clear "Delete Request" title
-  - Request details (title, requester, type) before deletion
-  - Cancel and Delete buttons with loading state
-  - Success/error toast notifications
-- Security: Backend verifies user email and role before allowing deletion
-- UX: Delete button has tooltip "Delete Request (Admin Only)" and red destructive styling
-- Other portals (All Requests, My Requests, My Assignments) have no delete functionality
-
-**October 13, 2025 - Column Layout Updates Across All Portals**
-- Updated Dashboard table: Changed "Description" column to "Requester" to display requester name
-- Updated All Requests table: Changed "Title" column to "Requester" to display requester name
-- Updated My Requests table: Changed "Title" column to "Type" to display request type (since user already knows they're the requester)
-- Updated My Assignments table: Changed "Title" column to "Type" to display request type (already had "Requester" column)
-- Provides better context at a glance: Data Leads see who requested items, while Requesters and Analysts see request types
-
-**October 12, 2025 - Comprehensive Real-Time Notification System**
-- Implemented comprehensive notification system for all platform actions
-- Added notification types: status_changed, priority_changed, deadline_changed (in addition to existing types)
-- Created notifications for all key actions:
-  - Comments: All stakeholders (requester, analyst, data lead) receive notifications when someone adds a comment
-  - Blockers: Requester and data lead receive notifications when analyst adds a blocker
-  - Status changes: Requester and data lead receive notifications when analyst updates status
-  - Priority/deadline changes: Requester and analyst receive notifications when data lead changes priority or deadline
-  - Request submission: All data leads receive notifications (already existed)
-  - Request assignment: Analyst and requester receive notifications (already existed)
-  - Accept/reject: Appropriate stakeholders receive notifications (already existed)
-- All notifications include actor identification, request context, and action details
-- WebSocket real-time broadcasting ensures instant notification delivery to all stakeholders
-- Bell icon with unread count badge in header shows notification status
-- Notification dropdown panel allows users to view and mark notifications as read
-- System excludes notification actors from receiving their own notifications
-
-**October 12, 2025 - Request Form UX Improvements**
-- Removed duplicate "What happens next?" blue info box from new request form
-- Made detailed "What's Next?" workflow section always visible (removed collapsible toggle)
-- Added success toast notification after form submission
-- Implemented auto-redirect to Dashboard after successful form submission (500ms delay to show toast)
-- All stakeholders (Requester, Data Lead, Analyst) benefit from improved form experience
-
-**October 12, 2025 - Real-Time Updates & Accept/Reject Button Fix**
-- Fixed real-time updates: Request detail dialogs now auto-refresh when data changes via WebSocket notifications
-- Added auto-update logic to all pages with request dialogs (Dashboard, All Requests, My Assignments, Pending Reviews)
-- Fixed Accept/Reject buttons to appear for ALL review-pending statuses (submitted, under_review, pending_review)
-- Previously only showed buttons for "submitted" status, causing buttons to not appear for "under_review" and "pending_review" requests in production
-- Updated request detail dialog condition to check all three review statuses for Data Lead role
-- Users no longer need to refresh or reopen dialogs to see status changes - updates happen instantly
-
-**October 11, 2025 - Test Email Support for Production Testing**
-- Added test email support for production testing purposes
-- Test emails: ar09info@gmail.com (requester), ar92info@gmail.com (analyst)
-- Created isAllowedRequesterEmail() helper function in backend to centralize email validation
-- Updated frontend signup validation to accept test emails
-- Updated backend validation in 4 locations: role changes, email updates, invites, role selection
-- Test emails bypass company domain requirements for testing all workflows
-
-**October 11, 2025 - Request Detail Dialog Enhancements**
-- Made dialog fullscreen (98vw x 98vh) for better visibility
-- Added back button with ArrowLeft icon to dialog header
-- Improved header text alignment with flex layout
-- Updated information tile colors to be more vibrant and visible:
-  - Light mode: solid colors (purple-200, blue-200, green-200, orange-200)
-  - Dark mode: solid colors (purple-700, blue-700, green-700, orange-700)
-  - Enhanced borders and text contrast for better readability
-
-**October 10, 2025 - Extended Request Types and Form Fields**
-- Added new request types: BigQuery Access, Event Tracking, Metric Change, Pipeline Change, Recurring Report
-- Added team/sub-department field to data requests for better organizational tracking
-- Enhanced data bug request type with dedicated fields for bug description and location
-- Created type-specific form sections with collapsible UI for each new request type:
-  - BigQuery Access: email, datasets, and purpose fields
-  - Data Bug: bug description and location fields
-  - Event Tracking: event name, platform, and tracking details
-  - Metric Change: metric name, change type, and reason
-  - Pipeline Change: pipeline name, change type, and details
-- Updated database schema with new columns for all type-specific fields
-- Auto-populates department field from user profile on new requests
-
-**October 10, 2025 - Settings Page Enhancements**
-- Added email editing capability to Settings page with email format validation and duplicate email checking
-- Added username (firstName/lastName) editing capability to Settings page
-- Fixed dark mode to apply globally across all screens by correcting CSS selector from `body.dark` to `.dark body`
-- Added theme initialization in App.tsx to load saved theme preference from localStorage on app startup
-- Created backend API endpoints: `/api/auth/user/email` and `/api/auth/user/name` with proper validation
-- Theme persistence now works correctly across page reloads
+DataHub is a full-stack data request management system designed to streamline data request and analytics workflows. It facilitates data request submission by team leads and efficient management, review, and completion by data analysts. The system offers features such as request tracking with status management, commenting, email/password authentication, and analytics dashboards. Built with React, shadcn/ui, Express, and PostgreSQL, DataHub aims to provide a modern, responsive user experience, improve transparency in data operations, and deliver actionable insights.
 
 ## User Preferences
 
@@ -112,11 +21,10 @@ Preferred communication style: Simple, everyday language.
 - **Forms**: React Hook Form with Zod validation
 
 **Design Decisions:**
-- **Component Architecture**: Reusable UI components and domain-specific custom components.
-- **State Management Pattern**: Server state managed via React Query with aggressive caching; queries invalidated on mutations.
-- **Authentication Flow**: Email/password authentication with role-based access. Authenticated users redirected from /auth to dashboard to prevent 404 errors.
-- **Form Validation**: Zod schemas for consistent client and server-side validation.
-- **Routing**: Wouter-based routing with authenticated/unauthenticated route separation and proper redirect handling.
+- Reusable component architecture.
+- Server state managed via React Query with aggressive caching and mutation-based invalidation.
+- Email/password authentication with role-based access and redirection handling.
+- Zod schemas for consistent form validation.
 
 ### Backend Architecture
 
@@ -129,91 +37,63 @@ Preferred communication style: Simple, everyday language.
 - **Password Hashing**: Node.js scrypt with per-user salts
 
 **Design Decisions:**
-- **Modular Route Structure**: Centralized API routes with authentication middleware.
-- **Storage Abstraction**: `IStorage` interface for database operations.
-- **Session Persistence**: PostgreSQL-backed sessions.
+- Modular route structure with centralized authentication middleware.
+- `IStorage` interface for database operations.
+- PostgreSQL-backed session persistence.
 
 ### Database Schema
 
 **Core Tables:**
-- **users**: User profiles, roles, departments.
-- **dataRequests**: Data request details (title, type, priority, status, requester, assignee).
-- **attachments**: File attachment metadata.
-- **comments**: Threaded discussions on requests.
-- **blockers**: Tracks issues on requests.
-- **auth_logs**: Authentication events (signin, signup, signout, IP, user agent).
-- **sessions**: PostgreSQL-backed session storage.
+- `users`: User profiles, roles, departments.
+- `dataRequests`: Request details, status, priority, requester, assignee, delivery info.
+- `attachments`: File metadata.
+- `comments`: Threaded discussions.
+- `blockers`: Tracks request issues.
+- `auth_logs`: Authentication events.
+- `sessions`: Session storage.
 
 **Key Relationships:**
 - One-to-many: Users to data requests, data requests to attachments, data requests to comments.
 
 **Enums:**
-- Request status: `submitted`, `under_review`, `in_progress`, `completed`
+- Request status: `submitted`, `under_review`, `in_progress`, `completed`, `pending_review`
 - Request priority: `P0-Critical`, `P1-High`, `P2-Medium`, `P3-Low`
-- Request type: `New Dashboard/Report`, `Modify Dashboard/Report`, `Ad-hoc Analysis`, `Data Extraction`, `Data Bug`, `Other`
+- Request type: `New Dashboard/Report`, `Modify Dashboard/Report`, `Ad-hoc Analysis`, `Data Extraction`, `Data Bug`, `Other`, `BigQuery Access`, `Event Tracking`, `Metric Change`, `Pipeline Change`, `Recurring Report`
 - User roles: `team_lead`, `data_analyst`
 
 ### Authentication & Authorization
 
 **Email/Password Authentication:**
-- Passport.js with Local Strategy for email/password authentication.
-- Password hashing using Node.js scrypt with per-user salts.
-- User information and credentials stored in PostgreSQL.
-- Cookie-based sessions with express-session.
+- Passport.js with Local Strategy.
+- Node.js scrypt for password hashing with per-user salts.
+- Cookie-based sessions.
 
 **Onboarding Flow:**
-1. **For Requesters (self-signup)**:
-   - Role selection on landing page ("Data Requester")
-   - Email/password signup with company email validation (@taleemabad.com, @niete.edu.pk, @niete.pk)
-   - Department selection
-   - Auto-login and redirection to dashboard
-
-2. **For Analysts (invitation-only)**:
-   - Data Lead invites analyst via team management interface
-   - System sends password setup email with secure 24-hour token
-   - Analyst clicks link, sets password and name
-   - Auto-login and redirection to dashboard
-   - Cannot self-signup (invitation required)
-
-3. **For Data Leads (bootstrap)**:
-   - Primary Data Lead (abdur.rehman@taleemabad.com) is protected
-   - Additional Data Leads can only be added by existing Data Leads
-   - Cannot self-select role from landing page
+- **Requesters**: Self-signup with company email validation, department selection, auto-login.
+- **Analysts**: Invitation-only by Data Lead, password setup via secure token.
+- **Data Leads**: Bootstrap for primary Data Lead, additional Data Leads added by existing Data Leads only.
 
 **Authorization Model:**
-- **Role-based access control**:
-  - **Requester**: View own requests only (filtered by requestedById). **Requires company email** (@taleemabad.com or @niete.edu.pk).
-  - **Data Lead**: View ALL requests, accept/reject, **exclusively assign/unassign analysts**, set priority/deadline, manage team members (add/remove users, change roles).
-  - **Analyst**: View assigned requests only (filtered by assignedToId), add blockers, suggest deadlines, update status. **Added by Data Lead only** (no self-signup).
-- **Security Enforcements**:
-  - **Role Preservation**: Existing users' roles preserved on re-authentication; new users start with undefined role
-  - **Privilege Escalation Prevention**: 
-    - Team Lead role cannot be self-selected from landing page (only assigned by existing Data Leads)
-    - Users with roles cannot change their own role (must be changed by Data Lead)
-  - **Request Filtering**: 
-    - Requesters see ONLY their own requests (backend enforces requestedById filter)
-    - Analysts see ONLY assigned requests (backend enforces assignedToId filter)
-    - Team Leads see ALL requests (no filtering applied)
-  - **Email Validation**: Requester role restricted to company email domains (@taleemabad.com and @niete.edu.pk)
-  - **Role Assignment**: Only Data Lead can assign/modify user roles via team management interface
+- **Role-based Access Control**:
+  - **Requester**: View own requests (company email required).
+  - **Data Lead**: View all requests, accept/reject, assign/unassign analysts, set priority/deadline, manage team.
+  - **Analyst**: View assigned requests only, add blockers, update status.
+- **Security Enforcements**: Prevents privilege escalation, enforces role preservation, filters requests based on role, validates company email domains, restricts role assignment to Data Leads.
 - Analytics view restricted to Data Lead only.
 
 ### API Structure
 
 **RESTful Endpoints:**
-- `GET /api/auth/user`, `PATCH /api/auth/user/role`, `PATCH /api/auth/user/department`, `PATCH /api/auth/user/email`, `PATCH /api/auth/user/name`, `PATCH /api/auth/user/password`
-- `GET /api/users/analysts`
-- `POST /api/requests`, `GET /api/requests`, `GET /api/requests/:id`
-- `PATCH /api/requests/:id/status`, `PATCH /api/requests/:id/assign`, `PATCH /api/requests/:id/priority-deadline`
-- `POST /api/requests/:id/attachments`, `POST /api/requests/:id/comments`, `GET /api/requests/:id/comments`
-- `POST /api/objects/upload`
-- `GET /api/analytics/*`
-- `GET /api/auth-logs`
+- User management: `/api/auth/user`, `/api/auth/user/role`, `/api/auth/user/department`, `/api/auth/user/email`, `/api/auth/user/name`, `/api/auth/user/password`
+- Analyst listing: `/api/users/analysts`
+- Request management: `/api/requests`, `/api/requests/:id`, `/api/requests/:id/status`, `/api/requests/:id/assign`, `/api/requests/:id/priority-deadline`, `/api/requests/:id/delivery`
+- Content: `/api/requests/:id/attachments`, `/api/requests/:id/comments`
+- File upload: `/api/objects/upload`
+- Analytics: `/api/analytics/*`
+- Auth logs: `/api/auth-logs`
 
 **API Design Patterns:**
-- Authentication middleware.
-- Zod schema validation.
-- Consistent error handling and JSON response format.
+- Authentication middleware, Zod schema validation, consistent error handling.
 
 ## External Dependencies
 
@@ -222,7 +102,6 @@ Preferred communication style: Simple, everyday language.
 - **Connection Pooling**: `@neondatabase/serverless` with `pg.Pool`.
 - **Migration Strategy**: Drizzle Kit.
 
-
 **UI Component Library:**
 - **shadcn/ui**: Accessible components built on Radix UI.
 - **Radix UI**: Unstyled, accessible primitives.
@@ -230,5 +109,4 @@ Preferred communication style: Simple, everyday language.
 
 **Object Storage:**
 - **Replit Object Storage**: Cloud storage for file attachments (Google Cloud Storage backend).
-- **File Upload**: Uppy with AWS S3 plugin using pre-signed URLs.
-- **Limits**: Max 5 files, 10MB per file.
+- **File Upload**: Uppy with AWS S3 plugin using pre-signed URLs (max 5 files, 10MB each).
