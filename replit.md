@@ -6,6 +6,13 @@ This is a full-stack data request management system for managing data requests a
 
 ## Recent Changes
 
+**October 13, 2025 - Column Layout Updates Across All Portals**
+- Updated Dashboard table: Changed "Description" column to "Requester" to display requester name
+- Updated All Requests table: Changed "Title" column to "Requester" to display requester name
+- Updated My Requests table: Changed "Title" column to "Type" to display request type (since user already knows they're the requester)
+- Updated My Assignments table: Changed "Title" column to "Type" to display request type (already had "Requester" column)
+- Provides better context at a glance: Data Leads see who requested items, while Requesters and Analysts see request types
+
 **October 12, 2025 - Comprehensive Real-Time Notification System**
 - Implemented comprehensive notification system for all platform actions
 - Added notification types: status_changed, priority_changed, deadline_changed (in addition to existing types)
