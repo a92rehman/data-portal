@@ -185,28 +185,53 @@
   }
 
   .gradient-badge-submitted {
-    background: linear-gradient(135deg, hsl(210, 50%, 92%) 0%, hsl(220, 50%, 94%) 100%);
-    @apply border border-gray-300 text-gray-700;
+    background: linear-gradient(135deg, hsl(210, 70%, 85%) 0%, hsl(220, 70%, 88%) 100%);
+    @apply border-2 border-gray-400 text-gray-800 font-semibold;
+  }
+
+  .dark .gradient-badge-submitted {
+    background: linear-gradient(135deg, hsl(210, 50%, 30%) 0%, hsl(220, 50%, 35%) 100%);
+    @apply border-gray-600 text-gray-200;
   }
 
   .gradient-badge-review {
-    background: linear-gradient(135deg, hsl(199, 89%, 88%) 0%, hsl(209, 89%, 90%) 100%);
-    @apply border border-blue-300 text-blue-700;
+    background: linear-gradient(135deg, hsl(199, 89%, 80%) 0%, hsl(209, 89%, 83%) 100%);
+    @apply border-2 border-blue-400 text-blue-800 font-semibold;
+  }
+
+  .dark .gradient-badge-review {
+    background: linear-gradient(135deg, hsl(199, 70%, 35%) 0%, hsl(209, 70%, 40%) 100%);
+    @apply border-blue-600 text-blue-200;
   }
 
   .gradient-badge-progress {
-    background: linear-gradient(135deg, hsl(38, 92%, 85%) 0%, hsl(48, 92%, 87%) 100%);
-    @apply border border-yellow-300 text-yellow-800;
+    background: linear-gradient(135deg, hsl(38, 92%, 78%) 0%, hsl(48, 92%, 80%) 100%);
+    @apply border-2 border-yellow-400 text-yellow-900 font-semibold;
+  }
+
+  .dark .gradient-badge-progress {
+    background: linear-gradient(135deg, hsl(38, 80%, 40%) 0%, hsl(48, 80%, 45%) 100%);
+    @apply border-yellow-600 text-yellow-200;
   }
 
   .gradient-badge-completed {
-    background: linear-gradient(135deg, hsl(142, 71%, 85%) 0%, hsl(152, 71%, 87%) 100%);
-    @apply border border-green-300 text-green-800;
+    background: linear-gradient(135deg, hsl(142, 71%, 78%) 0%, hsl(152, 71%, 80%) 100%);
+    @apply border-2 border-green-400 text-green-900 font-semibold;
+  }
+
+  .dark .gradient-badge-completed {
+    background: linear-gradient(135deg, hsl(142, 60%, 35%) 0%, hsl(152, 60%, 40%) 100%);
+    @apply border-green-600 text-green-200;
   }
 
   .gradient-badge-cancelled {
-    background: linear-gradient(135deg, hsl(0, 50%, 90%) 0%, hsl(10, 50%, 92%) 100%);
-    @apply border border-red-300 text-red-800;
+    background: linear-gradient(135deg, hsl(0, 60%, 83%) 0%, hsl(10, 60%, 85%) 100%);
+    @apply border-2 border-red-400 text-red-900 font-semibold;
+  }
+
+  .dark .gradient-badge-cancelled {
+    background: linear-gradient(135deg, hsl(0, 60%, 35%) 0%, hsl(10, 60%, 40%) 100%);
+    @apply border-red-600 text-red-200;
   }
 
   /* React Toastify Custom Styles */
