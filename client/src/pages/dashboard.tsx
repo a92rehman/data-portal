@@ -592,7 +592,7 @@ export default function Dashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Urgency</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Requester</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Priority</TableHead>
@@ -629,7 +629,15 @@ export default function Dashboard() {
                             {calculateUrgency(request).label}
                           </Badge>
                         </TableCell>
-                        <TableCell>{request.title}</TableCell>
+                        <TableCell>
+                          {request.requestedBy ? (
+                            <span className="text-sm">
+                              {request.requestedBy.firstName} {request.requestedBy.lastName}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Unknown</span>
+                          )}
+                        </TableCell>
                         <TableCell className="capitalize">{request.department}</TableCell>
                         <TableCell>{formatRequestType(request.type)}</TableCell>
                         <TableCell>
