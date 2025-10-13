@@ -41,28 +41,45 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (data: z.infer<typeof forgotPasswordSchema>) => {
     setIsLoading(true);
+    console.log('[forgot-password] Starting password reset for:', data.email);
+    
     try {
       // Call backend to generate reset token
+      console.log('[forgot-password] Calling backend API...');
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: data.email }),
       });
 
+      console.log('[forgot-password] Backend response status:', response.status);
       const result = await response.json();
+      console.log('[forgot-password] Backend response data:', result);
 
       if (!response.ok) {
+        console.error('[forgot-password] Backend error:', result.message);
         throw new Error(result.message || "Failed to send reset link");
       }
 
       // If emailData is returned, send email via EmailJS
       if (result.emailData) {
         const { userName, userEmail, resetUrl } = result.emailData;
+        console.log('[forgot-password] EmailData received:', { userName, userEmail, resetUrlLength: resetUrl?.length });
+        
+        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+        const templateId = 'template_1hb8p6b';
+        
+        console.log('[forgot-password] EmailJS config:', { 
+          serviceId, 
+          templateId,
+          hasPublicKey: !!import.meta.env.VITE_EMAILJS_PUBLIC_KEY 
+        });
         
         // Send email using EmailJS with template_1hb8p6b
+        console.log('[forgot-password] Sending email via EmailJS...');
         const emailResult = await emailjs.send(
-          import.meta.env.VITE_EMAILJS_SERVICE_ID || '',
-          'template_1hb8p6b', // Password reset template ID
+          serviceId || '',
+          templateId,
           {
             to_name: userName,
             to_email: userEmail,
@@ -71,12 +88,23 @@ export default function ForgotPassword() {
           }
         );
 
-        console.log('[forgot-password] Reset email sent via EmailJS to:', userEmail, 'Status:', emailResult.status);
+        console.log('[forgot-password] ✓ Email sent successfully!', {
+          to: userEmail,
+          status: emailResult.status,
+          text: emailResult.text
+        });
+      } else {
+        console.warn('[forgot-password] No emailData in response - email not sent');
       }
 
+      console.log('[forgot-password] Password reset process completed successfully');
       setIsSubmitted(true);
     } catch (error: any) {
-      console.error('[forgot-password] Error:', error);
+      console.error('[forgot-password] ✗ Error occurred:', {
+        message: error.message,
+        stack: error.stack,
+        error: error
+      });
       toast({
         variant: "destructive",
         title: "Error",
