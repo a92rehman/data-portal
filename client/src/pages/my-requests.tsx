@@ -25,15 +25,23 @@ export default function MyRequests() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
   const [filters, setFilters] = useState({
-    status: "",
-    department: "",
-    priority: "",
-    type: "",
+    status: "all",
+    department: "all",
+    priority: "all",
+    type: "all",
   });
 
   // Fetch requests submitted by current user
+  const apiFilters = {
+    status: filters.status === "all" ? "" : filters.status,
+    department: filters.department === "all" ? "" : filters.department,
+    priority: filters.priority === "all" ? "" : filters.priority,
+    type: filters.type === "all" ? "" : filters.type,
+    requestedById: (user as any)?.id,
+  };
+  
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({
-    queryKey: ["/api/requests", { ...filters, requestedById: (user as any)?.id }],
+    queryKey: ["/api/requests", apiFilters],
     staleTime: Infinity,
     refetchInterval: 3000,
     refetchIntervalInBackground: true,
@@ -233,7 +241,7 @@ export default function MyRequests() {
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Statuses</SelectItem>
+                      <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="pending_review">Pending Review</SelectItem>
                       <SelectItem value="accepted">Accepted</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
@@ -251,7 +259,7 @@ export default function MyRequests() {
                       <SelectValue placeholder="All Priorities" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Priorities</SelectItem>
+                      <SelectItem value="all">All Priorities</SelectItem>
                       <SelectItem value="p0_critical">P0 - Critical</SelectItem>
                       <SelectItem value="p1_high">P1 - High</SelectItem>
                       <SelectItem value="p2_medium">P2 - Medium</SelectItem>
