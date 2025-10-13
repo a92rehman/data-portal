@@ -353,6 +353,9 @@ export default function Dashboard() {
     }
     const dueDate = new Date(request.dueDate);
     const deliveredDate = new Date(request.deliveredAt);
+    
+    // Compare only dates, not time - if delivered on same day or before, it's on time
+    dueDate.setHours(23, 59, 59, 999);
     const isOnTime = deliveredDate <= dueDate;
     return { isOnTime, deliveredAt: request.deliveredAt };
   };

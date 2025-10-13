@@ -698,6 +698,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     if (!request.deliveredAt) return false;
     const dueDate = new Date(request.dueDate);
     const deliveredDate = new Date(request.deliveredAt);
+    // Compare only dates, not time - if delivered on same day or before, it's on time
+    dueDate.setHours(23, 59, 59, 999);
     return deliveredDate <= dueDate;
   };
 
