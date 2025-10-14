@@ -2102,6 +2102,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Task Analytics Routes
+  app.get('/api/analytics/tasks/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead' && user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied. Only Data Lead and Analysts can view task analytics." });
+      }
+
+      const stats = await storage.getTaskStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching task stats:", error);
+      res.status(500).json({ message: "Failed to fetch task stats" });
+    }
+  });
+
+  app.get('/api/analytics/tasks/by-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead' && user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied." });
+      }
+
+      const stats = await storage.getTasksByStatus();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching task status stats:", error);
+      res.status(500).json({ message: "Failed to fetch task status stats" });
+    }
+  });
+
+  app.get('/api/analytics/tasks/by-assignee', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead' && user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied." });
+      }
+
+      const stats = await storage.getTasksByAssignee();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching task assignee stats:", error);
+      res.status(500).json({ message: "Failed to fetch task assignee stats" });
+    }
+  });
+
+  app.get('/api/analytics/tasks/request-linked', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead' && user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied." });
+      }
+
+      const stats = await storage.getTasksRequestLinked();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching request-linked stats:", error);
+      res.status(500).json({ message: "Failed to fetch request-linked stats" });
+    }
+  });
+
   // Auth logs - restricted to Data Lead only
   app.get('/api/auth-logs', isAuthenticated, async (req: any, res) => {
     try {

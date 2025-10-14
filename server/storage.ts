@@ -106,6 +106,19 @@ export interface IStorage {
   getTypeStats(): Promise<{ type: string; count: number }[]>;
   getPriorityStats(): Promise<{ priority: string; count: number }[]>;
   
+  // Task Analytics operations
+  getTaskStats(): Promise<{
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    avgExpectedTime: number;
+  }>;
+  getTasksByStatus(): Promise<{ status: string; count: number }[]>;
+  getTasksByAssignee(): Promise<{ assignee: string; firstName: string; lastName: string; count: number }[]>;
+  getTasksRequestLinked(): Promise<{ linked: string; count: number }[]>;
+  
   // Auth logging operations
   logAuthEvent(userId: string, eventType: 'signup' | 'signin' | 'signout' | 'password_reset_requested' | 'password_reset_completed', ipAddress?: string, userAgent?: string): Promise<AuthLog>;
   getRecentAuthLogs(limit?: number): Promise<(AuthLog & { user: User })[]>;
@@ -636,6 +649,83 @@ export class DatabaseStorage implements IStorage {
       .groupBy(dataRequests.priority);
 
     return results.map(r => ({ priority: r.priority, count: r.count }));
+  }
+
+  // Task Analytics Methods
+  async getTaskStats(): Promise<{
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    avgExpectedTime: number;
+  }> {
+    const allTasks = await db.select().from(tasks);
+    
+    const totalTasks = allTasks.length;
+    const toDo = allTasks.filter(t => t.status === 'to_do').length;
+    const inProgress = allTasks.filter(t => t.status === 'in_progress').length;
+    const blocked = allTasks.filter(t => t.status === 'blocked').length;
+    const completed = allTasks.filter(t => t.status === 'completed').length;
+    
+    const tasksWithTime = allTasks.filter(t => t.expectedTime != null);
+    const avgExpectedTime = tasksWithTime.length > 0
+      ? tasksWithTime.reduce((sum, t) => sum + (t.expectedTime || 0), 0) / tasksWithTime.length
+      : 0;
+
+    return {
+      totalTasks,
+      toDo,
+      inProgress,
+      blocked,
+      completed,
+      avgExpectedTime: Number(avgExpectedTime.toFixed(1)),
+    };
+  }
+
+  async getTasksByStatus(): Promise<{ status: string; count: number }[]> {
+    const results = await db
+      .select({
+        status: tasks.status,
+        count: count(),
+      })
+      .from(tasks)
+      .groupBy(tasks.status);
+
+    return results.map(r => ({ status: r.status, count: r.count }));
+  }
+
+  async getTasksByAssignee(): Promise<{ assignee: string; firstName: string; lastName: string; count: number }[]> {
+    const results = await db
+      .select({
+        assignee: tasks.assignedToId,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        count: count(),
+      })
+      .from(tasks)
+      .leftJoin(users, eq(tasks.assignedToId, users.id))
+      .where(isNotNull(tasks.assignedToId))
+      .groupBy(tasks.assignedToId, users.firstName, users.lastName);
+
+    return results.map(r => ({
+      assignee: r.assignee || 'Unassigned',
+      firstName: r.firstName || '',
+      lastName: r.lastName || '',
+      count: r.count,
+    }));
+  }
+
+  async getTasksRequestLinked(): Promise<{ linked: string; count: number }[]> {
+    const allTasks = await db.select().from(tasks);
+    
+    const requestLinked = allTasks.filter(t => t.requestId != null).length;
+    const selfCreated = allTasks.filter(t => t.requestId == null).length;
+
+    return [
+      { linked: 'Request-Related', count: requestLinked },
+      { linked: 'Self-Created', count: selfCreated },
+    ];
   }
 
   async deleteDataRequest(id: string): Promise<void> {
