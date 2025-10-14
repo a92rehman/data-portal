@@ -6,6 +6,7 @@ import {
   blockers,
   authLogs,
   notifications,
+  tasks,
   type User,
   type UpsertUser,
   type DataRequest,
@@ -20,7 +21,10 @@ import {
   type InsertAuthLog,
   type Notification,
   type InsertNotification,
+  type Task,
+  type InsertTask,
   type DataRequestWithDetails,
+  type TaskWithDetails,
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, or, count, sql } from "drizzle-orm";
@@ -111,6 +115,22 @@ export interface IStorage {
   getUserNotifications(userId: string, unreadOnly?: boolean): Promise<Notification[]>;
   markNotificationAsRead(id: string): Promise<Notification | undefined>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
+  
+  // Task operations
+  createTask(task: InsertTask, createdById: string): Promise<Task>;
+  updateTask(id: string, task: Partial<InsertTask>): Promise<Task | undefined>;
+  getTask(id: string): Promise<TaskWithDetails | undefined>;
+  getTasks(filters?: {
+    status?: string;
+    assignedToId?: string;
+    createdById?: string;
+    requestId?: string;
+  }): Promise<TaskWithDetails[]>;
+  assignTask(id: string, assignedToId: string): Promise<Task | undefined>;
+  updateTaskStatus(id: string, status: string): Promise<Task | undefined>;
+  deleteTask(id: string): Promise<void>;
+  calculatePertTime(optimistic: number, mostLikely: number, pessimistic: number): number;
+  getUserWorkload(userId: string): Promise<{ tasks: TaskWithDetails[]; totalExpectedHours: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -848,6 +868,199 @@ export class DatabaseStorage implements IStorage {
       .update(notifications)
       .set({ read: 'true' })
       .where(and(eq(notifications.userId, userId), eq(notifications.read, 'false')));
+  }
+
+  // Task operations
+  calculatePertTime(optimistic: number, mostLikely: number, pessimistic: number): number {
+    // PERT formula: (O + 4M + P) / 6
+    return (optimistic + (4 * mostLikely) + pessimistic) / 6;
+  }
+
+  async createTask(task: InsertTask, createdById: string): Promise<Task> {
+    // Calculate expected time if PERT values are provided
+    let expectedTime: number | undefined;
+    if (task.optimisticTime !== undefined && task.optimisticTime !== null && 
+        task.mostLikelyTime !== undefined && task.mostLikelyTime !== null &&
+        task.pessimisticTime !== undefined && task.pessimisticTime !== null) {
+      expectedTime = this.calculatePertTime(
+        Number(task.optimisticTime), 
+        Number(task.mostLikelyTime), 
+        Number(task.pessimisticTime)
+      );
+    }
+
+    const [newTask] = await db
+      .insert(tasks)
+      .values({
+        ...task,
+        createdById,
+        expectedTime,
+        updatedAt: new Date(),
+      })
+      .returning();
+    return newTask;
+  }
+
+  async updateTask(id: string, taskUpdate: Partial<InsertTask>): Promise<Task | undefined> {
+    // Recalculate expected time if PERT values are updated
+    let expectedTime: number | undefined;
+    const currentTask = await db.select().from(tasks).where(eq(tasks.id, id)).limit(1);
+    
+    if (currentTask.length > 0) {
+      const optimistic = taskUpdate.optimisticTime !== undefined ? taskUpdate.optimisticTime : currentTask[0].optimisticTime;
+      const mostLikely = taskUpdate.mostLikelyTime !== undefined ? taskUpdate.mostLikelyTime : currentTask[0].mostLikelyTime;
+      const pessimistic = taskUpdate.pessimisticTime !== undefined ? taskUpdate.pessimisticTime : currentTask[0].pessimisticTime;
+      
+      if (optimistic !== undefined && optimistic !== null && 
+          mostLikely !== undefined && mostLikely !== null && 
+          pessimistic !== undefined && pessimistic !== null) {
+        expectedTime = this.calculatePertTime(Number(optimistic), Number(mostLikely), Number(pessimistic));
+      }
+    }
+
+    const [updated] = await db
+      .update(tasks)
+      .set({
+        ...taskUpdate,
+        ...(expectedTime !== undefined && { expectedTime }),
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getTask(id: string): Promise<TaskWithDetails | undefined> {
+    const [task] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, id))
+      .limit(1);
+
+    if (!task) return undefined;
+
+    // Get assignedTo user
+    const assignedTo = task.assignedToId 
+      ? (await this.getUser(task.assignedToId)) || null
+      : null;
+
+    // Get createdBy user
+    const createdBy = (await this.getUser(task.createdById))!;
+
+    // Get request
+    const request = task.requestId
+      ? await db.select().from(dataRequests).where(eq(dataRequests.id, task.requestId)).limit(1).then(r => r[0] || null)
+      : null;
+
+    return {
+      ...task,
+      assignedTo,
+      createdBy: createdBy!,
+      request,
+    };
+  }
+
+  async getTasks(filters?: {
+    status?: string;
+    assignedToId?: string;
+    createdById?: string;
+    requestId?: string;
+  }): Promise<TaskWithDetails[]> {
+    const conditions = [];
+    
+    if (filters?.status) {
+      conditions.push(eq(tasks.status, filters.status as any));
+    }
+    if (filters?.assignedToId) {
+      conditions.push(eq(tasks.assignedToId, filters.assignedToId));
+    }
+    if (filters?.createdById) {
+      conditions.push(eq(tasks.createdById, filters.createdById));
+    }
+    if (filters?.requestId) {
+      conditions.push(eq(tasks.requestId, filters.requestId));
+    }
+
+    const query = db
+      .select()
+      .from(tasks)
+      .orderBy(desc(tasks.createdAt));
+
+    const taskList = conditions.length > 0 
+      ? await query.where(and(...conditions))
+      : await query;
+
+    // Fetch related data for each task
+    const tasksWithDetails = await Promise.all(
+      taskList.map(async (task) => {
+        const assignedTo = task.assignedToId 
+          ? (await this.getUser(task.assignedToId)) || null
+          : null;
+        const createdBy = (await this.getUser(task.createdById))!;
+        const request = task.requestId
+          ? await db.select().from(dataRequests).where(eq(dataRequests.id, task.requestId)).limit(1).then(r => r[0] || null)
+          : null;
+
+        return {
+          ...task,
+          assignedTo,
+          createdBy,
+          request,
+        };
+      })
+    );
+
+    return tasksWithDetails;
+  }
+
+  async assignTask(id: string, assignedToId: string): Promise<Task | undefined> {
+    const [task] = await db
+      .update(tasks)
+      .set({
+        assignedToId,
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, id))
+      .returning();
+    return task;
+  }
+
+  async updateTaskStatus(id: string, status: string): Promise<Task | undefined> {
+    const updateData: any = {
+      status: status as any,
+      updatedAt: new Date(),
+    };
+
+    // If marking as completed, set completedAt
+    if (status === 'completed') {
+      updateData.completedAt = new Date();
+    }
+
+    const [task] = await db
+      .update(tasks)
+      .set(updateData)
+      .where(eq(tasks.id, id))
+      .returning();
+    return task;
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    await db.delete(tasks).where(eq(tasks.id, id));
+  }
+
+  async getUserWorkload(userId: string): Promise<{ tasks: TaskWithDetails[]; totalExpectedHours: number }> {
+    const userTasks = await this.getTasks({ assignedToId: userId });
+    
+    // Filter out completed tasks and calculate total expected hours
+    const activeTasks = userTasks.filter(t => t.status !== 'completed');
+    const totalExpectedHours = activeTasks.reduce((sum, task) => {
+      return sum + (task.expectedTime || 0);
+    }, 0);
+
+    return {
+      tasks: userTasks,
+      totalExpectedHours,
+    };
   }
 }
 

@@ -1833,6 +1833,227 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Task routes
+  app.post('/api/tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      // Only team leads and analysts can create tasks
+      if (!user || (user.role !== 'team_lead' && user.role !== 'analyst')) {
+        return res.status(403).json({ message: "Only team leads and analysts can create tasks" });
+      }
+      
+      // Validate and sanitize task data
+      const taskSchema = z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        optimisticTime: z.number().nonnegative().optional(),
+        mostLikelyTime: z.number().nonnegative().optional(),
+        pessimisticTime: z.number().nonnegative().optional(),
+        assignedToId: z.string().optional(),
+        requestId: z.string().optional(),
+        dueDate: z.string().optional(),
+      });
+      
+      const taskData = taskSchema.parse(req.body);
+      
+      // Transform dueDate string to Date if provided
+      const transformedData = {
+        ...taskData,
+        dueDate: taskData.dueDate ? new Date(taskData.dueDate) : undefined,
+      };
+      
+      // Create task
+      const task = await storage.createTask(transformedData, req.user.id);
+      
+      res.json(task);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid task data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create task" });
+    }
+  });
+
+  app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      const filters: any = {};
+
+      // Filter based on query params
+      if (req.query.status) filters.status = req.query.status;
+      if (req.query.requestId) filters.requestId = req.query.requestId;
+
+      // Role-based filtering - STRICTLY ENFORCED
+      if (user?.role === 'analyst') {
+        // Analysts see ONLY tasks assigned to them - NO BYPASS
+        filters.assignedToId = user.id;
+      } else if (user?.role === 'team_lead') {
+        // Team leads can see all tasks or filter by assignee
+        if (req.query.assignedToId) {
+          filters.assignedToId = req.query.assignedToId;
+        }
+      } else {
+        // Requesters cannot access tasks
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const tasks = await storage.getTasks(filters);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ message: "Failed to fetch tasks" });
+    }
+  });
+
+  app.get('/api/tasks/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const task = await storage.getTask(req.params.id);
+      
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Check permissions: assignee, creator, or team lead can view
+      const user = await storage.getUser(req.user.id);
+      const canView = 
+        task.assignedToId === req.user.id ||
+        task.createdById === req.user.id ||
+        user?.role === 'team_lead';
+
+      if (!canView) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(task);
+    } catch (error) {
+      console.error("Error fetching task:", error);
+      res.status(500).json({ message: "Failed to fetch task" });
+    }
+  });
+
+  app.patch('/api/tasks/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const task = await storage.getTask(req.params.id);
+      
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Check permissions: assignee, creator, or team lead can update
+      const user = await storage.getUser(req.user.id);
+      const canUpdate = 
+        task.assignedToId === req.user.id ||
+        task.createdById === req.user.id ||
+        user?.role === 'team_lead';
+
+      if (!canUpdate) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updatedTask = await storage.updateTask(req.params.id, req.body);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("Error updating task:", error);
+      res.status(500).json({ message: "Failed to update task" });
+    }
+  });
+
+  app.patch('/api/tasks/:id/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const { status } = req.body;
+      
+      if (!status || !['to_do', 'in_progress', 'blocked', 'completed'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const task = await storage.getTask(req.params.id);
+      
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Check permissions
+      const user = await storage.getUser(req.user.id);
+      const canUpdate = 
+        task.assignedToId === req.user.id ||
+        task.createdById === req.user.id ||
+        user?.role === 'team_lead';
+
+      if (!canUpdate) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updatedTask = await storage.updateTaskStatus(req.params.id, status);
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      res.status(500).json({ message: "Failed to update task status" });
+    }
+  });
+
+  app.patch('/api/tasks/:id/assign', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      const { assignedToId } = req.body;
+
+      // Team lead can assign to anyone, analysts can self-assign
+      const canAssign = user?.role === 'team_lead' || assignedToId === req.user.id;
+
+      if (!canAssign) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const task = await storage.assignTask(req.params.id, assignedToId);
+      res.json(task);
+    } catch (error) {
+      console.error("Error assigning task:", error);
+      res.status(500).json({ message: "Failed to assign task" });
+    }
+  });
+
+  app.delete('/api/tasks/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      const task = await storage.getTask(req.params.id);
+      
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+
+      // Only creator or team lead can delete
+      const canDelete = task.createdById === req.user.id || user?.role === 'team_lead';
+
+      if (!canDelete) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      await storage.deleteTask(req.params.id);
+      res.json({ message: "Task deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      res.status(500).json({ message: "Failed to delete task" });
+    }
+  });
+
+  app.get('/api/tasks/workload/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      // Team leads can view anyone's workload, users can view their own
+      if (user?.role !== 'team_lead' && req.params.userId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const workload = await storage.getUserWorkload(req.params.userId);
+      res.json(workload);
+    } catch (error) {
+      console.error("Error fetching workload:", error);
+      res.status(500).json({ message: "Failed to fetch workload" });
+    }
+  });
+
   // Analytics routes
   app.get('/api/analytics/stats', isAuthenticated, async (req: any, res) => {
     try {

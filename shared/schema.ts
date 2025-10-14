@@ -9,6 +9,7 @@ import {
   pgEnum,
   integer,
   serial,
+  real,
 } from "drizzle-orm/pg-core";
 import { relations } from 'drizzle-orm';
 import { createInsertSchema } from "drizzle-zod";
@@ -108,6 +109,14 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "status_changed",
   "priority_changed",
   "deadline_changed"
+]);
+
+// Task status enum
+export const taskStatusEnum = pgEnum("task_status", [
+  "to_do",
+  "in_progress",
+  "blocked",
+  "completed"
 ]);
 
 // Data requests table
@@ -242,6 +251,28 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Tasks table for task management with PERT calculations
+export const tasks = pgTable("tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  status: taskStatusEnum("status").notNull().default("to_do"),
+  assignedToId: varchar("assigned_to_id").references(() => users.id), // Can be analyst or team lead
+  requestId: varchar("request_id").references(() => dataRequests.id, { onDelete: 'cascade' }), // Optional link to request
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  
+  // PERT time estimation fields (in hours)
+  optimisticTime: real("optimistic_time"), // Best case scenario
+  mostLikelyTime: real("most_likely_time"), // Most realistic estimate
+  pessimisticTime: real("pessimistic_time"), // Worst case scenario
+  expectedTime: real("expected_time"), // Calculated: (O + 4M + P) / 6
+  
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   requestedDataRequests: many(dataRequests, { relationName: "requestedBy" }),
@@ -251,6 +282,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   blockers: many(blockers),
   authLogs: many(authLogs),
   notifications: many(notifications),
+  assignedTasks: many(tasks, { relationName: "assignedTo" }),
+  createdTasks: many(tasks, { relationName: "createdBy" }),
 }));
 
 export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => ({
@@ -272,6 +305,7 @@ export const dataRequestsRelations = relations(dataRequests, ({ one, many }) => 
   comments: many(comments),
   attachments: many(attachments),
   blockers: many(blockers),
+  tasks: many(tasks),
 }));
 
 export const commentsRelations = relations(comments, ({ one }) => ({
@@ -325,6 +359,23 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  assignedTo: one(users, {
+    fields: [tasks.assignedToId],
+    references: [users.id],
+    relationName: "assignedTo",
+  }),
+  createdBy: one(users, {
+    fields: [tasks.createdById],
+    references: [users.id],
+    relationName: "createdBy",
+  }),
+  request: one(dataRequests, {
+    fields: [tasks.requestId],
+    references: [dataRequests.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertDataRequestSchema = createInsertSchema(dataRequests).omit({ 
@@ -360,6 +411,15 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   id: true, 
   createdAt: true 
 });
+export const insertTaskSchema = createInsertSchema(tasks).omit({ 
+  id: true, 
+  createdAt: true,
+  updatedAt: true,
+  createdById: true,
+  expectedTime: true // This is calculated
+}).extend({
+  dueDate: z.union([z.date(), z.string()]).transform((val) => val ? new Date(val) : null).optional()
+});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -376,6 +436,8 @@ export type InsertAuthLog = z.infer<typeof insertAuthLogSchema>;
 export type AuthLog = typeof authLogs.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Task = typeof tasks.$inferSelect;
 
 // Extended types for API responses
 export type DataRequestWithDetails = DataRequest & {
@@ -385,4 +447,10 @@ export type DataRequestWithDetails = DataRequest & {
   comments: (Comment & { user: User })[];
   attachments: (Attachment & { uploadedBy: User })[];
   blockers: (Blocker & { reportedBy: User })[];
+};
+
+export type TaskWithDetails = Task & {
+  assignedTo: User | null;
+  createdBy: User;
+  request: DataRequest | null;
 };
