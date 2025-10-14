@@ -10,11 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, CheckCircle2, AlertCircle, Plus, User as UserIcon, Calendar as CalendarIcon, ListTodo, BarChart2, Info, ListChecks } from "lucide-react";
+import { Clock, CheckCircle2, AlertCircle, Plus, User as UserIcon, Calendar as CalendarIcon, ListTodo, BarChart2, Info, ListChecks, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import type { TaskWithDetails, User } from "@shared/schema";
@@ -370,10 +371,15 @@ function TaskDetailDialog({
   onClose: () => void;
   onUpdate: () => void;
 }) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [showSubTaskForm, setShowSubTaskForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingSubTaskId, setDeletingSubTaskId] = useState<string | null>(null);
+
+  const isTeamLead = (user as any)?.role === "team_lead";
 
   // Fetch sub-tasks
   const { data: subTasks = [] } = useQuery<TaskWithDetails[]>({
@@ -396,6 +402,47 @@ function TaskDetailDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({ title: "Success", description: "Task status updated" });
       onUpdate();
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      return await apiRequest("DELETE", `/api/tasks/${taskId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({ title: "Success", description: "Task deleted successfully" });
+      setShowDeleteDialog(false);
+      onClose();
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete task",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteSubTaskMutation = useMutation({
+    mutationFn: async (subTaskId: string) => {
+      return await apiRequest("DELETE", `/api/tasks/${subTaskId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+      toast({ title: "Success", description: "Sub-task deleted successfully" });
+      setDeletingSubTaskId(null);
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete sub-task",
+        variant: "destructive",
+      });
+      setDeletingSubTaskId(null);
     },
   });
 
@@ -522,12 +569,28 @@ function TaskDetailDialog({
                           <p className="text-xs text-muted-foreground mt-1">{subTask.description}</p>
                         )}
                       </div>
-                      <Badge variant={subTask.status === 'completed' ? 'default' : 'outline'} className="text-xs">
-                        {subTask.status === 'to_do' && 'To Do'}
-                        {subTask.status === 'in_progress' && 'In Progress'}
-                        {subTask.status === 'blocked' && 'Blocked'}
-                        {subTask.status === 'completed' && 'Completed'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={subTask.status === 'completed' ? 'default' : 'outline'} className="text-xs">
+                          {subTask.status === 'to_do' && 'To Do'}
+                          {subTask.status === 'in_progress' && 'In Progress'}
+                          {subTask.status === 'blocked' && 'Blocked'}
+                          {subTask.status === 'completed' && 'Completed'}
+                        </Badge>
+                        {isTeamLead && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setDeletingSubTaskId(subTask.id);
+                            }}
+                            disabled={deleteSubTaskMutation.isPending}
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            data-testid={`button-delete-subtask-${subTask.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 ))
@@ -535,7 +598,68 @@ function TaskDetailDialog({
             </div>
           </div>
         </div>
+
+        {/* Dialog Footer with Delete Button */}
+        {isTeamLead && (
+          <DialogFooter className="border-t pt-4">
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              data-testid="button-delete-task"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Task
+            </Button>
+          </DialogFooter>
+        )}
       </DialogContent>
+
+      {/* Delete Task Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+              {subTasks.length > 0 && (
+                <span className="block mt-2 text-red-600 font-semibold">
+                  Warning: This will also delete all {subTasks.length} sub-task(s).
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTaskMutation.mutate(task.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Sub-Task Confirmation Dialog */}
+      <AlertDialog open={!!deletingSubTaskId} onOpenChange={(open) => !open && setDeletingSubTaskId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Sub-Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this sub-task? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingSubTaskId && deleteSubTaskMutation.mutate(deletingSubTaskId)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteSubTaskMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

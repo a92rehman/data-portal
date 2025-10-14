@@ -44,7 +44,9 @@ import {
   FileText,
   Calendar,
   RefreshCw,
-  Edit
+  Edit,
+  ListTodo,
+  Plus
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -65,6 +67,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "");
   const [editedPriority, setEditedPriority] = useState(request.priority);
   const [editedDueDate, setEditedDueDate] = useState(new Date(request.dueDate).toISOString().split('T')[0]);
+  const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
   
   const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
@@ -85,6 +90,19 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
     enabled: (user as any)?.role === "team_lead" || (user as any)?.role === "analyst",
+  });
+
+  // Fetch tasks linked to this request
+  const { data: requestTasks = [] } = useQuery<any[]>({
+    queryKey: ["/api/requests", request.id, "tasks"],
+    queryFn: async () => {
+      const response = await fetch(`/api/requests/${request.id}/tasks`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch request tasks');
+      return response.json();
+    },
+    enabled: !!(user && request.id),
   });
 
   const analystForm = useForm({
@@ -456,6 +474,30 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       toast({
         title: "Error",
         description: error.message || "Failed to complete request",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createTaskMutation = useMutation({
+    mutationFn: async (data: { title: string; description?: string; requestId: string; assignedToId?: string }) => {
+      return await apiRequest("POST", "/api/tasks", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Task created successfully",
+      });
+      setShowCreateTaskDialog(false);
+      setNewTaskTitle("");
+      setNewTaskDescription("");
+      queryClient.invalidateQueries({ queryKey: ["/api/requests", request.id, "tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create task",
         variant: "destructive",
       });
     },
@@ -1810,7 +1852,136 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </CardContent>
           </Card>
         </div>
+
+        {/* 6. Tasks Section - Full Width */}
+        {request.assignedToId && (
+          <div className="px-6 py-4 border-t">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ListTodo className="w-5 h-5" />
+                    Linked Tasks ({requestTasks.length})
+                  </CardTitle>
+                  {((user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowCreateTaskDialog(true)}
+                      data-testid="button-create-task"
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Create Task
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {requestTasks.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                    <ListTodo className="w-12 h-12 mx-auto text-muted-foreground/40 mb-2" />
+                    <p className="text-sm text-muted-foreground">No tasks created yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Create tasks to organize the work for this request</p>
+                  </div>
+                ) : (
+                  requestTasks.map((task: any) => (
+                    <div key={task.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm mb-1">{task.title}</h4>
+                          {task.description && (
+                            <p className="text-xs text-muted-foreground mb-2">{task.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {task.assignedTo && (
+                              <span>Assigned to: {task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                            )}
+                            <Badge variant="outline" className="text-xs">
+                              {task.status === 'to_do' && 'To Do'}
+                              {task.status === 'in_progress' && 'In Progress'}
+                              {task.status === 'blocked' && 'Blocked'}
+                              {task.status === 'completed' && 'Completed'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => window.location.href = '/tasks'}
+                          className="text-purple-600 hover:text-purple-700"
+                        >
+                          View
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </ScrollArea>
+
+      {/* Create Task Dialog */}
+      <Dialog open={showCreateTaskDialog} onOpenChange={setShowCreateTaskDialog}>
+        <DialogContent data-testid="dialog-create-task">
+          <DialogHeader>
+            <DialogTitle>Create Task</DialogTitle>
+            <DialogDescription>
+              Create a new task linked to this request
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium">Task Title</label>
+              <Input
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Enter task title..."
+                className="mt-1"
+                data-testid="input-task-title"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description (Optional)</label>
+              <Textarea
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                placeholder="Enter task description..."
+                className="mt-1"
+                rows={3}
+                data-testid="input-task-description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateTaskDialog(false);
+                setNewTaskTitle("");
+                setNewTaskDescription("");
+              }}
+              data-testid="button-cancel-create-task"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createTaskMutation.mutate({
+                title: newTaskTitle,
+                description: newTaskDescription || undefined,
+                requestId: request.id,
+                assignedToId: request.assignedToId || undefined,
+              })}
+              disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
+              data-testid="button-confirm-create-task"
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {createTaskMutation.isPending ? "Creating..." : "Create Task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reject Request Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
