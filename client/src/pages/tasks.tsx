@@ -192,14 +192,15 @@ export default function Tasks() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar 
-        onNewRequest={() => setLocation("/new-request")} 
-        user={user as any} 
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header user={user as any} />
-        <main className="flex-1 overflow-y-auto p-6">
+    <div className="min-h-screen">
+      <Header user={user as any} />
+      
+      <div className="flex">
+        <Sidebar 
+          onNewRequest={() => setLocation("/new-request")} 
+          user={user as any} 
+        />
+        <main className="flex-1 p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
