@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataHub is a full-stack data request management system designed to streamline data request and analytics workflows. It facilitates data request submission by team leads and efficient management, review, and completion by data analysts. The system offers features such as request tracking with status management, commenting, email/password authentication, and analytics dashboards. Built with React, shadcn/ui, Express, and PostgreSQL, DataHub aims to provide a modern, responsive user experience, improve transparency in data operations, and deliver actionable insights.
+DataHub is a full-stack data request management system designed to streamline data request and analytics workflows. It facilitates data request submission by team leads and efficient management, review, and completion by data analysts. The system offers features such as request tracking with status management, commenting, email/password authentication, task management with PERT time estimation, and comprehensive analytics dashboards. Built with React, shadcn/ui, Express, and PostgreSQL, DataHub aims to provide a modern, responsive user experience, improve transparency in data operations, and deliver actionable insights.
 
 ## User Preferences
 
@@ -46,6 +46,7 @@ Preferred communication style: Simple, everyday language.
 **Core Tables:**
 - `users`: User profiles, roles, departments.
 - `dataRequests`: Request details, status, priority, requester, assignee, delivery info.
+- `tasks`: Task tracking with PERT time estimation, Kanban status, request linkage.
 - `attachments`: File metadata.
 - `comments`: Threaded discussions.
 - `blockers`: Tracks request issues.
@@ -87,9 +88,10 @@ Preferred communication style: Simple, everyday language.
 - User management: `/api/auth/user`, `/api/auth/user/role`, `/api/auth/user/department`, `/api/auth/user/email`, `/api/auth/user/name`, `/api/auth/user/password`
 - Analyst listing: `/api/users/analysts`
 - Request management: `/api/requests`, `/api/requests/:id`, `/api/requests/:id/status`, `/api/requests/:id/assign`, `/api/requests/:id/priority-deadline`, `/api/requests/:id/delivery`
+- Task management: `/api/tasks`, `/api/tasks/:id`, `/api/tasks/:id/status`
 - Content: `/api/requests/:id/attachments`, `/api/requests/:id/comments`
 - File upload: `/api/objects/upload`
-- Analytics: `/api/analytics/*`
+- Analytics: `/api/analytics/*` (requests and tasks analytics)
 - Auth logs: `/api/auth-logs`
 
 **API Design Patterns:**
