@@ -157,6 +157,49 @@ export default function RequestAssignments() {
     return variants[status as keyof typeof variants] || "gradient-badge-submitted";
   };
 
+  const getDeliveryStatus = (request: DataRequestWithDetails) => {
+    // If delivered, check if on time or late
+    if (request.deliveredAt) {
+      const dueDate = new Date(request.dueDate);
+      const deliveredDate = new Date(request.deliveredAt);
+      
+      // Compare only dates, not time - if delivered on same day or before, it's on time
+      dueDate.setHours(23, 59, 59, 999);
+      const isOnTime = deliveredDate <= dueDate;
+      return { status: 'delivered', isOnTime };
+    }
+    
+    // Not delivered yet
+    return { status: 'not_yet' };
+  };
+
+  // Sort requests by workflow order
+  const sortedRequests = [...filteredRequests].sort((a, b) => {
+    const statusOrder = {
+      'pending_review': 1,
+      'accepted': 2,
+      'assigned': 2, // Same as accepted - it's the initial state after assignment
+      'in_progress': 3,
+      'blocked': 4,
+      'completed': 5,
+      'rejected': 6,
+      'cancelled': 6, // Same as rejected - terminal state
+    };
+    
+    const orderA = statusOrder[a.status as keyof typeof statusOrder] || 999;
+    const orderB = statusOrder[b.status as keyof typeof statusOrder] || 999;
+    
+    // Primary sort: by status
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    
+    // Secondary sort: by creation date (newest first)
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
+  });
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -223,58 +266,118 @@ export default function RequestAssignments() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Urgency</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Priority</TableHead>
                     <TableHead>Requester</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Request Status</TableHead>
+                    <TableHead>Delivery Status</TableHead>
+                    <TableHead>Assigned To</TableHead>
                     <TableHead>Due Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredRequests.length === 0 ? (
+                  {sortedRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         No assignments found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredRequests.map((request) => (
-                      <TableRow key={request.id} className="hover:bg-purple-50/50 transition-colors">
-                        <TableCell className="font-mono text-xs" data-testid={`cell-id-${request.id}`}>
-                          <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${calculateUrgency(request).colorClass}`}>
-                            {calculateUrgency(request).label}
-                          </Badge>
+                    sortedRequests.map((request) => (
+                      <TableRow key={request.id} className="hover:bg-purple-50/50 transition-colors" onClick={() => setSelectedRequest(request)}>
+                        <TableCell className="font-medium">
+                          {(() => {
+                            const urgency = calculateUrgency(request);
+                            if (!urgency.label) {
+                              return <span className="text-xs text-muted-foreground">—</span>;
+                            }
+                            return (
+                              <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${urgency.colorClass}`}>
+                                {urgency.label}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
-                        <TableCell className="font-medium" data-testid={`cell-type-${request.id}`}>
-                          {formatRequestType(request.type)}
+                        <TableCell>
+                          {request.requestedBy ? (
+                            <span className="text-sm">
+                              {request.requestedBy.firstName} {request.requestedBy.lastName}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Unknown</span>
+                          )}
                         </TableCell>
-                        <TableCell data-testid={`cell-status-${request.id}`}>
+                        <TableCell className="capitalize">{request.department}</TableCell>
+                        <TableCell>{formatRequestType(request.type)}</TableCell>
+                        <TableCell>
                           <Badge className={`status-badge ${getStatusBadge(request.status)}`}>
                             {formatStatus(request.status)}
                           </Badge>
                         </TableCell>
-                        <TableCell className="capitalize" data-testid={`cell-department-${request.id}`}>
-                          {request.department}
+                        <TableCell>
+                          {(() => {
+                            const deliveryStatus = getDeliveryStatus(request);
+                            
+                            // Not Yet delivered
+                            if (deliveryStatus.status === 'not_yet') {
+                              return (
+                                <Badge 
+                                  className="px-2 py-1 text-xs font-semibold bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700"
+                                  data-testid={`delivery-status-${request.id}`}
+                                >
+                                  Not Yet
+                                </Badge>
+                              );
+                            }
+                            
+                            // Delivered state (on time or late)
+                            return (
+                              <Badge 
+                                className={`px-2 py-1 text-xs font-semibold ${
+                                  deliveryStatus.isOnTime 
+                                    ? 'bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-300 dark:border-green-700' 
+                                    : 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700'
+                                }`}
+                                data-testid={`delivery-status-${request.id}`}
+                              >
+                                {deliveryStatus.isOnTime ? 'On Time' : 'Late'}
+                              </Badge>
+                            );
+                          })()}
                         </TableCell>
-                        <TableCell data-testid={`cell-priority-${request.id}`}>
-                          <div className="flex items-center gap-1">
-                            {getPriorityIcon(request.priority)}
-                            <span className="text-sm">{formatPriority(request.priority)}</span>
-                          </div>
+                        <TableCell>
+                          {request.assignedTo ? (
+                            <span className="text-sm" data-testid={`assigned-${request.id}`}>
+                              {request.assignedTo.firstName} {request.assignedTo.lastName}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Unassigned</span>
+                          )}
                         </TableCell>
-                        <TableCell data-testid={`cell-requester-${request.id}`}>
-                          {request.requestedBy.firstName} {request.requestedBy.lastName}
-                        </TableCell>
-                        <TableCell data-testid={`cell-date-${request.id}`}>
-                          {request.dueDate ? formatDate(request.dueDate.toString()) : 'N/A'}
+                        <TableCell>
+                          {(() => {
+                            const dueDate = new Date(request.dueDate);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            dueDate.setHours(0, 0, 0, 0);
+                            const isOverdue = dueDate < today && !request.deliveredAt;
+                            
+                            return (
+                              <span className={isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : ''}>
+                                {formatDate(request.dueDate.toString())}
+                              </span>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setSelectedRequest(request)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedRequest(request);
+                            }}
                             data-testid={`button-view-${request.id}`}
                           >
                             <Eye className="w-4 h-4 mr-2" />
