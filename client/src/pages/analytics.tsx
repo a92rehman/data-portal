@@ -8,12 +8,13 @@ import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, PieChart, TrendingUp, ListChecks } from "lucide-react";
+import { BarChart3, PieChart, TrendingUp, ListChecks, Clock, CheckCircle2, AlertCircle, ListTodo } from "lucide-react";
 
 export default function Analytics() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState("requests");
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -73,6 +74,34 @@ export default function Analytics() {
     enabled: isAuthenticated,
   });
 
+  // Task Analytics Queries
+  const { data: taskStats } = useQuery<{
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    avgExpectedTime: number;
+  }>({
+    queryKey: ["/api/analytics/tasks/stats"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: taskStatusStats = [] } = useQuery<Array<{ status: string; count: number }>>({
+    queryKey: ["/api/analytics/tasks/by-status"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: taskAssigneeStats = [] } = useQuery<Array<{ assignee: string; firstName: string; lastName: string; count: number }>>({
+    queryKey: ["/api/analytics/tasks/by-assignee"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: taskLinkedStats = [] } = useQuery<Array<{ linked: string; count: number }>>({
+    queryKey: ["/api/analytics/tasks/request-linked"],
+    enabled: isAuthenticated,
+  });
+
   const formatRequestType = (type: string) => {
     switch (type) {
       case "powerbi":
@@ -126,8 +155,6 @@ export default function Analytics() {
       </div>
     );
   }
-
-  const [activeTab, setActiveTab] = useState("requests");
 
   return (
     <div className="min-h-screen">
@@ -287,8 +314,141 @@ export default function Analytics() {
             </TabsContent>
 
             <TabsContent value="tasks" className="mt-6">
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Task analytics dashboard coming soon...</p>
+              {/* Task Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <Card className="gradient-card">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Total Tasks</CardTitle>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 70%, 65%) 100%)'}}>
+                      <ListChecks className="w-4 h-4 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{taskStats?.totalTasks || 0}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="gradient-card">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-500">
+                      <Clock className="w-4 h-4 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{taskStats?.inProgress || 0}</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="gradient-card">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-500">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{taskStats?.completed || 0}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {taskStats?.totalTasks ? Math.round((taskStats.completed / taskStats.totalTasks) * 100) : 0}% completion rate
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="gradient-card">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Expected Time</CardTitle>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                      <Clock className="w-4 h-4 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{taskStats?.avgExpectedTime || 0}h</div>
+                    <p className="text-xs text-muted-foreground mt-1">Per task estimate</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Detailed Analytics */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <Card className="gradient-card">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 70%, 65%) 100%)'}}>
+                        <ListTodo className="w-4 h-4 text-white" />
+                      </div>
+                      Tasks by Status
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {(taskStatusStats || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+                      ) : (
+                        (taskStatusStats || []).map((stat: any) => (
+                          <div key={stat.status} className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground capitalize">
+                              {stat.status.replace('_', ' ')}
+                            </span>
+                            <span className="font-medium">{stat.count}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="gradient-card">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                        <BarChart3 className="w-4 h-4 text-white" />
+                      </div>
+                      Tasks by Assignee
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {(taskAssigneeStats || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">No assigned tasks</p>
+                      ) : (
+                        (taskAssigneeStats || []).map((stat: any) => (
+                          <div key={stat.assignee} className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">
+                              {stat.firstName} {stat.lastName}
+                            </span>
+                            <span className="font-medium">{stat.count}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="gradient-card">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
+                        <PieChart className="w-4 h-4 text-white" />
+                      </div>
+                      Task Source
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {(taskLinkedStats || []).length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+                      ) : (
+                        (taskLinkedStats || []).map((stat: any) => (
+                          <div key={stat.linked} className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">{stat.linked}</span>
+                            <span className="font-medium">{stat.count}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
           </Tabs>
