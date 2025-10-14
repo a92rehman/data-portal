@@ -259,6 +259,7 @@ export const tasks = pgTable("tasks", {
   status: taskStatusEnum("status").notNull().default("to_do"),
   assignedToId: varchar("assigned_to_id").references(() => users.id), // Can be analyst or team lead
   requestId: varchar("request_id").references(() => dataRequests.id, { onDelete: 'cascade' }), // Optional link to request
+  parentTaskId: varchar("parent_task_id").references((): any => tasks.id, { onDelete: 'cascade' }), // For sub-tasks
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   
   // PERT time estimation fields (in hours)
