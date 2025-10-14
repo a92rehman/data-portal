@@ -938,23 +938,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
-      // Auto-create task for the assigned analyst
-      try {
-        const task = await storage.createTask({
-          title: request.title,
-          description: request.primaryQuestion || '',
-          status: 'to_do',
-          assignedToId: analystId,
-          requestId: request.id,
-          dueDate: request.dueDate,
-          parentTaskId: null,
-        }, user.id);
-        console.log(`[task] Auto-created task ${task.id} for request ${request.id}`);
-      } catch (taskError) {
-        console.error("[task] Failed to auto-create task:", taskError);
-        // Don't fail the request if task creation fails
-      }
-
       // Send email notification to assigned analyst
       try {
         const assignedAnalyst = await storage.getUser(analystId);
