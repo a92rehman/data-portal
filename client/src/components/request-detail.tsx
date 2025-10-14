@@ -1854,14 +1854,14 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </div>
 
         {/* 6. Tasks Section - Full Width */}
-        {request.assignedToId && (
+        {(request.assignedToId || (user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
           <div className="px-6 py-4 border-t">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <ListTodo className="w-5 h-5" />
-                    Linked Tasks ({requestTasks.length})
+                    Linked Tasks ({requestTasks.filter((t: any) => !t.parentTaskId).length})
                   </CardTitle>
                   {((user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
                     <Button
@@ -1877,44 +1877,94 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {requestTasks.length === 0 ? (
+                {requestTasks.filter((t: any) => !t.parentTaskId).length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
                     <ListTodo className="w-12 h-12 mx-auto text-muted-foreground/40 mb-2" />
                     <p className="text-sm text-muted-foreground">No tasks created yet</p>
                     <p className="text-xs text-muted-foreground mt-1">Create tasks to organize the work for this request</p>
                   </div>
                 ) : (
-                  requestTasks.map((task: any) => (
-                    <div key={task.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm mb-1">{task.title}</h4>
-                          {task.description && (
-                            <p className="text-xs text-muted-foreground mb-2">{task.description}</p>
-                          )}
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {task.assignedTo && (
-                              <span>Assigned to: {task.assignedTo.firstName} {task.assignedTo.lastName}</span>
-                            )}
-                            <Badge variant="outline" className="text-xs">
-                              {task.status === 'to_do' && 'To Do'}
-                              {task.status === 'in_progress' && 'In Progress'}
-                              {task.status === 'blocked' && 'Blocked'}
-                              {task.status === 'completed' && 'Completed'}
-                            </Badge>
+                  requestTasks
+                    .filter((t: any) => !t.parentTaskId)
+                    .map((task: any) => {
+                      const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
+                      return (
+                        <div key={task.id} className="border rounded-lg overflow-hidden">
+                          {/* Parent Task */}
+                          <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-medium text-sm">{task.title}</h4>
+                                  {subTasks.length > 0 && (
+                                    <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                                      {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} sub-tasks
+                                    </Badge>
+                                  )}
+                                </div>
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground mb-2">{task.description}</p>
+                                )}
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  {task.assignedTo && (
+                                    <span>Assigned to: {task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                                  )}
+                                  <Badge variant="outline" className="text-xs">
+                                    {task.status === 'to_do' && 'To Do'}
+                                    {task.status === 'in_progress' && 'In Progress'}
+                                    {task.status === 'blocked' && 'Blocked'}
+                                    {task.status === 'completed' && 'Completed'}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => window.location.href = '/tasks'}
+                                className="text-purple-600 hover:text-purple-700"
+                              >
+                                View
+                              </Button>
+                            </div>
                           </div>
+
+                          {/* Sub-Tasks */}
+                          {subTasks.length > 0 && (
+                            <div className="border-t bg-gray-50/50 dark:bg-gray-900/20">
+                              {subTasks.map((subTask: any) => (
+                                <div 
+                                  key={subTask.id} 
+                                  className="p-3 pl-8 border-b last:border-b-0 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 border-2 border-purple-400 rounded-sm" />
+                                        <h5 className="font-medium text-xs">{subTask.title}</h5>
+                                      </div>
+                                      {subTask.description && (
+                                        <p className="text-xs text-muted-foreground mt-1 ml-5">{subTask.description}</p>
+                                      )}
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 ml-5">
+                                        <Badge 
+                                          variant={subTask.status === 'completed' ? 'default' : 'outline'} 
+                                          className="text-xs"
+                                        >
+                                          {subTask.status === 'to_do' && 'To Do'}
+                                          {subTask.status === 'in_progress' && 'In Progress'}
+                                          {subTask.status === 'blocked' && 'Blocked'}
+                                          {subTask.status === 'completed' && 'Completed'}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => window.location.href = '/tasks'}
-                          className="text-purple-600 hover:text-purple-700"
-                        >
-                          View
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                      );
+                    })
                 )}
               </CardContent>
             </Card>
