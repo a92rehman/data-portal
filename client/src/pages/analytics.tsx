@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -7,7 +7,8 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, PieChart, TrendingUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart3, PieChart, TrendingUp, ListChecks } from "lucide-react";
 
 export default function Analytics() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -126,6 +127,8 @@ export default function Analytics() {
     );
   }
 
+  const [activeTab, setActiveTab] = useState("requests");
+
   return (
     <div className="min-h-screen">
       <Header user={user as any} />
@@ -135,6 +138,20 @@ export default function Analytics() {
         
         <main className="flex-1 p-6">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">Analytics & Insights</h2>
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="requests" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Requests Analytics
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-2">
+                <ListChecks className="w-4 h-4" />
+                Tasks Analytics
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="requests" className="mt-6">
 
           {/* Key Metrics */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -267,6 +284,14 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
+            </TabsContent>
+
+            <TabsContent value="tasks" className="mt-6">
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Task analytics dashboard coming soon...</p>
+              </div>
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
     </div>
