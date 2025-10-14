@@ -15,7 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Send, User as UserIcon, Info, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Send, User as UserIcon, Info, ChevronDown, ChevronRight, ListTodo, Plus, Clock, CheckCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { showNotification } from "@/lib/notifications";
 import { z } from "zod";
 
@@ -92,6 +93,9 @@ export default function RequestWorkspace() {
   const { user } = useAuth();
   const [selectedType, setSelectedType] = useState<string>("");
   const [commentText, setCommentText] = useState("");
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
   
   // Collapsible section states (all open by default)
   const [section1Open, setSection1Open] = useState(true);
@@ -110,6 +114,35 @@ export default function RequestWorkspace() {
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
     enabled: (user as any)?.role === "team_lead",
+  });
+
+  // Fetch tasks for this request
+  const { data: tasks = [] } = useQuery<any[]>({
+    queryKey: ["/api/tasks", { requestId }],
+    queryFn: async () => {
+      const response = await fetch(`/api/tasks?requestId=${requestId}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !isNewRequest && !!requestId,
+  });
+
+  const createTaskMutation = useMutation({
+    mutationFn: async (taskData: { title: string; description?: string; requestId: string }) => {
+      return await apiRequest("POST", "/api/tasks", taskData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      setTaskDialogOpen(false);
+      setNewTaskTitle("");
+      setNewTaskDescription("");
+      showNotification("success", "Task created successfully");
+    },
+    onError: (error: Error) => {
+      showNotification("error", error.message || "Failed to create task");
+    },
   });
 
   const form = useForm<FormData>({
@@ -1397,6 +1430,106 @@ export default function RequestWorkspace() {
               <Card>
                 <CardContent className="p-4 text-center text-sm text-muted-foreground">
                   Not assigned yet
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Tasks Section */}
+            {!isNewRequest && (user as any)?.role !== "requester" && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <ListTodo className="w-4 h-4" />
+                      Tasks ({tasks.length})
+                    </CardTitle>
+                    <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline" className="h-7 text-xs" data-testid="button-add-task">
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Task
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Create Task for Request</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Task Title</label>
+                            <Input
+                              value={newTaskTitle}
+                              onChange={(e) => setNewTaskTitle(e.target.value)}
+                              placeholder="Enter task title..."
+                              data-testid="input-task-title"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Description (Optional)</label>
+                            <Textarea
+                              value={newTaskDescription}
+                              onChange={(e) => setNewTaskDescription(e.target.value)}
+                              placeholder="Enter task description..."
+                              rows={3}
+                              data-testid="input-task-description"
+                            />
+                          </div>
+                          <Button
+                            onClick={() => {
+                              if (!newTaskTitle.trim()) return;
+                              createTaskMutation.mutate({
+                                title: newTaskTitle,
+                                description: newTaskDescription || undefined,
+                                requestId: requestId!,
+                              });
+                            }}
+                            disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
+                            className="w-full"
+                            data-testid="button-create-task"
+                          >
+                            {createTaskMutation.isPending ? "Creating..." : "Create Task"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-48 overflow-y-auto">
+                  {tasks.length > 0 ? (
+                    tasks.map((task: any) => (
+                      <div
+                        key={task.id}
+                        className="p-2 border rounded-md hover:bg-accent cursor-pointer transition-colors"
+                        onClick={() => navigate("/tasks")}
+                        data-testid={`task-item-${task.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{task.title}</p>
+                            {task.expectedTime && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{task.expectedTime.toFixed(1)}h</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {task.status === "completed" ? (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <div className={`w-2 h-2 rounded-full ${
+                                task.status === "in_progress" ? "bg-blue-500" :
+                                task.status === "blocked" ? "bg-red-500" :
+                                "bg-gray-400"
+                              }`} />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-center text-muted-foreground py-4">No tasks yet</p>
+                  )}
                 </CardContent>
               </Card>
             )}
