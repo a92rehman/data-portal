@@ -95,7 +95,7 @@ export default function Tasks() {
     };
 
     return (
-      <div className="flex-1 min-w-[300px]">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           {icon}
           <h3 className="font-semibold text-sm uppercase text-muted-foreground">{title}</h3>
@@ -255,7 +255,7 @@ export default function Tasks() {
               <p className="text-muted-foreground">Loading tasks...</p>
             </div>
           ) : (
-            <div className="flex gap-4 overflow-x-auto pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatusColumn 
                 status="to_do"
                 title="To Do" 
