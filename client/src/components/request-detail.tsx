@@ -64,7 +64,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
-  const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "");
+  const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "unassigned");
   const [editedPriority, setEditedPriority] = useState(request.priority);
   const [editedDueDate, setEditedDueDate] = useState(new Date(request.dueDate).toISOString().split('T')[0]);
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
@@ -2155,7 +2155,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           <div className="py-4 space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Analyst</label>
-              <Select value={assignAnalystId} onValueChange={setAssignAnalystId} data-testid="select-assign-analyst-dialog">
+              <Select value={assignAnalystId || undefined} onValueChange={setAssignAnalystId} data-testid="select-assign-analyst-dialog">
                 <SelectTrigger>
                   <SelectValue placeholder="Select analyst..." />
                 </SelectTrigger>
