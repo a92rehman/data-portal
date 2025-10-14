@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight } from "lucide-react";
+import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, Clock, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskWithDetails, User, DataRequestWithDetails } from "@shared/schema";
 
@@ -220,7 +220,6 @@ export default function Tasks() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Task</TableHead>
-                    <TableHead>Type</TableHead>
                     <TableHead>Assigned To</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Expected Time</TableHead>
@@ -231,14 +230,14 @@ export default function Tasks() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={6} className="text-center py-8">
                         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                         Loading tasks...
                       </TableCell>
                     </TableRow>
                   ) : sortedTasks.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No tasks found matching your criteria
                       </TableCell>
                     </TableRow>
@@ -354,76 +353,86 @@ function TaskRow({
 
   return (
     <TableRow 
-      className={`cursor-pointer hover:bg-muted/50 ${isSubTask ? 'bg-muted/30' : ''}`}
+      className={`cursor-pointer hover:bg-muted/50 transition-colors border-b border-border ${isSubTask ? 'bg-muted/20' : ''}`}
       data-testid={`task-row-${task.id}`}
     >
-      <TableCell className="font-medium">
-        <div className={isSubTask ? 'pl-8' : ''}>
-          {isSubTask && (
-            <div className="inline-flex items-center mr-2 text-muted-foreground">
-              <CornerDownRight className="w-4 h-4" />
-            </div>
-          )}
-          <div className="inline-block">
-            <div 
-              className={`font-medium cursor-pointer hover:text-primary inline-flex items-center gap-2 ${isSubTask ? 'text-sm text-muted-foreground' : ''}`}
-              onClick={() => onSelectTask(task)}
-              data-testid={`task-title-${task.id}`}
-            >
-              {task.title}
-              {task.request && (
-                <button
-                  onClick={handleRequestClick}
-                  className="text-sm text-purple-600 dark:text-purple-400 hover:underline font-normal"
-                  data-testid={`link-request-${task.id}`}
-                >
-                  #{task.request.requestNumber}
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              {progress && progress.total > 0 && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
-                  <ListChecks className="w-3 h-3" />
-                  {progress.completed}/{progress.total}
-                </Badge>
-              )}
-              {task.description && (
-                <p className="text-sm text-muted-foreground line-clamp-1">
-                  {task.description}
-                </p>
-              )}
-            </div>
+      {/* Task Title Cell with Better Visual Hierarchy */}
+      <TableCell className={`py-4 ${isSubTask ? 'pl-12 border-l-4 border-blue-300 dark:border-blue-700' : ''}`}>
+        <div className="flex flex-col gap-2">
+          {/* Title Row with Type Badge and Request Badge */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Type Badge BEFORE Title */}
+            {task.requestId ? (
+              <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
+                Request Task
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                Team Task
+              </Badge>
+            )}
+            
+            {/* Request Number Badge (if applicable) */}
+            {task.request && (
+              <button
+                onClick={handleRequestClick}
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors"
+                data-testid={`link-request-${task.id}`}
+              >
+                Request #{task.request.requestNumber}
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+            
+            {/* Sub-task Progress Badge */}
+            {progress && progress.total > 0 && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                <ListChecks className="w-3 h-3" />
+                {progress.completed}/{progress.total}
+              </Badge>
+            )}
           </div>
+          
+          {/* Task Title */}
+          <div 
+            className={`${isSubTask ? 'text-sm font-medium text-muted-foreground' : 'text-base font-semibold'} cursor-pointer hover:text-primary transition-colors`}
+            onClick={() => onSelectTask(task)}
+            data-testid={`task-title-${task.id}`}
+          >
+            {task.title}
+          </div>
+          
+          {/* Description (if exists) */}
+          {task.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {task.description}
+            </p>
+          )}
         </div>
       </TableCell>
-      <TableCell>
-        {task.requestId ? (
-          <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
-            Request Task
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-xs">
-            Team Task
-          </Badge>
-        )}
+      
+      {/* Assigned To Cell with Icon */}
+      <TableCell className="py-4">
+        <div className="flex items-center gap-2">
+          <UserIcon className="w-4 h-4 text-muted-foreground" />
+          {task.assignedTo ? (
+            <span className="text-sm font-medium">
+              {task.assignedTo.firstName} {task.assignedTo.lastName}
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground italic">Unassigned</span>
+          )}
+        </div>
       </TableCell>
-      <TableCell>
-        {task.assignedTo ? (
-          <span className="text-sm">
-            {task.assignedTo.firstName} {task.assignedTo.lastName}
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground italic">Unassigned</span>
-        )}
-      </TableCell>
-      <TableCell onClick={(e) => e.stopPropagation()}>
+      
+      {/* Status Cell */}
+      <TableCell className="py-4" onClick={(e) => e.stopPropagation()}>
         <Select 
           value={task.status} 
           onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
         >
           <SelectTrigger 
-            className={`w-32 ${getStatusBadge(task.status)}`}
+            className={`w-36 ${getStatusBadge(task.status)}`}
             data-testid={`select-status-${task.id}`}
           >
             <SelectValue />
@@ -436,21 +445,33 @@ function TaskRow({
           </SelectContent>
         </Select>
       </TableCell>
-      <TableCell>
-        {task.expectedTime ? (
-          <span className="text-sm">{task.expectedTime.toFixed(1)}h</span>
-        ) : (
-          <span className="text-sm text-muted-foreground">—</span>
-        )}
+      
+      {/* Expected Time Cell with Icon */}
+      <TableCell className="py-4">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-muted-foreground" />
+          {task.expectedTime ? (
+            <span className="text-sm font-medium">{task.expectedTime.toFixed(1)}h</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">—</span>
+          )}
+        </div>
       </TableCell>
-      <TableCell>
-        {task.dueDate ? (
-          <span className="text-sm">{format(new Date(task.dueDate), "MMM d, yyyy")}</span>
-        ) : (
-          <span className="text-sm text-muted-foreground">—</span>
-        )}
+      
+      {/* Due Date Cell with Icon */}
+      <TableCell className="py-4">
+        <div className="flex items-center gap-2">
+          <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+          {task.dueDate ? (
+            <span className="text-sm font-medium">{format(new Date(task.dueDate), "MMM d, yyyy")}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">—</span>
+          )}
+        </div>
       </TableCell>
-      <TableCell>
+      
+      {/* Actions Cell */}
+      <TableCell className="py-4">
         <Button
           variant="ghost"
           size="sm"
@@ -458,6 +479,7 @@ function TaskRow({
             e.stopPropagation();
             onSelectTask(task);
           }}
+          className="hover:bg-primary/10"
           data-testid={`button-view-${task.id}`}
         >
           <Eye className="w-4 h-4" />
