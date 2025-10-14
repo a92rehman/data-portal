@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, CheckCircle2, AlertCircle, Plus, User as UserIcon, Calendar as CalendarIcon, ListTodo, BarChart2 } from "lucide-react";
+import { Clock, CheckCircle2, AlertCircle, Plus, User as UserIcon, Calendar as CalendarIcon, ListTodo, BarChart2, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import type { TaskWithDetails, User } from "@shared/schema";
 
@@ -205,7 +206,11 @@ export default function Tasks() {
               <h1 className="text-3xl font-bold mb-1" data-testid="page-title">Tasks</h1>
               <p className="text-muted-foreground">Manage your team's tasks and workload</p>
             </div>
-            <Button onClick={() => setIsCreateDialogOpen(true)} data-testid="button-create-task">
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)} 
+              data-testid="button-create-task"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+            >
               <Plus className="w-4 h-4 mr-2" />
               New Task
             </Button>
@@ -517,10 +522,40 @@ function CreateTaskDialog({
           </div>
 
           <div>
-            <Label className="mb-2 block">PERT Time Estimation (hours)</Label>
+            <div className="flex items-center gap-2 mb-2">
+              <Label className="block">PERT Time Estimation (hours)</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-sm">
+                    <div className="space-y-2 text-xs">
+                      <p className="font-semibold">PERT Time Estimation:</p>
+                      <p><strong>Optimistic (O):</strong> Best case - everything goes perfectly</p>
+                      <p><strong>Most Likely (M):</strong> Realistic estimate - normal conditions</p>
+                      <p><strong>Pessimistic (P):</strong> Worst case - maximum delays/issues</p>
+                      <p className="pt-1 border-t"><strong>Expected Time = (O + 4M + P) / 6</strong></p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label htmlFor="optimistic" className="text-xs text-muted-foreground">Optimistic</Label>
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="optimistic" className="text-xs text-muted-foreground">Optimistic</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Best case scenario - everything goes perfectly with no issues</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Input
                   id="optimistic"
                   type="number"
@@ -532,7 +567,19 @@ function CreateTaskDialog({
                 />
               </div>
               <div>
-                <Label htmlFor="mostLikely" className="text-xs text-muted-foreground">Most Likely</Label>
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="mostLikely" className="text-xs text-muted-foreground">Most Likely</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Realistic estimate - normal working conditions with typical challenges</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Input
                   id="mostLikely"
                   type="number"
@@ -544,7 +591,19 @@ function CreateTaskDialog({
                 />
               </div>
               <div>
-                <Label htmlFor="pessimistic" className="text-xs text-muted-foreground">Pessimistic</Label>
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="pessimistic" className="text-xs text-muted-foreground">Pessimistic</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="text-xs">Worst case scenario - maximum delays and unexpected issues</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Input
                   id="pessimistic"
                   type="number"
@@ -599,7 +658,12 @@ function CreateTaskDialog({
             <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel">
               Cancel
             </Button>
-            <Button type="submit" disabled={createMutation.isPending} data-testid="button-submit-task">
+            <Button 
+              type="submit" 
+              disabled={createMutation.isPending} 
+              data-testid="button-submit-task"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+            >
               {createMutation.isPending ? "Creating..." : "Create Task"}
             </Button>
           </div>
