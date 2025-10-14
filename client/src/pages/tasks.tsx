@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
+import RequestDetail from "@/components/request-detail";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,9 +17,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye } from "lucide-react";
+import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight } from "lucide-react";
 import { format } from "date-fns";
-import type { TaskWithDetails, User } from "@shared/schema";
+import type { TaskWithDetails, User, DataRequestWithDetails } from "@shared/schema";
 
 export default function Tasks() {
   const { user, isAuthenticated } = useAuth();
@@ -29,6 +30,7 @@ export default function Tasks() {
   const [filterAssignee, setFilterAssignee] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
 
   const isTeamLead = (user as any)?.role === "team_lead";
   const isAnalyst = (user as any)?.role === "analyst";
@@ -57,11 +59,21 @@ export default function Tasks() {
     enabled: isAuthenticated && isTeamLead,
   });
 
-  // Filter out sub-tasks (they show only in parent task detail)
+  // Organize tasks with sub-tasks nested under parents
   const parentTasks = tasks.filter(t => !t.parentTaskId);
+  const subTasksMap = new Map<string, TaskWithDetails[]>();
+  
+  tasks.forEach(task => {
+    if (task.parentTaskId) {
+      if (!subTasksMap.has(task.parentTaskId)) {
+        subTasksMap.set(task.parentTaskId, []);
+      }
+      subTasksMap.get(task.parentTaskId)?.push(task);
+    }
+  });
 
-  // Sort tasks by status
-  const sortedTasks = [...parentTasks].sort((a, b) => {
+  // Sort parent tasks by status
+  const sortedParentTasks = [...parentTasks].sort((a, b) => {
     const statusOrder = {
       'to_do': 1,
       'in_progress': 2,
@@ -88,6 +100,14 @@ export default function Tasks() {
     const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return bTime - aTime;
+  });
+
+  // Create flattened list with sub-tasks nested under parents
+  const sortedTasks: TaskWithDetails[] = [];
+  sortedParentTasks.forEach(parent => {
+    sortedTasks.push(parent);
+    const subTasks = subTasksMap.get(parent.id) || [];
+    sortedTasks.push(...subTasks);
   });
 
   const updateTaskStatusMutation = useMutation({
@@ -228,6 +248,7 @@ export default function Tasks() {
                         key={task.id}
                         task={task}
                         onSelectTask={setSelectedTask}
+                        onSelectRequest={setSelectedRequest}
                         updateStatusMutation={updateTaskStatusMutation}
                         getStatusBadge={getStatusBadge}
                         formatStatus={formatStatus}
@@ -252,6 +273,22 @@ export default function Tasks() {
         />
       )}
 
+      {/* Request Detail Dialog */}
+      {selectedRequest && (
+        <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <RequestDetail 
+              request={selectedRequest}
+              onClose={() => setSelectedRequest(null)}
+              onUpdate={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Create Task Dialog */}
       <CreateTaskDialog
         open={isCreateDialogOpen}
@@ -268,7 +305,8 @@ export default function Tasks() {
 // Task Row Component
 function TaskRow({ 
   task, 
-  onSelectTask, 
+  onSelectTask,
+  onSelectRequest,
   updateStatusMutation,
   getStatusBadge,
   formatStatus,
@@ -276,14 +314,16 @@ function TaskRow({
 }: { 
   task: TaskWithDetails; 
   onSelectTask: (task: TaskWithDetails) => void;
+  onSelectRequest: (request: DataRequestWithDetails) => void;
   updateStatusMutation: any;
   getStatusBadge: (status: string) => string;
   formatStatus: (status: string) => string;
   setLocation: (path: string) => void;
 }) {
   const { user, isAuthenticated } = useAuth();
+  const isSubTask = !!task.parentTaskId;
 
-  // Fetch sub-task progress
+  // Fetch sub-task progress for parent tasks only
   const { data: progress } = useQuery<{ total: number; completed: number }>({
     queryKey: ["/api/tasks", task.id, "subtasks", "progress"],
     queryFn: async () => {
@@ -293,63 +333,79 @@ function TaskRow({
       if (!response.ok) throw new Error('Failed to fetch sub-task progress');
       return response.json();
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isSubTask,
   });
+
+  const handleRequestClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (task.request) {
+      try {
+        const response = await fetch(`/api/requests/${task.request.id}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch request');
+        const requestData = await response.json();
+        onSelectRequest(requestData);
+      } catch (error) {
+        console.error('Error fetching request:', error);
+      }
+    }
+  };
 
   return (
     <TableRow 
-      className="cursor-pointer hover:bg-muted/50"
+      className={`cursor-pointer hover:bg-muted/50 ${isSubTask ? 'bg-muted/30' : ''}`}
       data-testid={`task-row-${task.id}`}
     >
       <TableCell className="font-medium">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            {task.requestId ? (
-              <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
-                Request Task
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs">
-                Team Task
-              </Badge>
-            )}
-            {progress && progress.total > 0 && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
-                <ListChecks className="w-3 h-3" />
-                {progress.completed}/{progress.total}
-              </Badge>
-            )}
-          </div>
-          <div 
-            className="font-medium cursor-pointer hover:text-primary"
-            onClick={() => onSelectTask(task)}
-            data-testid={`task-title-${task.id}`}
-          >
-            {task.title}
-          </div>
-          {task.description && (
-            <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
-              {task.description}
-            </p>
+        <div className={isSubTask ? 'pl-8' : ''}>
+          {isSubTask && (
+            <div className="inline-flex items-center mr-2 text-muted-foreground">
+              <CornerDownRight className="w-4 h-4" />
+            </div>
           )}
+          <div className="inline-block">
+            <div 
+              className={`font-medium cursor-pointer hover:text-primary inline-flex items-center gap-2 ${isSubTask ? 'text-sm text-muted-foreground' : ''}`}
+              onClick={() => onSelectTask(task)}
+              data-testid={`task-title-${task.id}`}
+            >
+              {task.title}
+              {task.request && (
+                <button
+                  onClick={handleRequestClick}
+                  className="text-sm text-purple-600 dark:text-purple-400 hover:underline font-normal"
+                  data-testid={`link-request-${task.id}`}
+                >
+                  #{task.request.requestNumber}
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              {progress && progress.total > 0 && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                  <ListChecks className="w-3 h-3" />
+                  {progress.completed}/{progress.total}
+                </Badge>
+              )}
+              {task.description && (
+                <p className="text-sm text-muted-foreground line-clamp-1">
+                  {task.description}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       </TableCell>
       <TableCell>
-        {task.request ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (task.request) {
-                setLocation(`/requests/${task.request.id}`);
-              }
-            }}
-            className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
-            data-testid={`link-request-${task.id}`}
-          >
-            #{task.request.requestNumber}
-          </button>
+        {task.requestId ? (
+          <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
+            Request Task
+          </Badge>
         ) : (
-          <span className="text-sm text-muted-foreground">—</span>
+          <Badge variant="outline" className="text-xs">
+            Team Task
+          </Badge>
         )}
       </TableCell>
       <TableCell>
