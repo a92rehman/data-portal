@@ -103,87 +103,135 @@ export default function Tasks() {
         </div>
         <div className="space-y-3">
           {tasks.map(task => (
-            <Card 
-              key={task.id} 
-              className={`hover:shadow-md transition-shadow ${statusColors[status as keyof typeof statusColors]}`}
-              data-testid={`task-card-${task.id}`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h4 
-                    className="font-medium flex-1 cursor-pointer" 
-                    onClick={() => setSelectedTask(task)}
-                    data-testid={`task-title-${task.id}`}
-                  >
-                    {task.title}
-                  </h4>
-                  <Select 
-                    value={task.status} 
-                    onValueChange={(newStatus) => updateTaskStatusMutation.mutate({ id: task.id, status: newStatus })}
-                  >
-                    <SelectTrigger 
-                      className="w-24 h-7 text-xs" 
-                      onClick={(e) => e.stopPropagation()}
-                      data-testid={`select-status-${task.id}`}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="to_do">To Do</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="blocked">Blocked</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {task.description && (
-                  <p 
-                    className="text-sm text-muted-foreground mb-3 line-clamp-2 cursor-pointer"
-                    onClick={() => setSelectedTask(task)}
-                  >
-                    {task.description}
-                  </p>
-                )}
-                
-                <div 
-                  className="flex flex-wrap gap-2 text-xs text-muted-foreground cursor-pointer"
-                  onClick={() => setSelectedTask(task)}
-                >
-                  {task.assignedTo && (
-                    <div className="flex items-center gap-1">
-                      <UserIcon className="w-3 h-3" />
-                      <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
-                    </div>
-                  )}
-                  {task.expectedTime && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{task.expectedTime.toFixed(1)}h</span>
-                    </div>
-                  )}
-                  {task.dueDate && (
-                    <div className="flex items-center gap-1">
-                      <CalendarIcon className="w-3 h-3" />
-                      <span>{format(new Date(task.dueDate), "MMM d")}</span>
-                    </div>
-                  )}
-                </div>
-
-                {task.request && (
-                  <div 
-                    className="mt-2 pt-2 border-t cursor-pointer"
-                    onClick={() => setSelectedTask(task)}
-                  >
-                    <p className="text-xs text-muted-foreground">
-                      Linked to: {task.request.title}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <TaskCard key={task.id} task={task} statusColors={statusColors} status={status} onSelectTask={setSelectedTask} updateStatusMutation={updateTaskStatusMutation} />
           ))}
         </div>
       </div>
+    );
+  };
+
+  const TaskCard = ({ task, statusColors, status, onSelectTask, updateStatusMutation }: {
+    task: TaskWithDetails;
+    statusColors: any;
+    status: string;
+    onSelectTask: (task: TaskWithDetails) => void;
+    updateStatusMutation: any;
+  }) => {
+    // Fetch sub-task progress
+    const { data: progress } = useQuery<{ total: number; completed: number }>({
+      queryKey: ["/api/tasks", task.id, "subtasks", "progress"],
+      queryFn: async () => {
+        const response = await fetch(`/api/tasks/${task.id}/subtasks/progress`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch sub-task progress');
+        return response.json();
+      },
+      enabled: isAuthenticated,
+    });
+
+    return (
+      <Card 
+        className={`hover:shadow-md transition-shadow ${statusColors[status as keyof typeof statusColors]}`}
+        data-testid={`task-card-${task.id}`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                {task.requestId ? (
+                  <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
+                    Request Task
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs">
+                    Team Task
+                  </Badge>
+                )}
+                {progress && progress.total > 0 && (
+                  <Badge variant="outline" className="text-xs">
+                    {progress.completed}/{progress.total} sub-tasks
+                  </Badge>
+                )}
+              </div>
+              <h4 
+                className="font-medium cursor-pointer" 
+                onClick={() => onSelectTask(task)}
+                data-testid={`task-title-${task.id}`}
+              >
+                {task.title}
+              </h4>
+            </div>
+            <Select 
+              value={task.status} 
+              onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
+            >
+              <SelectTrigger 
+                className="w-24 h-7 text-xs" 
+                onClick={(e) => e.stopPropagation()}
+                data-testid={`select-status-${task.id}`}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="to_do">To Do</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {task.description && (
+            <p 
+              className="text-sm text-muted-foreground mb-3 line-clamp-2 cursor-pointer"
+              onClick={() => onSelectTask(task)}
+            >
+              {task.description}
+            </p>
+          )}
+          
+          <div 
+            className="flex flex-wrap gap-2 text-xs text-muted-foreground cursor-pointer"
+            onClick={() => onSelectTask(task)}
+          >
+            {task.assignedTo && (
+              <div className="flex items-center gap-1">
+                <UserIcon className="w-3 h-3" />
+                <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+              </div>
+            )}
+            {task.expectedTime && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>{task.expectedTime.toFixed(1)}h</span>
+              </div>
+            )}
+            {task.dueDate && (
+              <div className="flex items-center gap-1">
+                <CalendarIcon className="w-3 h-3" />
+                <span>{format(new Date(task.dueDate), "MMM d")}</span>
+              </div>
+            )}
+          </div>
+
+          {task.request && (
+            <div className="mt-2 pt-2 border-t">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (task.request) {
+                    setLocation(`/requests/${task.request.id}`);
+                  }
+                }}
+                className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
+                data-testid={`link-request-${task.id}`}
+              >
+                <span>→ Request #{task.request?.requestNumber}: {task.request?.title}</span>
+              </button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   };
 
@@ -322,6 +370,21 @@ function TaskDetailDialog({
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+  const [showSubTaskForm, setShowSubTaskForm] = useState(false);
+
+  // Fetch sub-tasks
+  const { data: subTasks = [] } = useQuery<TaskWithDetails[]>({
+    queryKey: ["/api/tasks", task.id, "subtasks"],
+    queryFn: async () => {
+      const response = await fetch(`/api/tasks/${task.id}/subtasks`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch sub-tasks');
+      return response.json();
+    },
+    enabled: open,
+  });
 
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
@@ -403,9 +466,72 @@ function TaskDetailDialog({
           {task.request && (
             <div>
               <Label className="text-xs text-muted-foreground">Linked Request</Label>
-              <p className="text-sm mt-1">{task.request.title}</p>
+              <button
+                onClick={() => {
+                  if (task.request) {
+                    setLocation(`/requests/${task.request.id}`);
+                    onClose();
+                  }
+                }}
+                className="text-sm mt-1 text-purple-600 dark:text-purple-400 hover:underline"
+              >
+                #{task.request.requestNumber}: {task.request.title}
+              </button>
             </div>
           )}
+
+          {/* Sub-tasks Section */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-semibold">Sub-tasks ({subTasks.length})</Label>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSubTaskForm(!showSubTaskForm)}
+                data-testid="button-add-subtask"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Sub-task
+              </Button>
+            </div>
+
+            {showSubTaskForm && (
+              <SubTaskForm
+                parentTaskId={task.id}
+                onSuccess={() => {
+                  setShowSubTaskForm(false);
+                  queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+                }}
+                onCancel={() => setShowSubTaskForm(false)}
+              />
+            )}
+
+            <div className="space-y-2 mt-3">
+              {subTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No sub-tasks yet</p>
+              ) : (
+                subTasks.map((subTask) => (
+                  <Card key={subTask.id} className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <h5 className="font-medium text-sm">{subTask.title}</h5>
+                        {subTask.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{subTask.description}</p>
+                        )}
+                      </div>
+                      <Badge variant={subTask.status === 'completed' ? 'default' : 'outline'} className="text-xs">
+                        {subTask.status === 'to_do' && 'To Do'}
+                        {subTask.status === 'in_progress' && 'In Progress'}
+                        {subTask.status === 'blocked' && 'Blocked'}
+                        {subTask.status === 'completed' && 'Completed'}
+                      </Badge>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -671,5 +797,95 @@ function CreateTaskDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Sub-task Form Component
+function SubTaskForm({
+  parentTaskId,
+  onSuccess,
+  onCancel,
+}: {
+  parentTaskId: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/tasks", {
+        ...data,
+        parentTaskId,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Sub-task created successfully" });
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create sub-task",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim()) {
+      toast({ title: "Error", description: "Title is required", variant: "destructive" });
+      return;
+    }
+    createMutation.mutate(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3 p-3 bg-muted rounded-lg mb-3">
+      <div>
+        <Label htmlFor="subtask-title" className="text-sm">Title</Label>
+        <Input
+          id="subtask-title"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          placeholder="Enter sub-task title"
+          className="mt-1"
+          data-testid="input-subtask-title"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="subtask-description" className="text-sm">Description (Optional)</Label>
+        <Textarea
+          id="subtask-description"
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Enter sub-task description"
+          rows={2}
+          className="mt-1"
+          data-testid="input-subtask-description"
+        />
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel} data-testid="button-cancel-subtask">
+          Cancel
+        </Button>
+        <Button 
+          type="submit" 
+          size="sm"
+          disabled={createMutation.isPending}
+          data-testid="button-create-subtask"
+          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+        >
+          {createMutation.isPending ? "Creating..." : "Create Sub-task"}
+        </Button>
+      </div>
+    </form>
   );
 }
