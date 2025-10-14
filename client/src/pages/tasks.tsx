@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, CheckCircle2, AlertCircle, Plus, User as UserIcon, Calendar as CalendarIcon, ListTodo, BarChart2, Info } from "lucide-react";
+import { Clock, CheckCircle2, AlertCircle, Plus, User as UserIcon, Calendar as CalendarIcon, ListTodo, BarChart2, Info, ListChecks } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import type { TaskWithDetails, User } from "@shared/schema";
@@ -150,7 +150,8 @@ export default function Tasks() {
                   </Badge>
                 )}
                 {progress && progress.total > 0 && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                    <ListChecks className="w-3 h-3" />
                     {progress.completed}/{progress.total} sub-tasks
                   </Badge>
                 )}
