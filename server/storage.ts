@@ -797,6 +797,21 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(dataRequests.id, id))
       .returning();
+    
+    // Auto-create a task for the analyst when request is assigned
+    if (request) {
+      await db.insert(tasks).values({
+        title: `Request #${request.requestNumber}: ${request.title}`,
+        description: `Work on ${request.type} request`,
+        status: 'to_do',
+        assignedToId: analystId,
+        requestId: request.id,
+        createdById: analystId,
+        dueDate: dueDate || undefined,
+        updatedAt: new Date(),
+      });
+    }
+    
     return request;
   }
 
@@ -1151,6 +1166,48 @@ export class DatabaseStorage implements IStorage {
       tasks: userTasks,
       totalExpectedHours,
     };
+  }
+
+  // Sub-task methods
+  async getSubTasks(parentTaskId: string): Promise<TaskWithDetails[]> {
+    const subTasks = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.parentTaskId, parentTaskId))
+      .orderBy(desc(tasks.createdAt));
+
+    const subTasksWithDetails = await Promise.all(
+      subTasks.map(async (task) => {
+        const assignedTo = task.assignedToId 
+          ? (await this.getUser(task.assignedToId)) || null
+          : null;
+        const createdBy = (await this.getUser(task.createdById))!;
+        const request = task.requestId
+          ? await db.select().from(dataRequests).where(eq(dataRequests.id, task.requestId)).limit(1).then(r => r[0] || null)
+          : null;
+
+        return {
+          ...task,
+          assignedTo,
+          createdBy,
+          request,
+        };
+      })
+    );
+
+    return subTasksWithDetails;
+  }
+
+  async getSubTaskProgress(parentTaskId: string): Promise<{ total: number; completed: number }> {
+    const subTasks = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.parentTaskId, parentTaskId));
+
+    const total = subTasks.length;
+    const completed = subTasks.filter(t => t.status === 'completed').length;
+
+    return { total, completed };
   }
 }
 

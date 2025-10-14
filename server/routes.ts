@@ -2054,6 +2054,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sub-task routes
+  app.get('/api/tasks/:id/subtasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const parentTask = await storage.getTask(req.params.id);
+      
+      if (!parentTask) {
+        return res.status(404).json({ message: "Parent task not found" });
+      }
+
+      // Check permissions: assignee, creator, or team lead can view
+      const user = await storage.getUser(req.user.id);
+      const canView = 
+        parentTask.assignedToId === req.user.id ||
+        parentTask.createdById === req.user.id ||
+        user?.role === 'team_lead';
+
+      if (!canView) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const subTasks = await storage.getSubTasks(req.params.id);
+      res.json(subTasks);
+    } catch (error) {
+      console.error("Error fetching sub-tasks:", error);
+      res.status(500).json({ message: "Failed to fetch sub-tasks" });
+    }
+  });
+
+  app.get('/api/tasks/:id/subtasks/progress', isAuthenticated, async (req: any, res) => {
+    try {
+      const parentTask = await storage.getTask(req.params.id);
+      
+      if (!parentTask) {
+        return res.status(404).json({ message: "Parent task not found" });
+      }
+
+      // Check permissions: assignee, creator, or team lead can view
+      const user = await storage.getUser(req.user.id);
+      const canView = 
+        parentTask.assignedToId === req.user.id ||
+        parentTask.createdById === req.user.id ||
+        user?.role === 'team_lead';
+
+      if (!canView) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const progress = await storage.getSubTaskProgress(req.params.id);
+      res.json(progress);
+    } catch (error) {
+      console.error("Error fetching sub-task progress:", error);
+      res.status(500).json({ message: "Failed to fetch sub-task progress" });
+    }
+  });
+
   // Analytics routes
   app.get('/api/analytics/stats', isAuthenticated, async (req: any, res) => {
     try {
