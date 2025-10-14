@@ -766,8 +766,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       {/* 1. Header Row */}
       <DialogHeader className="border-b px-6 py-6 -m-6 mb-0">
         <div className="flex flex-col gap-4">
-          {/* Back and Close Button Row */}
-          <div className="flex items-center gap-3">
+          {/* Back and Close Button Row with Create Task */}
+          <div className="flex items-center justify-between gap-3">
             <Button
               variant="ghost"
               size="icon"
@@ -777,6 +777,19 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
+            
+            {/* Create Task Button - Top Right */}
+            {((user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
+              <Button
+                size="sm"
+                onClick={() => setShowCreateTaskDialog(true)}
+                data-testid="button-create-task-header"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Create Task
+              </Button>
+            )}
           </div>
 
           {/* Title and Status Banner Tile */}

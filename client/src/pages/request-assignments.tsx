@@ -10,11 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import RequestDetail from "@/components/request-detail";
-import { Search, Eye, CircleAlert, MinusCircle, InfoIcon } from "lucide-react";
-import type { DataRequestWithDetails } from "@shared/schema";
+import { Search, Eye, CircleAlert, MinusCircle, InfoIcon, Calendar as CalendarIcon } from "lucide-react";
+import type { DataRequestWithDetails, User } from "@shared/schema";
+import { DEPARTMENTS } from "@shared/constants";
+import { format } from "date-fns";
 import { calculateUrgency } from "@/lib/urgency";
 
 export default function RequestAssignments() {
@@ -23,14 +27,34 @@ export default function RequestAssignments() {
   const [location, setLocation] = useLocation();
   const searchString = useSearch();
   const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    status: "",
+    department: "",
+    priority: "",
+    type: "",
+    assignedToId: "",
+    dateFilter: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
+  });
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
-  const [statusFilter, setStatusFilter] = useState("");
+
+  // Fetch analysts for filter (only for team leads and analysts)
+  const { data: analysts = [] } = useQuery<User[]>({
+    queryKey: ["/api/users/analysts"],
+    enabled: authLoading === false && ((user as any)?.role === "team_lead" || (user as any)?.role === "analyst"),
+  });
 
   // Fetch requests assigned to current user (analyst or data lead)
-  // For data leads, we pass assignedToId filter to get only their assigned requests
+  // For team leads: if they haven't selected a specific analyst in the filter, show only their assignments
+  // For analysts: use all filters as-is
   const queryParams = (user as any)?.role === 'team_lead' 
-    ? { assignedToId: (user as any)?.id, status: statusFilter }
-    : { status: statusFilter };
+    ? { ...filters, assignedToId: filters.assignedToId || (user as any)?.id }
+    : filters;
     
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", queryParams],
@@ -77,6 +101,58 @@ export default function RequestAssignments() {
         });
     }
   }, [searchString, location, setLocation]);
+
+  // Handle date filter changes
+  const handleDateFilterChange = (value: string) => {
+    const now = new Date();
+    let startDate = "";
+    let endDate = "";
+
+    if (value === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      startDate = today.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "this_week") {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      startDate = weekStart.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "this_month") {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      startDate = monthStart.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "custom") {
+      // For custom, dates will be set via the date picker
+      setFilters({ ...filters, dateFilter: value, startDate: "", endDate: "" });
+      return;
+    } else {
+      // "all" - clear date filters
+      setFilters({ ...filters, dateFilter: "", startDate: "", endDate: "" });
+      setDateRange({ from: undefined, to: undefined });
+      return;
+    }
+
+    setFilters({ ...filters, dateFilter: value, startDate, endDate });
+  };
+
+  // Handle custom date range selection
+  useEffect(() => {
+    if (filters.dateFilter === "custom" && dateRange.from) {
+      const from = new Date(dateRange.from);
+      from.setHours(0, 0, 0, 0);
+      const to = dateRange.to ? new Date(dateRange.to) : new Date();
+      to.setHours(23, 59, 59, 999);
+      
+      setFilters({
+        ...filters,
+        startDate: from.toISOString(),
+        endDate: to.toISOString(),
+      });
+    }
+  }, [dateRange]);
 
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -235,7 +311,7 @@ export default function RequestAssignments() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search assignments..."
+                    placeholder="Search requests..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 w-64"
@@ -243,18 +319,125 @@ export default function RequestAssignments() {
                   />
                 </div>
 
-                <Select value={statusFilter || "all"} onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}>
+                <Select value={filters.status || "all"} onValueChange={(value) => setFilters({...filters, status: value === "all" ? "" : value})}>
                   <SelectTrigger className="w-40" data-testid="select-status">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
+                    <SelectItem value="pending_review">Pending Review</SelectItem>
+                    <SelectItem value="accepted">Accepted</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="blocked">Blocked</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Select value={filters.department || "all"} onValueChange={(value) => setFilters({...filters, department: value === "all" ? "" : value})}>
+                  <SelectTrigger className="w-40" data-testid="select-department">
+                    <SelectValue placeholder="All Departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    {DEPARTMENTS.map((dept) => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.priority || "all"} onValueChange={(value) => setFilters({...filters, priority: value === "all" ? "" : value})}>
+                  <SelectTrigger className="w-40" data-testid="select-priority">
+                    <SelectValue placeholder="All Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priority</SelectItem>
+                    <SelectItem value="p0_critical">P0 - Critical</SelectItem>
+                    <SelectItem value="p1_high">P1 - High</SelectItem>
+                    <SelectItem value="p2_medium">P2 - Medium</SelectItem>
+                    <SelectItem value="p3_low">P3 - Low</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filters.type || "all"} onValueChange={(value) => setFilters({...filters, type: value === "all" ? "" : value})}>
+                  <SelectTrigger className="w-40" data-testid="select-type">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
+                    <SelectItem value="modify_dashboard">Modify Dashboard/Report</SelectItem>
+                    <SelectItem value="adhoc_analysis">Ad-hoc Analysis</SelectItem>
+                    <SelectItem value="data_extraction">Data Extraction</SelectItem>
+                    <SelectItem value="data_bug">Data Bug</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {((user as any)?.role === "team_lead" || (user as any)?.role === "analyst") && (
+                  <Select value={filters.assignedToId || "all"} onValueChange={(value) => setFilters({...filters, assignedToId: value === "all" ? "" : value})}>
+                    <SelectTrigger className="w-40" data-testid="select-assigned">
+                      <SelectValue placeholder="All Analysts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Analysts</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {analysts.map((analyst) => (
+                        <SelectItem key={analyst.id} value={analyst.id}>
+                          {analyst.firstName} {analyst.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {(user as any)?.role === "team_lead" && (
+                  <>
+                    <Select value={filters.dateFilter || "all"} onValueChange={handleDateFilterChange}>
+                      <SelectTrigger className="w-40" data-testid="select-date-filter">
+                        <SelectValue placeholder="All Time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Time</SelectItem>
+                        <SelectItem value="today">Today</SelectItem>
+                        <SelectItem value="this_week">This Week</SelectItem>
+                        <SelectItem value="this_month">This Month</SelectItem>
+                        <SelectItem value="custom">Custom Range</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {filters.dateFilter === "custom" && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="w-60" data-testid="button-custom-date">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange.from ? (
+                              dateRange.to ? (
+                                <>
+                                  {format(dateRange.from, "MMM dd, yyyy")} - {format(dateRange.to, "MMM dd, yyyy")}
+                                </>
+                              ) : (
+                                format(dateRange.from, "MMM dd, yyyy")
+                              )
+                            ) : (
+                              <span>Pick a date range</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={dateRange.from}
+                            selected={dateRange}
+                            onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+                            numberOfMonths={2}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

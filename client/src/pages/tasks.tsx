@@ -993,6 +993,7 @@ function CreateTaskDialog({
             onClick={handleSubmit}
             disabled={createTaskMutation.isPending}
             data-testid="button-submit-task"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
           >
             {createTaskMutation.isPending ? "Creating..." : "Create Task"}
           </Button>

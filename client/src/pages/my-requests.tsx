@@ -10,12 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import RequestDetail from "@/components/request-detail";
-import { Search, Eye, CircleAlert, MinusCircle, InfoIcon } from "lucide-react";
+import { Search, Eye, CircleAlert, MinusCircle, InfoIcon, Calendar as CalendarIcon } from "lucide-react";
 import type { DataRequestWithDetails } from "@shared/schema";
 import { calculateUrgency } from "@/lib/urgency";
+import { format } from "date-fns";
 
 export default function MyRequests() {
   const { user, isLoading: authLoading } = useAuth();
@@ -25,18 +28,23 @@ export default function MyRequests() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
   const [filters, setFilters] = useState({
-    status: "all",
-    department: "all",
-    priority: "all",
-    type: "all",
+    status: "",
+    type: "",
+    dateFilter: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined,
   });
 
   // Fetch requests submitted by current user
   const apiFilters = {
-    status: filters.status === "all" ? "" : filters.status,
-    department: filters.department === "all" ? "" : filters.department,
-    priority: filters.priority === "all" ? "" : filters.priority,
-    type: filters.type === "all" ? "" : filters.type,
+    status: filters.status,
+    type: filters.type,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
     requestedById: (user as any)?.id,
   };
   
@@ -86,6 +94,56 @@ export default function MyRequests() {
         });
     }
   }, [searchString, location, setLocation]);
+
+  // Handle date filter changes
+  const handleDateFilterChange = (value: string) => {
+    const now = new Date();
+    let startDate = "";
+    let endDate = "";
+
+    if (value === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      startDate = today.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "this_week") {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      startDate = weekStart.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "this_month") {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      monthStart.setHours(0, 0, 0, 0);
+      startDate = monthStart.toISOString();
+      endDate = new Date().toISOString();
+    } else if (value === "custom") {
+      setFilters({ ...filters, dateFilter: value, startDate: "", endDate: "" });
+      return;
+    } else {
+      setFilters({ ...filters, dateFilter: "", startDate: "", endDate: "" });
+      setDateRange({ from: undefined, to: undefined });
+      return;
+    }
+
+    setFilters({ ...filters, dateFilter: value, startDate, endDate });
+  };
+
+  // Handle custom date range selection
+  useEffect(() => {
+    if (filters.dateFilter === "custom" && dateRange.from) {
+      const from = new Date(dateRange.from);
+      from.setHours(0, 0, 0, 0);
+      const to = dateRange.to ? new Date(dateRange.to) : new Date();
+      to.setHours(23, 59, 59, 999);
+      
+      setFilters({
+        ...filters,
+        startDate: from.toISOString(),
+        endDate: to.toISOString(),
+      });
+    }
+  }, [dateRange]);
 
   const filteredRequests = (requests || []).filter((request: DataRequestWithDetails) =>
     request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -222,50 +280,91 @@ export default function MyRequests() {
             {/* Filters */}
             <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
               <CardContent className="p-4">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1 relative">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Search requests..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 w-64"
                       data-testid="input-search"
                     />
                   </div>
-                  <Select
-                    value={filters.status}
-                    onValueChange={(value) => setFilters({ ...filters, status: value })}
-                  >
-                    <SelectTrigger className="w-full md:w-48" data-testid="select-status-filter">
-                      <SelectValue placeholder="All Statuses" />
+
+                  <Select value={filters.status || "all"} onValueChange={(value) => setFilters({...filters, status: value === "all" ? "" : value})}>
+                    <SelectTrigger className="w-40" data-testid="select-status">
+                      <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="pending_review">Pending Review</SelectItem>
                       <SelectItem value="accepted">Accepted</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="blocked">Blocked</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select
-                    value={filters.priority}
-                    onValueChange={(value) => setFilters({ ...filters, priority: value })}
-                  >
-                    <SelectTrigger className="w-full md:w-48" data-testid="select-priority-filter">
-                      <SelectValue placeholder="All Priorities" />
+
+                  <Select value={filters.type || "all"} onValueChange={(value) => setFilters({...filters, type: value === "all" ? "" : value})}>
+                    <SelectTrigger className="w-40" data-testid="select-type">
+                      <SelectValue placeholder="All Types" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Priorities</SelectItem>
-                      <SelectItem value="p0_critical">P0 - Critical</SelectItem>
-                      <SelectItem value="p1_high">P1 - High</SelectItem>
-                      <SelectItem value="p2_medium">P2 - Medium</SelectItem>
-                      <SelectItem value="p3_low">P3 - Low</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
+                      <SelectItem value="modify_dashboard">Modify Dashboard/Report</SelectItem>
+                      <SelectItem value="adhoc_analysis">Ad-hoc Analysis</SelectItem>
+                      <SelectItem value="data_extraction">Data Extraction</SelectItem>
+                      <SelectItem value="data_bug">Data Bug</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  <Select value={filters.dateFilter || "all"} onValueChange={handleDateFilterChange}>
+                    <SelectTrigger className="w-40" data-testid="select-date-filter">
+                      <SelectValue placeholder="All Time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="this_week">This Week</SelectItem>
+                      <SelectItem value="this_month">This Month</SelectItem>
+                      <SelectItem value="custom">Custom Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {filters.dateFilter === "custom" && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-60" data-testid="button-custom-date">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateRange.from ? (
+                            dateRange.to ? (
+                              <>
+                                {format(dateRange.from, "MMM dd, yyyy")} - {format(dateRange.to, "MMM dd, yyyy")}
+                              </>
+                            ) : (
+                              format(dateRange.from, "MMM dd, yyyy")
+                            )
+                          ) : (
+                            <span>Pick a date range</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          initialFocus
+                          mode="range"
+                          defaultMonth={dateRange.from}
+                          selected={dateRange}
+                          onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+                          numberOfMonths={2}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </div>
               </CardContent>
             </Card>
