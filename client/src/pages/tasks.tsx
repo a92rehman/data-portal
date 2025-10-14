@@ -817,7 +817,7 @@ function CreateTaskDialog({
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedToId, setAssignedToId] = useState("");
+  const [assignedToId, setAssignedToId] = useState("unassigned");
   const [optimisticTime, setOptimisticTime] = useState("");
   const [mostLikelyTime, setMostLikelyTime] = useState("");
   const [pessimisticTime, setPessimisticTime] = useState("");
@@ -869,7 +869,7 @@ function CreateTaskDialog({
       title: title.trim(),
       description: description.trim() || undefined,
       status: "to_do",
-      assignedToId: assignedToId || undefined,
+      assignedToId: assignedToId === "unassigned" ? undefined : assignedToId,
       dueDate: dueDate || undefined,
     };
 
@@ -921,7 +921,7 @@ function CreateTaskDialog({
                   <SelectValue placeholder="Select analyst" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {analysts.map((analyst) => (
                     <SelectItem key={analyst.id} value={analyst.id}>
                       {analyst.firstName} {analyst.lastName}
