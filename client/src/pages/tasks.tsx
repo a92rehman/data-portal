@@ -213,12 +213,12 @@ export default function Tasks() {
 
           {/* Filters */}
           <div className="flex gap-3 mb-6">
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <Select value={filterStatus || "all"} onValueChange={(value) => setFilterStatus(value === "all" ? "" : value)}>
               <SelectTrigger className="w-[200px]" data-testid="select-status-filter">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="to_do">To Do</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="blocked">Blocked</SelectItem>
@@ -227,12 +227,12 @@ export default function Tasks() {
             </Select>
 
             {isTeamLead && (
-              <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+              <Select value={filterAssignee || "all"} onValueChange={(value) => setFilterAssignee(value === "all" ? "" : value)}>
                 <SelectTrigger className="w-[200px]" data-testid="select-assignee-filter">
                   <SelectValue placeholder="All Assignees" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Assignees</SelectItem>
+                  <SelectItem value="all">All Assignees</SelectItem>
                   {analysts.map(analyst => (
                     <SelectItem key={analyst.id} value={analyst.id}>
                       {analyst.firstName} {analyst.lastName}
