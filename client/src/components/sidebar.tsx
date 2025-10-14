@@ -9,7 +9,8 @@ import {
   Plus,
   ClipboardCheck,
   FileText,
-  ListTodo
+  ListTodo,
+  ClipboardList
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,7 +30,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
       return [
         { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-my-requests" },
-        { href: "/tasks", icon: ListTodo, label: "Tasks", testId: "nav-tasks" },
+        { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-tasks" },
         { href: "/pending-reviews", icon: ClipboardCheck, label: "Pending Reviews", testId: "nav-pending-reviews" },
         { href: "/all-requests", icon: FileText, label: "All Requests", testId: "nav-all-requests" },
         { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
@@ -40,7 +41,8 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
       return [
         { href: "/", icon: LayoutDashboard, label: "Dashboard", testId: "nav-dashboard" },
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-my-requests" },
-        { href: "/tasks", icon: ListTodo, label: "Tasks", testId: "nav-tasks" },
+        { href: "/request-assignments", icon: ClipboardList, label: "Request Assignments", testId: "nav-request-assignments" },
+        { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-tasks" },
       ];
     } else {
       // Requester - Limited access
