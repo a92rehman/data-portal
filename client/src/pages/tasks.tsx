@@ -6,17 +6,17 @@ import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, CheckCircle2, AlertCircle, Plus, User as UserIcon, Calendar as CalendarIcon, ListTodo, BarChart2, Info, ListChecks, Trash2 } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskWithDetails, User } from "@shared/schema";
 
@@ -48,7 +48,7 @@ export default function Tasks() {
       return response.json();
     },
     enabled: isAuthenticated,
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
+    refetchInterval: 5000,
   });
 
   // Fetch analysts for assignment
@@ -57,14 +57,38 @@ export default function Tasks() {
     enabled: isAuthenticated && isTeamLead,
   });
 
-  // Group tasks by status for Kanban (exclude sub-tasks - they show only in parent task detail)
+  // Filter out sub-tasks (they show only in parent task detail)
   const parentTasks = tasks.filter(t => !t.parentTaskId);
-  const tasksByStatus = {
-    to_do: parentTasks.filter(t => t.status === "to_do"),
-    in_progress: parentTasks.filter(t => t.status === "in_progress"),
-    blocked: parentTasks.filter(t => t.status === "blocked"),
-    completed: parentTasks.filter(t => t.status === "completed"),
-  };
+
+  // Sort tasks by status
+  const sortedTasks = [...parentTasks].sort((a, b) => {
+    const statusOrder = {
+      'to_do': 1,
+      'in_progress': 2,
+      'blocked': 3,
+      'completed': 4,
+    };
+    
+    const orderA = statusOrder[a.status as keyof typeof statusOrder] || 999;
+    const orderB = statusOrder[b.status as keyof typeof statusOrder] || 999;
+    
+    // Primary sort: by status
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    
+    // Secondary sort: by due date (if exists)
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    
+    // Tertiary sort: by creation date (newest first)
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
 
   const updateTaskStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -83,159 +107,24 @@ export default function Tasks() {
     },
   });
 
-  const StatusColumn = ({ status, title, icon, tasks }: { 
-    status: string; 
-    title: string; 
-    icon: React.ReactNode;
-    tasks: TaskWithDetails[];
-  }) => {
-    const statusColors = {
-      to_do: "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800",
-      in_progress: "bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800",
-      blocked: "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800",
-      completed: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      to_do: "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700",
+      in_progress: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+      blocked: "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700",
+      completed: "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700",
     };
-
-    return (
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          {icon}
-          <h3 className="font-semibold text-sm uppercase text-muted-foreground">{title}</h3>
-          <Badge variant="outline" className="ml-auto">{tasks.length}</Badge>
-        </div>
-        <div className="space-y-3">
-          {tasks.map(task => (
-            <TaskCard key={task.id} task={task} statusColors={statusColors} status={status} onSelectTask={setSelectedTask} updateStatusMutation={updateTaskStatusMutation} />
-          ))}
-        </div>
-      </div>
-    );
+    return variants[status as keyof typeof variants] || variants.to_do;
   };
 
-  const TaskCard = ({ task, statusColors, status, onSelectTask, updateStatusMutation }: {
-    task: TaskWithDetails;
-    statusColors: any;
-    status: string;
-    onSelectTask: (task: TaskWithDetails) => void;
-    updateStatusMutation: any;
-  }) => {
-    // Fetch sub-task progress
-    const { data: progress } = useQuery<{ total: number; completed: number }>({
-      queryKey: ["/api/tasks", task.id, "subtasks", "progress"],
-      queryFn: async () => {
-        const response = await fetch(`/api/tasks/${task.id}/subtasks/progress`, {
-          credentials: 'include',
-        });
-        if (!response.ok) throw new Error('Failed to fetch sub-task progress');
-        return response.json();
-      },
-      enabled: isAuthenticated,
-    });
-
-    return (
-      <Card 
-        className={`hover:shadow-md transition-shadow ${statusColors[status as keyof typeof statusColors]}`}
-        data-testid={`task-card-${task.id}`}
-      >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                {task.requestId ? (
-                  <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
-                    Request Task
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs">
-                    Team Task
-                  </Badge>
-                )}
-                {progress && progress.total > 0 && (
-                  <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
-                    <ListChecks className="w-3 h-3" />
-                    {progress.completed}/{progress.total} sub-tasks
-                  </Badge>
-                )}
-              </div>
-              <h4 
-                className="font-medium cursor-pointer" 
-                onClick={() => onSelectTask(task)}
-                data-testid={`task-title-${task.id}`}
-              >
-                {task.title}
-              </h4>
-            </div>
-            <Select 
-              value={task.status} 
-              onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
-            >
-              <SelectTrigger 
-                className="w-24 h-7 text-xs" 
-                onClick={(e) => e.stopPropagation()}
-                data-testid={`select-status-${task.id}`}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="to_do">To Do</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {task.description && (
-            <p 
-              className="text-sm text-muted-foreground mb-3 line-clamp-2 cursor-pointer"
-              onClick={() => onSelectTask(task)}
-            >
-              {task.description}
-            </p>
-          )}
-          
-          <div 
-            className="flex flex-wrap gap-2 text-xs text-muted-foreground cursor-pointer"
-            onClick={() => onSelectTask(task)}
-          >
-            {task.assignedTo && (
-              <div className="flex items-center gap-1">
-                <UserIcon className="w-3 h-3" />
-                <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
-              </div>
-            )}
-            {task.expectedTime && (
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>{task.expectedTime.toFixed(1)}h</span>
-              </div>
-            )}
-            {task.dueDate && (
-              <div className="flex items-center gap-1">
-                <CalendarIcon className="w-3 h-3" />
-                <span>{format(new Date(task.dueDate), "MMM d")}</span>
-              </div>
-            )}
-          </div>
-
-          {task.request && (
-            <div className="mt-2 pt-2 border-t">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (task.request) {
-                    setLocation(`/requests/${task.request.id}`);
-                  }
-                }}
-                className="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1"
-                data-testid={`link-request-${task.id}`}
-              >
-                <span>→ Request #{task.request?.requestNumber}: {task.request?.title}</span>
-              </button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
+  const formatStatus = (status: string) => {
+    const statusMap = {
+      to_do: "To Do",
+      in_progress: "In Progress",
+      blocked: "Blocked",
+      completed: "Completed",
+    };
+    return statusMap[status as keyof typeof statusMap] || status;
   };
 
   if (!isAuthenticated) {
@@ -255,7 +144,7 @@ export default function Tasks() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-1" data-testid="page-title">Tasks</h1>
+              <h1 className="text-3xl font-bold mb-1" data-testid="page-title">Team Tasks</h1>
               <p className="text-muted-foreground">Manage your team's tasks and workload</p>
             </div>
             <Button 
@@ -269,70 +158,87 @@ export default function Tasks() {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-3 mb-6">
-            <Select value={filterStatus || "all"} onValueChange={(value) => setFilterStatus(value === "all" ? "" : value)}>
-              <SelectTrigger className="w-[200px]" data-testid="select-status-filter">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="to_do">To Do</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex gap-3">
+                <Select value={filterStatus || "all"} onValueChange={(value) => setFilterStatus(value === "all" ? "" : value)}>
+                  <SelectTrigger className="w-[200px]" data-testid="select-status-filter">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="to_do">To Do</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="blocked">Blocked</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
 
-            {isTeamLead && (
-              <Select value={filterAssignee || "all"} onValueChange={(value) => setFilterAssignee(value === "all" ? "" : value)}>
-                <SelectTrigger className="w-[200px]" data-testid="select-assignee-filter">
-                  <SelectValue placeholder="All Assignees" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Assignees</SelectItem>
-                  {analysts.map(analyst => (
-                    <SelectItem key={analyst.id} value={analyst.id}>
-                      {analyst.firstName} {analyst.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
+                {isTeamLead && (
+                  <Select value={filterAssignee || "all"} onValueChange={(value) => setFilterAssignee(value === "all" ? "" : value)}>
+                    <SelectTrigger className="w-[200px]" data-testid="select-assignee-filter">
+                      <SelectValue placeholder="All Assignees" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Assignees</SelectItem>
+                      {analysts.map(analyst => (
+                        <SelectItem key={analyst.id} value={analyst.id}>
+                          {analyst.firstName} {analyst.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Kanban Board */}
-          {isLoading ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Loading tasks...</p>
+          {/* Tasks Table */}
+          <Card className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Task</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Assigned To</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Expected Time</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        Loading tasks...
+                      </TableCell>
+                    </TableRow>
+                  ) : sortedTasks.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        No tasks found matching your criteria
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sortedTasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        onSelectTask={setSelectedTask}
+                        updateStatusMutation={updateTaskStatusMutation}
+                        getStatusBadge={getStatusBadge}
+                        formatStatus={formatStatus}
+                        setLocation={setLocation}
+                      />
+                    ))
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatusColumn 
-                status="to_do"
-                title="To Do" 
-                icon={<ListTodo className="w-4 h-4 text-slate-500" />}
-                tasks={tasksByStatus.to_do}
-              />
-              <StatusColumn 
-                status="in_progress"
-                title="In Progress" 
-                icon={<Clock className="w-4 h-4 text-blue-500" />}
-                tasks={tasksByStatus.in_progress}
-              />
-              <StatusColumn 
-                status="blocked"
-                title="Blocked" 
-                icon={<AlertCircle className="w-4 h-4 text-red-500" />}
-                tasks={tasksByStatus.blocked}
-              />
-              <StatusColumn 
-                status="completed"
-                title="Completed" 
-                icon={<CheckCircle2 className="w-4 h-4 text-green-500" />}
-                tasks={tasksByStatus.completed}
-              />
-            </div>
-          )}
+          </Card>
         </main>
       </div>
 
@@ -356,6 +262,152 @@ export default function Tasks() {
         }}
       />
     </div>
+  );
+}
+
+// Task Row Component
+function TaskRow({ 
+  task, 
+  onSelectTask, 
+  updateStatusMutation,
+  getStatusBadge,
+  formatStatus,
+  setLocation
+}: { 
+  task: TaskWithDetails; 
+  onSelectTask: (task: TaskWithDetails) => void;
+  updateStatusMutation: any;
+  getStatusBadge: (status: string) => string;
+  formatStatus: (status: string) => string;
+  setLocation: (path: string) => void;
+}) {
+  const { user, isAuthenticated } = useAuth();
+
+  // Fetch sub-task progress
+  const { data: progress } = useQuery<{ total: number; completed: number }>({
+    queryKey: ["/api/tasks", task.id, "subtasks", "progress"],
+    queryFn: async () => {
+      const response = await fetch(`/api/tasks/${task.id}/subtasks/progress`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch sub-task progress');
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  return (
+    <TableRow 
+      className="cursor-pointer hover:bg-muted/50"
+      data-testid={`task-row-${task.id}`}
+    >
+      <TableCell className="font-medium">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            {task.requestId ? (
+              <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
+                Request Task
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs">
+                Team Task
+              </Badge>
+            )}
+            {progress && progress.total > 0 && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                <ListChecks className="w-3 h-3" />
+                {progress.completed}/{progress.total}
+              </Badge>
+            )}
+          </div>
+          <div 
+            className="font-medium cursor-pointer hover:text-primary"
+            onClick={() => onSelectTask(task)}
+            data-testid={`task-title-${task.id}`}
+          >
+            {task.title}
+          </div>
+          {task.description && (
+            <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+              {task.description}
+            </p>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        {task.request ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (task.request) {
+                setLocation(`/requests/${task.request.id}`);
+              }
+            }}
+            className="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+            data-testid={`link-request-${task.id}`}
+          >
+            #{task.request.requestNumber}
+          </button>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {task.assignedTo ? (
+          <span className="text-sm">
+            {task.assignedTo.firstName} {task.assignedTo.lastName}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground italic">Unassigned</span>
+        )}
+      </TableCell>
+      <TableCell onClick={(e) => e.stopPropagation()}>
+        <Select 
+          value={task.status} 
+          onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
+        >
+          <SelectTrigger 
+            className={`w-32 ${getStatusBadge(task.status)}`}
+            data-testid={`select-status-${task.id}`}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="to_do">To Do</SelectItem>
+            <SelectItem value="in_progress">In Progress</SelectItem>
+            <SelectItem value="blocked">Blocked</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell>
+        {task.expectedTime ? (
+          <span className="text-sm">{task.expectedTime.toFixed(1)}h</span>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell>
+        {task.dueDate ? (
+          <span className="text-sm">{format(new Date(task.dueDate), "MMM d, yyyy")}</span>
+        ) : (
+          <span className="text-sm text-muted-foreground">—</span>
+        )}
+      </TableCell>
+      <TableCell>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelectTask(task);
+          }}
+          data-testid={`button-view-${task.id}`}
+        >
+          <Eye className="w-4 h-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -580,14 +632,11 @@ function TaskDetailDialog({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => {
-                              setDeletingSubTaskId(subTask.id);
-                            }}
-                            disabled={deleteSubTaskMutation.isPending}
-                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setDeletingSubTaskId(subTask.id)}
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                             data-testid={`button-delete-subtask-${subTask.id}`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         )}
                       </div>
@@ -597,54 +646,48 @@ function TaskDetailDialog({
               )}
             </div>
           </div>
-        </div>
 
-        {/* Dialog Footer with Delete Button */}
-        {isTeamLead && (
-          <DialogFooter className="border-t pt-4">
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              data-testid="button-delete-task"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete Task
-            </Button>
-          </DialogFooter>
-        )}
+          {isTeamLead && (
+            <div className="border-t pt-4 flex justify-end">
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                data-testid="button-delete-task"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Task
+              </Button>
+            </div>
+          )}
+        </div>
       </DialogContent>
 
-      {/* Delete Task Confirmation Dialog */}
+      {/* Delete Task Confirmation */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Task</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this task? This action cannot be undone.
-              {subTasks.length > 0 && (
-                <span className="block mt-2 text-red-600 font-semibold">
-                  Warning: This will also delete all {subTasks.length} sub-task(s).
-                </span>
-              )}
+              Are you sure you want to delete this task? This will also delete all sub-tasks. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteTaskMutation.mutate(task.id)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteTaskMutation.isPending ? "Deleting..." : "Delete"}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Sub-Task Confirmation Dialog */}
-      <AlertDialog open={!!deletingSubTaskId} onOpenChange={(open) => !open && setDeletingSubTaskId(null)}>
+      {/* Delete Sub-task Confirmation */}
+      <AlertDialog open={!!deletingSubTaskId} onOpenChange={() => setDeletingSubTaskId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Sub-Task</AlertDialogTitle>
+            <AlertDialogTitle>Delete Sub-task</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete this sub-task? This action cannot be undone.
             </AlertDialogDescription>
@@ -653,14 +696,110 @@ function TaskDetailDialog({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingSubTaskId && deleteSubTaskMutation.mutate(deletingSubTaskId)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteSubTaskMutation.isPending ? "Deleting..." : "Delete"}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </Dialog>
+  );
+}
+
+// Sub-task Form Component
+function SubTaskForm({ 
+  parentTaskId, 
+  onSuccess, 
+  onCancel 
+}: { 
+  parentTaskId: string; 
+  onSuccess: () => void; 
+  onCancel: () => void;
+}) {
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  const createSubTaskMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/tasks", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Sub-task created successfully" });
+      onSuccess();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create sub-task",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!title.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a title for the sub-task",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createSubTaskMutation.mutate({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      status: "to_do",
+      parentTaskId,
+    });
+  };
+
+  return (
+    <Card className="p-4 bg-muted">
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs">Sub-task Title</Label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter sub-task title"
+            className="mt-1"
+            data-testid="input-subtask-title"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Description (Optional)</Label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter description"
+            className="mt-1"
+            rows={2}
+            data-testid="textarea-subtask-description"
+          />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onCancel}
+            data-testid="button-cancel-subtask"
+          >
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={createSubTaskMutation.isPending}
+            data-testid="button-save-subtask"
+          >
+            {createSubTaskMutation.isPending ? "Creating..." : "Create Sub-task"}
+          </Button>
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -676,39 +815,36 @@ function CreateTaskDialog({
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    optimisticTime: "",
-    mostLikelyTime: "",
-    pessimisticTime: "",
-    assignedToId: "",
-    dueDate: "",
-  });
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [assignedToId, setAssignedToId] = useState("");
+  const [optimisticTime, setOptimisticTime] = useState("");
+  const [mostLikelyTime, setMostLikelyTime] = useState("");
+  const [pessimisticTime, setPessimisticTime] = useState("");
+  const [dueDate, setDueDate] = useState("");
 
   const isTeamLead = (user as any)?.role === "team_lead";
 
+  // Fetch analysts for assignment
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
-    enabled: isTeamLead,
+    enabled: isTeamLead && open,
   });
 
-  const createMutation = useMutation({
+  const createTaskMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/tasks", data);
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Task created successfully" });
+      setTitle("");
+      setDescription("");
+      setAssignedToId("");
+      setOptimisticTime("");
+      setMostLikelyTime("");
+      setPessimisticTime("");
+      setDueDate("");
       onSuccess();
-      setFormData({
-        title: "",
-        description: "",
-        optimisticTime: "",
-        mostLikelyTime: "",
-        pessimisticTime: "",
-        assignedToId: "",
-        dueDate: "",
-      });
     },
     onError: (error: Error) => {
       toast({
@@ -719,31 +855,33 @@ function CreateTaskDialog({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = () => {
+    if (!title.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a task title",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const taskData: any = {
-      title: formData.title,
-      description: formData.description || undefined,
-      optimisticTime: formData.optimisticTime ? parseFloat(formData.optimisticTime) : undefined,
-      mostLikelyTime: formData.mostLikelyTime ? parseFloat(formData.mostLikelyTime) : undefined,
-      pessimisticTime: formData.pessimisticTime ? parseFloat(formData.pessimisticTime) : undefined,
-      assignedToId: formData.assignedToId || undefined,
-      dueDate: formData.dueDate || undefined,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      status: "to_do",
+      assignedToId: assignedToId || undefined,
+      dueDate: dueDate || undefined,
     };
 
-    createMutation.mutate(taskData);
-  };
+    // Add PERT estimates if provided
+    if (optimisticTime || mostLikelyTime || pessimisticTime) {
+      taskData.optimisticTime = optimisticTime ? parseFloat(optimisticTime) : undefined;
+      taskData.mostLikelyTime = mostLikelyTime ? parseFloat(mostLikelyTime) : undefined;
+      taskData.pessimisticTime = pessimisticTime ? parseFloat(pessimisticTime) : undefined;
+    }
 
-  // Calculate expected time using PERT formula
-  const expectedTime = 
-    formData.optimisticTime && formData.mostLikelyTime && formData.pessimisticTime
-      ? (
-          (parseFloat(formData.optimisticTime) + 
-           4 * parseFloat(formData.mostLikelyTime) + 
-           parseFloat(formData.pessimisticTime)) / 6
-        ).toFixed(1)
-      : null;
+    createTaskMutation.mutate(taskData);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -751,142 +889,40 @@ function CreateTaskDialog({
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
-            <Label htmlFor="title">Task Title *</Label>
+            <Label>Task Title</Label>
             <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter task title"
+              className="mt-1"
               data-testid="input-task-title"
             />
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label>Description (Optional)</Label>
             <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter task description"
+              className="mt-1"
               rows={3}
-              data-testid="input-task-description"
+              data-testid="textarea-task-description"
             />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Label className="block">PERT Time Estimation (hours)</Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-sm">
-                    <div className="space-y-2 text-xs">
-                      <p className="font-semibold">PERT Time Estimation:</p>
-                      <p><strong>Optimistic (O):</strong> Best case - everything goes perfectly</p>
-                      <p><strong>Most Likely (M):</strong> Realistic estimate - normal conditions</p>
-                      <p><strong>Pessimistic (P):</strong> Worst case - maximum delays/issues</p>
-                      <p className="pt-1 border-t"><strong>Expected Time = (O + 4M + P) / 6</strong></p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="optimistic" className="text-xs text-muted-foreground">Optimistic</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Best case scenario - everything goes perfectly with no issues</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Input
-                  id="optimistic"
-                  type="number"
-                  step="0.5"
-                  value={formData.optimisticTime}
-                  onChange={(e) => setFormData({ ...formData, optimisticTime: e.target.value })}
-                  placeholder="Best case"
-                  data-testid="input-optimistic-time"
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="mostLikely" className="text-xs text-muted-foreground">Most Likely</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Realistic estimate - normal working conditions with typical challenges</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Input
-                  id="mostLikely"
-                  type="number"
-                  step="0.5"
-                  value={formData.mostLikelyTime}
-                  onChange={(e) => setFormData({ ...formData, mostLikelyTime: e.target.value })}
-                  placeholder="Realistic"
-                  data-testid="input-most-likely-time"
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="pessimistic" className="text-xs text-muted-foreground">Pessimistic</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3 h-3 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="text-xs">Worst case scenario - maximum delays and unexpected issues</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Input
-                  id="pessimistic"
-                  type="number"
-                  step="0.5"
-                  value={formData.pessimisticTime}
-                  onChange={(e) => setFormData({ ...formData, pessimisticTime: e.target.value })}
-                  placeholder="Worst case"
-                  data-testid="input-pessimistic-time"
-                />
-              </div>
-            </div>
-            {expectedTime && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Expected Time: <span className="font-medium text-primary">{expectedTime} hours</span>
-              </p>
-            )}
           </div>
 
           {isTeamLead && (
             <div>
-              <Label htmlFor="assignedTo">Assign To</Label>
-              <Select 
-                value={formData.assignedToId} 
-                onValueChange={(value) => setFormData({ ...formData, assignedToId: value })}
-              >
-                <SelectTrigger data-testid="select-assign-to">
+              <Label>Assign To</Label>
+              <Select value={assignedToId} onValueChange={setAssignedToId}>
+                <SelectTrigger className="mt-1" data-testid="select-assign-to">
                   <SelectValue placeholder="Select analyst" />
                 </SelectTrigger>
                 <SelectContent>
-                  {analysts.map(analyst => (
+                  <SelectItem value="">Unassigned</SelectItem>
+                  {analysts.map((analyst) => (
                     <SelectItem key={analyst.id} value={analyst.id}>
                       {analyst.firstName} {analyst.lastName}
                     </SelectItem>
@@ -897,121 +933,71 @@ function CreateTaskDialog({
           )}
 
           <div>
-            <Label htmlFor="dueDate">Due Date</Label>
+            <Label>Due Date (Optional)</Label>
             <Input
-              id="dueDate"
               type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="mt-1"
               data-testid="input-due-date"
             />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose} data-testid="button-cancel">
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={createMutation.isPending} 
-              data-testid="button-submit-task"
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
-            >
-              {createMutation.isPending ? "Creating..." : "Create Task"}
-            </Button>
+          <div>
+            <Label>PERT Time Estimates (Optional, in hours)</Label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              <div>
+                <Label className="text-xs text-muted-foreground">Optimistic</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={optimisticTime}
+                  onChange={(e) => setOptimisticTime(e.target.value)}
+                  placeholder="0.0"
+                  className="mt-1"
+                  data-testid="input-optimistic-time"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Most Likely</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={mostLikelyTime}
+                  onChange={(e) => setMostLikelyTime(e.target.value)}
+                  placeholder="0.0"
+                  className="mt-1"
+                  data-testid="input-most-likely-time"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Pessimistic</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={pessimisticTime}
+                  onChange={(e) => setPessimisticTime(e.target.value)}
+                  placeholder="0.0"
+                  className="mt-1"
+                  data-testid="input-pessimistic-time"
+                />
+              </div>
+            </div>
           </div>
-        </form>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} data-testid="button-cancel-task">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={createTaskMutation.isPending}
+            data-testid="button-submit-task"
+          >
+            {createTaskMutation.isPending ? "Creating..." : "Create Task"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-// Sub-task Form Component
-function SubTaskForm({
-  parentTaskId,
-  onSuccess,
-  onCancel,
-}: {
-  parentTaskId: string;
-  onSuccess: () => void;
-  onCancel: () => void;
-}) {
-  const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/tasks", {
-        ...data,
-        parentTaskId,
-      });
-    },
-    onSuccess: () => {
-      toast({ title: "Success", description: "Sub-task created successfully" });
-      onSuccess();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create sub-task",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title.trim()) {
-      toast({ title: "Error", description: "Title is required", variant: "destructive" });
-      return;
-    }
-    createMutation.mutate(formData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-3 bg-muted rounded-lg mb-3">
-      <div>
-        <Label htmlFor="subtask-title" className="text-sm">Title</Label>
-        <Input
-          id="subtask-title"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          placeholder="Enter sub-task title"
-          className="mt-1"
-          data-testid="input-subtask-title"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="subtask-description" className="text-sm">Description (Optional)</Label>
-        <Textarea
-          id="subtask-description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Enter sub-task description"
-          rows={2}
-          className="mt-1"
-          data-testid="input-subtask-description"
-        />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel} data-testid="button-cancel-subtask">
-          Cancel
-        </Button>
-        <Button 
-          type="submit" 
-          size="sm"
-          disabled={createMutation.isPending}
-          data-testid="button-create-subtask"
-          className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
-        >
-          {createMutation.isPending ? "Creating..." : "Create Sub-task"}
-        </Button>
-      </div>
-    </form>
   );
 }
