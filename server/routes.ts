@@ -2037,6 +2037,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get tasks linked to a specific request
+  app.get('/api/requests/:id/tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      const request = await storage.getDataRequest(req.params.id);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      // Check permissions: requester, assigned analyst, or team lead can view
+      const canView = 
+        request.requestedById === req.user.id ||
+        request.assignedToId === req.user.id ||
+        user?.role === 'team_lead';
+
+      if (!canView) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const requestTasks = await storage.getTasks({ requestId: req.params.id });
+      res.json(requestTasks);
+    } catch (error) {
+      console.error("Error fetching request tasks:", error);
+      res.status(500).json({ message: "Failed to fetch request tasks" });
+    }
+  });
+
   app.get('/api/tasks/workload/:userId', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);
