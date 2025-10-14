@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +71,11 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskAssignedTo, setNewTaskAssignedTo] = useState("unassigned");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskOptimisticTime, setNewTaskOptimisticTime] = useState("");
+  const [newTaskMostLikelyTime, setNewTaskMostLikelyTime] = useState("");
+  const [newTaskPessimisticTime, setNewTaskPessimisticTime] = useState("");
   
   const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
@@ -480,7 +486,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: async (data: { title: string; description?: string; requestId: string; assignedToId?: string }) => {
+    mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/tasks", data);
     },
     onSuccess: () => {
@@ -491,6 +497,11 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       setShowCreateTaskDialog(false);
       setNewTaskTitle("");
       setNewTaskDescription("");
+      setNewTaskAssignedTo("unassigned");
+      setNewTaskDueDate("");
+      setNewTaskOptimisticTime("");
+      setNewTaskMostLikelyTime("");
+      setNewTaskPessimisticTime("");
       queryClient.invalidateQueries({ queryKey: ["/api/requests", request.id, "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
     },
@@ -1871,23 +1882,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           <div className="px-6 py-4 border-t">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ListTodo className="w-5 h-5" />
-                    Linked Tasks ({requestTasks.filter((t: any) => !t.parentTaskId).length})
-                  </CardTitle>
-                  {((user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
-                    <Button
-                      size="sm"
-                      onClick={() => setShowCreateTaskDialog(true)}
-                      data-testid="button-create-task"
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Create Task
-                    </Button>
-                  )}
-                </div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ListTodo className="w-5 h-5" />
+                  Linked Tasks ({requestTasks.filter((t: any) => !t.parentTaskId).length})
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {requestTasks.filter((t: any) => !t.parentTaskId).length === 0 ? (
@@ -1987,34 +1985,107 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
       {/* Create Task Dialog */}
       <Dialog open={showCreateTaskDialog} onOpenChange={setShowCreateTaskDialog}>
-        <DialogContent data-testid="dialog-create-task">
+        <DialogContent className="max-w-2xl" data-testid="dialog-create-task">
           <DialogHeader>
             <DialogTitle>Create Task</DialogTitle>
             <DialogDescription>
               Create a new task linked to this request
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Task Title</label>
+              <Label>Task Title</Label>
               <Input
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="Enter task title..."
+                placeholder="Enter task title"
                 className="mt-1"
                 data-testid="input-task-title"
               />
             </div>
+
             <div>
-              <label className="text-sm font-medium">Description (Optional)</label>
+              <Label>Description (Optional)</Label>
               <Textarea
                 value={newTaskDescription}
                 onChange={(e) => setNewTaskDescription(e.target.value)}
-                placeholder="Enter task description..."
+                placeholder="Enter task description"
                 className="mt-1"
                 rows={3}
-                data-testid="input-task-description"
+                data-testid="textarea-task-description"
               />
+            </div>
+
+            {((user as any)?.role === 'team_lead') && (
+              <div>
+                <Label>Assign To</Label>
+                <Select value={newTaskAssignedTo} onValueChange={setNewTaskAssignedTo}>
+                  <SelectTrigger className="mt-1" data-testid="select-assign-to">
+                    <SelectValue placeholder="Select analyst" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {analysts.map((analyst) => (
+                      <SelectItem key={analyst.id} value={analyst.id}>
+                        {analyst.firstName} {analyst.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <Label>Due Date (Optional)</Label>
+              <Input
+                type="date"
+                value={newTaskDueDate}
+                onChange={(e) => setNewTaskDueDate(e.target.value)}
+                className="mt-1"
+                data-testid="input-due-date"
+              />
+            </div>
+
+            <div>
+              <Label>PERT Time Estimates (Optional, in hours)</Label>
+              <div className="grid grid-cols-3 gap-2 mt-1">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Optimistic</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={newTaskOptimisticTime}
+                    onChange={(e) => setNewTaskOptimisticTime(e.target.value)}
+                    placeholder="0.0"
+                    className="mt-1"
+                    data-testid="input-optimistic-time"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Most Likely</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={newTaskMostLikelyTime}
+                    onChange={(e) => setNewTaskMostLikelyTime(e.target.value)}
+                    placeholder="0.0"
+                    className="mt-1"
+                    data-testid="input-most-likely-time"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Pessimistic</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={newTaskPessimisticTime}
+                    onChange={(e) => setNewTaskPessimisticTime(e.target.value)}
+                    placeholder="0.0"
+                    className="mt-1"
+                    data-testid="input-pessimistic-time"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -2024,21 +2095,39 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 setShowCreateTaskDialog(false);
                 setNewTaskTitle("");
                 setNewTaskDescription("");
+                setNewTaskAssignedTo("unassigned");
+                setNewTaskDueDate("");
+                setNewTaskOptimisticTime("");
+                setNewTaskMostLikelyTime("");
+                setNewTaskPessimisticTime("");
               }}
               data-testid="button-cancel-create-task"
             >
               Cancel
             </Button>
             <Button
-              onClick={() => createTaskMutation.mutate({
-                title: newTaskTitle,
-                description: newTaskDescription || undefined,
-                requestId: request.id,
-                assignedToId: request.assignedToId || undefined,
-              })}
+              onClick={() => {
+                const taskData: any = {
+                  title: newTaskTitle.trim(),
+                  description: newTaskDescription.trim() || undefined,
+                  status: "to_do",
+                  requestId: request.id,
+                  assignedToId: newTaskAssignedTo === "unassigned" ? undefined : newTaskAssignedTo,
+                  dueDate: newTaskDueDate || undefined,
+                };
+
+                // Add PERT estimates if provided
+                if (newTaskOptimisticTime || newTaskMostLikelyTime || newTaskPessimisticTime) {
+                  taskData.optimisticTime = newTaskOptimisticTime ? parseFloat(newTaskOptimisticTime) : undefined;
+                  taskData.mostLikelyTime = newTaskMostLikelyTime ? parseFloat(newTaskMostLikelyTime) : undefined;
+                  taskData.pessimisticTime = newTaskPessimisticTime ? parseFloat(newTaskPessimisticTime) : undefined;
+                }
+
+                createTaskMutation.mutate(taskData);
+              }}
               disabled={!newTaskTitle.trim() || createTaskMutation.isPending}
               data-testid="button-confirm-create-task"
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
             >
               {createTaskMutation.isPending ? "Creating..." : "Create Task"}
             </Button>
