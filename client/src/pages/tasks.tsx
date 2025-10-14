@@ -56,12 +56,13 @@ export default function Tasks() {
     enabled: isAuthenticated && isTeamLead,
   });
 
-  // Group tasks by status for Kanban
+  // Group tasks by status for Kanban (exclude sub-tasks - they show only in parent task detail)
+  const parentTasks = tasks.filter(t => !t.parentTaskId);
   const tasksByStatus = {
-    to_do: tasks.filter(t => t.status === "to_do"),
-    in_progress: tasks.filter(t => t.status === "in_progress"),
-    blocked: tasks.filter(t => t.status === "blocked"),
-    completed: tasks.filter(t => t.status === "completed"),
+    to_do: parentTasks.filter(t => t.status === "to_do"),
+    in_progress: parentTasks.filter(t => t.status === "in_progress"),
+    blocked: parentTasks.filter(t => t.status === "blocked"),
+    completed: parentTasks.filter(t => t.status === "completed"),
   };
 
   const updateTaskStatusMutation = useMutation({
