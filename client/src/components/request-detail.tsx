@@ -939,7 +939,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 )}
                 
                 {request.status === "accepted" && !request.rejectionReason && (
-                  <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold" data-testid="badge-request-accepted">
+                  <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold ml-[40px] mr-[40px]" data-testid="badge-request-accepted">
                     <Check className="w-4 h-4 mr-1.5" />
                     Request Accepted
                   </Badge>
