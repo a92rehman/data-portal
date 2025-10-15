@@ -489,13 +489,13 @@ function TaskCard({
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => onSelectTask(subTask)}
-                    className="h-7 px-2 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow transition-all"
+                    className="h-7 w-7 p-0 hover:bg-primary/10"
                     data-testid={`button-view-subtask-${subTask.id}`}
                   >
-                    <Eye className="w-3.5 h-3.5 mr-1" />
-                    View
+                    <Eye className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </div>
               </div>
