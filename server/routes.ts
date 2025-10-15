@@ -1852,6 +1852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pessimisticTime: z.number().nonnegative().optional(),
         assignedToId: z.string().optional(),
         requestId: z.string().optional(),
+        parentTaskId: z.string().optional(),
         dueDate: z.string().optional(),
       });
       
