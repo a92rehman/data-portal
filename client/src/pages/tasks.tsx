@@ -716,8 +716,9 @@ function TaskDetailDialog({
   const [deletingSubTaskId, setDeletingSubTaskId] = useState<string | null>(null);
 
   const isTeamLead = (user as any)?.role === "team_lead";
+  const isSubTask = !!task.parentTaskId; // Check if this task is itself a subtask
 
-  // Fetch sub-tasks
+  // Fetch sub-tasks (only for parent tasks)
   const { data: subTasks = [] } = useQuery<TaskWithDetails[]>({
     queryKey: ["/api/tasks", task.id, "subtasks"],
     queryFn: async () => {
@@ -727,7 +728,7 @@ function TaskDetailDialog({
       if (!response.ok) throw new Error('Failed to fetch sub-tasks');
       return response.json();
     },
-    enabled: open,
+    enabled: open && !isSubTask, // Only fetch if not a subtask
   });
 
   const updateStatusMutation = useMutation({
@@ -940,25 +941,26 @@ function TaskDetailDialog({
             </Card>
           )}
 
-          {/* Sub-tasks Section */}
-          <Card className="p-5 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+          {/* Sub-tasks Section - Only show for parent tasks, not subtasks */}
+          {!isSubTask && (
+            <Card className="p-5 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                  </div>
+                  <Label className="text-base font-bold">Sub-tasks ({subTasks.length})</Label>
                 </div>
-                <Label className="text-base font-bold">Sub-tasks ({subTasks.length})</Label>
+                <Button
+                  size="sm"
+                  onClick={() => setShowSubTaskForm(!showSubTaskForm)}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-md hover:shadow-lg transition-all"
+                  data-testid="button-add-subtask"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Sub-task
+                </Button>
               </div>
-              <Button
-                size="sm"
-                onClick={() => setShowSubTaskForm(!showSubTaskForm)}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-md hover:shadow-lg transition-all"
-                data-testid="button-add-subtask"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Sub-task
-              </Button>
-            </div>
 
             {showSubTaskForm && (
               <div className="mb-4">
@@ -1044,6 +1046,7 @@ function TaskDetailDialog({
               )}
             </div>
           </Card>
+          )}
 
           {isTeamLead && (
             <div className="border-t pt-6 flex justify-end">
