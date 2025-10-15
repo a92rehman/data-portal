@@ -1023,15 +1023,37 @@ function TaskDetailDialog({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge 
-                          variant={subTask.status === 'completed' ? 'default' : 'outline'} 
-                          className={`text-xs ${getStatusBadge(subTask.status)}`}
+                        <Select 
+                          value={subTask.status} 
+                          onValueChange={(newStatus) => {
+                            apiRequest("PATCH", `/api/tasks/${subTask.id}/status`, { status: newStatus })
+                              .then(() => {
+                                queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+                                queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+                                toast({ title: "Success", description: "Sub-task status updated" });
+                              })
+                              .catch((error: Error) => {
+                                toast({ 
+                                  title: "Error", 
+                                  description: error.message || "Failed to update status",
+                                  variant: "destructive" 
+                                });
+                              });
+                          }}
                         >
-                          {subTask.status === 'to_do' && 'To Do'}
-                          {subTask.status === 'in_progress' && 'In Progress'}
-                          {subTask.status === 'blocked' && 'Blocked'}
-                          {subTask.status === 'completed' && 'Completed'}
-                        </Badge>
+                          <SelectTrigger 
+                            className={`w-32 h-8 text-xs ${getStatusBadge(subTask.status)}`}
+                            data-testid={`select-subtask-status-${subTask.id}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="to_do">To Do</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="blocked">Blocked</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
                         {isTeamLead && (
                           <Button
                             size="sm"
