@@ -47,9 +47,11 @@ import {
   Calendar,
   RefreshCw,
   Edit,
+  Edit2,
   ListTodo,
   ListChecks,
-  Plus
+  Plus,
+  Users
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -72,6 +74,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [editedDueDate, setEditedDueDate] = useState(new Date(request.dueDate).toISOString().split('T')[0]);
   const [editedRequestType, setEditedRequestType] = useState(request.type);
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
+  const [showEditPriorityDialog, setShowEditPriorityDialog] = useState(false);
+  const [showEditDueDateDialog, setShowEditDueDateDialog] = useState(false);
+  const [showEditRequestTypeDialog, setShowEditRequestTypeDialog] = useState(false);
+  const [showEditAssignedToDialog, setShowEditAssignedToDialog] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskAssignedTo, setNewTaskAssignedTo] = useState("unassigned");
@@ -933,9 +939,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       </DialogHeader>
 
       <ScrollArea className="flex-1">
-        {/* 2. 5-Column Info Tiles Row */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 px-6 py-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
+        {/* 2. Info Cards Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 px-6 py-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
+          {/* Priority Card with Edit Button */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm relative group">
             <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1 flex items-center gap-1">
               {getPriorityIcon(request.priority)}
               Priority
@@ -951,7 +958,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 was {formatPriority(request.originalPriority)}
               </p>
             )}
+            {isTeamLead && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setShowEditPriorityDialog(true)}
+                data-testid="button-edit-priority"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
+
+          {/* Created Date Card */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-sm">
             <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1 flex items-center gap-1">
               <Calendar className="w-3 h-3" />
@@ -961,7 +981,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               {request.createdAt ? new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : 'N/A'}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
+
+          {/* Due Date Card with Edit Button */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm relative group">
             <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Due Date
@@ -977,13 +999,72 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 was {new Date(request.originalDueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </p>
             )}
+            {isTeamLead && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setShowEditDueDateDialog(true)}
+                data-testid="button-edit-due-date"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
+
+          {/* Request Type Card with Edit Button */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-800/50 shadow-sm relative group">
+            <p className="text-xs text-green-600 dark:text-green-400 uppercase mb-1 flex items-center gap-1">
+              <FileText className="w-3 h-3" />
+              Request Type
+            </p>
+            <p className="text-sm font-semibold truncate" data-testid="text-request-type">
+              {formatRequestType(request.type)}
+            </p>
+            {(isTeamLead || isAnalyst) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setShowEditRequestTypeDialog(true)}
+                data-testid="button-edit-request-type"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+
+          {/* Assigned To Card with Edit Button */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-teal-200 dark:border-teal-800/50 shadow-sm relative group">
+            <p className="text-xs text-teal-600 dark:text-teal-400 uppercase mb-1 flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              Assigned To
+            </p>
+            <p className="text-sm font-semibold truncate" data-testid="text-assigned-to">
+              {request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : 'Unassigned'}
+            </p>
+            {isTeamLead && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setShowEditAssignedToDialog(true)}
+                data-testid="button-edit-assigned-to"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+
+          {/* Department Card */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
             <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1">Department</p>
             <p className="text-sm font-semibold capitalize truncate" data-testid="text-department">
               {request.department}
             </p>
           </div>
+
+          {/* Requested By Card */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
             <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
               <UserIcon className="w-3 h-3" />
@@ -995,174 +1076,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </div>
 
-        {/* 3. Edit Row - For Team Lead and Analysts */}
-        {(isTeamLead || isAnalyst) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4 border-b bg-indigo-50 dark:bg-indigo-950/20">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block flex items-center gap-2">
-                Edit Priority
-                {editedPriority !== request.priority && (
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-normal normal-case">
-                    (Modified)
-                  </span>
-                )}
-              </label>
-              <div className="flex gap-2">
-                <Select 
-                  value={editedPriority} 
-                  onValueChange={(value) => setEditedPriority(value as any)}
-                  data-testid="select-edit-priority"
-                >
-                  <SelectTrigger className={`flex-1 ${editedPriority !== request.priority ? 'border-amber-500 dark:border-amber-600' : ''}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="p0_critical">P0 - Critical</SelectItem>
-                    <SelectItem value="p1_high">P1 - High</SelectItem>
-                    <SelectItem value="p2_medium">P2 - Medium</SelectItem>
-                    <SelectItem value="p3_low">P3 - Low</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    updatePriorityDeadlineMutation.mutate({
-                      priority: editedPriority,
-                      dueDate: editedDueDate,
-                    });
-                  }}
-                  disabled={updatePriorityDeadlineMutation.isPending || (editedPriority === request.priority && editedDueDate === new Date(request.dueDate).toISOString().split('T')[0])}
-                  data-testid="button-save-priority"
-                  className="bg-primary hover:bg-primary/90"
-                  title="Save changes"
-                >
-                  <Save className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block flex items-center gap-2">
-                Edit Due Date
-                {editedDueDate !== new Date(request.dueDate).toISOString().split('T')[0] && (
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-normal normal-case">
-                    (Modified)
-                  </span>
-                )}
-              </label>
-              <div className="flex gap-2">
-                <Input 
-                  type="date" 
-                  value={editedDueDate}
-                  onChange={(e) => setEditedDueDate(e.target.value)}
-                  className={`flex-1 ${editedDueDate !== new Date(request.dueDate).toISOString().split('T')[0] ? 'border-amber-500 dark:border-amber-600' : ''}`}
-                  data-testid="input-edit-due-date"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    updatePriorityDeadlineMutation.mutate({
-                      priority: editedPriority,
-                      dueDate: editedDueDate,
-                    });
-                  }}
-                  disabled={updatePriorityDeadlineMutation.isPending || (editedPriority === request.priority && editedDueDate === new Date(request.dueDate).toISOString().split('T')[0])}
-                  data-testid="button-save-deadline"
-                  className="bg-primary hover:bg-primary/90"
-                  title="Save changes"
-                >
-                  <Save className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block flex items-center gap-2">
-                Edit Request Type
-                {editedRequestType !== request.type && (
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-normal normal-case">
-                    (Modified)
-                  </span>
-                )}
-              </label>
-              <div className="flex gap-2">
-                <Select 
-                  value={editedRequestType} 
-                  onValueChange={(value) => setEditedRequestType(value as any)}
-                  data-testid="select-edit-request-type"
-                >
-                  <SelectTrigger className={`flex-1 ${editedRequestType !== request.type ? 'border-amber-500 dark:border-amber-600' : ''}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
-                    <SelectItem value="modify_dashboard">Modification to Existing Dashboard/Report</SelectItem>
-                    <SelectItem value="adhoc_analysis">Ad-hoc Data Analysis</SelectItem>
-                    <SelectItem value="data_extraction">One-time Data Extraction</SelectItem>
-                    <SelectItem value="data_bug">Data Bug / Data Quality Issue</SelectItem>
-                    <SelectItem value="bq_access">BigQuery Access Request</SelectItem>
-                    <SelectItem value="tracking">Event Tracking / Instrumentation</SelectItem>
-                    <SelectItem value="metric_change">Metric Definition / Business Rule Change</SelectItem>
-                    <SelectItem value="pipeline_change">Data Pipeline / Table Change</SelectItem>
-                    <SelectItem value="recurring_report">Scheduled / Recurring Report</SelectItem>
-                    <SelectItem value="experimentation">Experimentation</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    updateRequestTypeMutation.mutate(editedRequestType);
-                  }}
-                  disabled={updateRequestTypeMutation.isPending || editedRequestType === request.type}
-                  data-testid="button-save-request-type"
-                  className="bg-primary hover:bg-primary/90"
-                  title="Save changes"
-                >
-                  <Save className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {isTeamLead && (
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                  Assigned To
-                </label>
-                <div className="flex gap-2">
-                  <Select 
-                    value={selectedAnalyst} 
-                    onValueChange={setSelectedAnalyst}
-                    data-testid="select-assign-analyst"
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select analyst..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {analysts.map((analyst) => (
-                        <SelectItem key={analyst.id} value={analyst.id}>
-                          {analyst.firstName} {analyst.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    size="sm" 
-                    onClick={handleAssignAnalyst}
-                    disabled={!selectedAnalyst || assignMutation.isPending}
-                    data-testid="button-assign"
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    <Save className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 4. 2-Column Main Content */}
+        {/* 3. 2-Column Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 px-6 py-4">
           {/* Left Column - Request Details */}
           <div className="space-y-4">
@@ -2507,6 +2421,241 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               data-testid="button-confirm-suggest-deadline"
             >
               {suggestDeadlineMutation.isPending ? "Submitting..." : "Submit Suggestion"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Priority Dialog */}
+      <Dialog open={showEditPriorityDialog} onOpenChange={setShowEditPriorityDialog}>
+        <DialogContent data-testid="dialog-edit-priority">
+          <DialogHeader>
+            <DialogTitle>Edit Priority</DialogTitle>
+            <DialogDescription>
+              Update the priority level for this request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">Priority Level</label>
+            <Select 
+              value={editedPriority} 
+              onValueChange={(value) => setEditedPriority(value as any)}
+              data-testid="select-dialog-priority"
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="p0_critical">P0 - Critical</SelectItem>
+                <SelectItem value="p1_high">P1 - High</SelectItem>
+                <SelectItem value="p2_medium">P2 - Medium</SelectItem>
+                <SelectItem value="p3_low">P3 - Low</SelectItem>
+              </SelectContent>
+            </Select>
+            {request.priority !== editedPriority && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Current: {formatPriority(request.priority)} → New: {formatPriority(editedPriority)}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditedPriority(request.priority);
+                setShowEditPriorityDialog(false);
+              }}
+              data-testid="button-cancel-edit-priority"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                updatePriorityDeadlineMutation.mutate({
+                  priority: editedPriority,
+                  dueDate: editedDueDate,
+                });
+                setShowEditPriorityDialog(false);
+              }}
+              disabled={updatePriorityDeadlineMutation.isPending || editedPriority === request.priority}
+              data-testid="button-save-edit-priority"
+            >
+              {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Due Date Dialog */}
+      <Dialog open={showEditDueDateDialog} onOpenChange={setShowEditDueDateDialog}>
+        <DialogContent data-testid="dialog-edit-due-date">
+          <DialogHeader>
+            <DialogTitle>Edit Due Date</DialogTitle>
+            <DialogDescription>
+              Update the deadline for this request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">Due Date</label>
+            <Input 
+              type="date" 
+              value={editedDueDate}
+              onChange={(e) => setEditedDueDate(e.target.value)}
+              data-testid="input-dialog-due-date"
+            />
+            {new Date(request.dueDate).toISOString().split('T')[0] !== editedDueDate && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Current: {new Date(request.dueDate).toLocaleDateString()} → New: {new Date(editedDueDate).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditedDueDate(new Date(request.dueDate).toISOString().split('T')[0]);
+                setShowEditDueDateDialog(false);
+              }}
+              data-testid="button-cancel-edit-due-date"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                updatePriorityDeadlineMutation.mutate({
+                  priority: editedPriority,
+                  dueDate: editedDueDate,
+                });
+                setShowEditDueDateDialog(false);
+              }}
+              disabled={updatePriorityDeadlineMutation.isPending || editedDueDate === new Date(request.dueDate).toISOString().split('T')[0]}
+              data-testid="button-save-edit-due-date"
+            >
+              {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Request Type Dialog */}
+      <Dialog open={showEditRequestTypeDialog} onOpenChange={setShowEditRequestTypeDialog}>
+        <DialogContent data-testid="dialog-edit-request-type">
+          <DialogHeader>
+            <DialogTitle>Edit Request Type</DialogTitle>
+            <DialogDescription>
+              Update the type of this request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">Request Type</label>
+            <Select 
+              value={editedRequestType} 
+              onValueChange={(value) => setEditedRequestType(value as any)}
+              data-testid="select-dialog-request-type"
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
+                <SelectItem value="modify_dashboard">Modification to Existing Dashboard/Report</SelectItem>
+                <SelectItem value="adhoc_analysis">Ad-hoc Data Analysis</SelectItem>
+                <SelectItem value="data_extraction">One-time Data Extraction</SelectItem>
+                <SelectItem value="data_bug">Data Bug / Data Quality Issue</SelectItem>
+                <SelectItem value="bq_access">BigQuery Access Request</SelectItem>
+                <SelectItem value="tracking">Event Tracking / Instrumentation</SelectItem>
+                <SelectItem value="metric_change">Metric Definition / Business Rule Change</SelectItem>
+                <SelectItem value="pipeline_change">Data Pipeline / Table Change</SelectItem>
+                <SelectItem value="recurring_report">Scheduled / Recurring Report</SelectItem>
+                <SelectItem value="experimentation">Experimentation</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+            {request.type !== editedRequestType && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Current: {formatRequestType(request.type)} → New: {formatRequestType(editedRequestType)}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditedRequestType(request.type);
+                setShowEditRequestTypeDialog(false);
+              }}
+              data-testid="button-cancel-edit-request-type"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                updateRequestTypeMutation.mutate(editedRequestType);
+                setShowEditRequestTypeDialog(false);
+              }}
+              disabled={updateRequestTypeMutation.isPending || editedRequestType === request.type}
+              data-testid="button-save-edit-request-type"
+            >
+              {updateRequestTypeMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Assigned To Dialog */}
+      <Dialog open={showEditAssignedToDialog} onOpenChange={setShowEditAssignedToDialog}>
+        <DialogContent data-testid="dialog-edit-assigned-to">
+          <DialogHeader>
+            <DialogTitle>Edit Assignment</DialogTitle>
+            <DialogDescription>
+              Assign or reassign this request to an analyst.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">Assigned To</label>
+            <Select 
+              value={selectedAnalyst} 
+              onValueChange={setSelectedAnalyst}
+              data-testid="select-dialog-assigned-to"
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select analyst..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {analysts.map((analyst) => (
+                  <SelectItem key={analyst.id} value={analyst.id}>
+                    {analyst.firstName} {analyst.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(request.assignedToId || "unassigned") !== selectedAnalyst && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Current: {request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : 'Unassigned'} → New: {selectedAnalyst === "unassigned" ? "Unassigned" : analysts.find(a => a.id === selectedAnalyst) ? `${analysts.find(a => a.id === selectedAnalyst)?.firstName} ${analysts.find(a => a.id === selectedAnalyst)?.lastName}` : ""}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedAnalyst(request.assignedToId || "unassigned");
+                setShowEditAssignedToDialog(false);
+              }}
+              data-testid="button-cancel-edit-assigned-to"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                handleAssignAnalyst();
+                setShowEditAssignedToDialog(false);
+              }}
+              disabled={!selectedAnalyst || assignMutation.isPending}
+              data-testid="button-save-edit-assigned-to"
+            >
+              {assignMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
