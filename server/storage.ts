@@ -586,25 +586,39 @@ export class DatabaseStorage implements IStorage {
 
     const baseFilter = filters.length > 0 ? and(...filters) : undefined;
 
+    // Use INNER JOIN with users table to match getDataRequests behavior
+    // This ensures we only count requests with valid users
     const [totalResult] = baseFilter
-      ? await db.select({ count: count() }).from(dataRequests).where(baseFilter)
-      : await db.select({ count: count() }).from(dataRequests);
+      ? await db.select({ count: count() })
+          .from(dataRequests)
+          .innerJoin(users, eq(dataRequests.requestedById, users.id))
+          .where(baseFilter)
+      : await db.select({ count: count() })
+          .from(dataRequests)
+          .innerJoin(users, eq(dataRequests.requestedById, users.id));
 
     const inProgressFilter = baseFilter
       ? and(baseFilter, eq(dataRequests.status, 'in_progress'))
       : eq(dataRequests.status, 'in_progress');
-    const [inProgressResult] = await db.select({ count: count() }).from(dataRequests).where(inProgressFilter);
+    const [inProgressResult] = await db.select({ count: count() })
+      .from(dataRequests)
+      .innerJoin(users, eq(dataRequests.requestedById, users.id))
+      .where(inProgressFilter);
 
     const completedFilter = baseFilter
       ? and(baseFilter, eq(dataRequests.status, 'completed'))
       : eq(dataRequests.status, 'completed');
-    const [completedResult] = await db.select({ count: count() }).from(dataRequests).where(completedFilter);
+    const [completedResult] = await db.select({ count: count() })
+      .from(dataRequests)
+      .innerJoin(users, eq(dataRequests.requestedById, users.id))
+      .where(completedFilter);
     
     const [avgResult] = await db
       .select({ 
         avg: sql<number>`AVG(${dataRequests.estimatedCompletionDays})` 
       })
       .from(dataRequests)
+      .innerJoin(users, eq(dataRequests.requestedById, users.id))
       .where(completedFilter);
 
     return {
