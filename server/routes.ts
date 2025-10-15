@@ -1065,6 +1065,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/requests/:id/request-type', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || (user.role !== 'team_lead' && user.role !== 'analyst')) {
+        return res.status(403).json({ message: "Only Data Lead and Analysts can update request type" });
+      }
+
+      const { type } = req.body;
+      if (!type) {
+        return res.status(400).json({ message: "Request type is required" });
+      }
+
+      const request = await storage.updateDataRequestType(req.params.id, type);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+
+      res.json(request);
+    } catch (error) {
+      console.error("Error updating request type:", error);
+      res.status(500).json({ message: "Failed to update request type" });
+    }
+  });
+
   app.delete('/api/requests/:id', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);

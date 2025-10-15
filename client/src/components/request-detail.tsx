@@ -70,6 +70,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "unassigned");
   const [editedPriority, setEditedPriority] = useState(request.priority);
   const [editedDueDate, setEditedDueDate] = useState(new Date(request.dueDate).toISOString().split('T')[0]);
+  const [editedRequestType, setEditedRequestType] = useState(request.type);
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
@@ -209,6 +210,37 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       toast({
         title: "Error",
         description: error.message || "Failed to update priority and deadline",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateRequestTypeMutation = useMutation({
+    mutationFn: async (type: string) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}/request-type`, { type });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request type updated successfully",
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update request type",
         variant: "destructive",
       });
     },
@@ -963,9 +995,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </div>
 
-        {/* 3. 3-Column Edit Row - Only for Team Lead */}
-        {isTeamLead && (
-          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)] gap-4 px-6 py-4 border-b bg-indigo-50 dark:bg-indigo-950/20">
+        {/* 3. Edit Row - For Team Lead and Analysts */}
+        {(isTeamLead || isAnalyst) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-6 py-4 border-b bg-indigo-50 dark:bg-indigo-950/20">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block flex items-center gap-2">
                 Edit Priority
@@ -1045,38 +1077,88 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                Assigned To
+              <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block flex items-center gap-2">
+                Edit Request Type
+                {editedRequestType !== request.type && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-normal normal-case">
+                    (Modified)
+                  </span>
+                )}
               </label>
               <div className="flex gap-2">
                 <Select 
-                  value={selectedAnalyst} 
-                  onValueChange={setSelectedAnalyst}
-                  data-testid="select-assign-analyst"
+                  value={editedRequestType} 
+                  onValueChange={(value) => setEditedRequestType(value as any)}
+                  data-testid="select-edit-request-type"
                 >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select analyst..." />
+                  <SelectTrigger className={`flex-1 ${editedRequestType !== request.type ? 'border-amber-500 dark:border-amber-600' : ''}`}>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {analysts.map((analyst) => (
-                      <SelectItem key={analyst.id} value={analyst.id}>
-                        {analyst.firstName} {analyst.lastName}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
+                    <SelectItem value="modify_dashboard">Modification to Existing Dashboard/Report</SelectItem>
+                    <SelectItem value="adhoc_analysis">Ad-hoc Data Analysis</SelectItem>
+                    <SelectItem value="data_extraction">One-time Data Extraction</SelectItem>
+                    <SelectItem value="data_bug">Data Bug / Data Quality Issue</SelectItem>
+                    <SelectItem value="bq_access">BigQuery Access Request</SelectItem>
+                    <SelectItem value="tracking">Event Tracking / Instrumentation</SelectItem>
+                    <SelectItem value="metric_change">Metric Definition / Business Rule Change</SelectItem>
+                    <SelectItem value="pipeline_change">Data Pipeline / Table Change</SelectItem>
+                    <SelectItem value="recurring_report">Scheduled / Recurring Report</SelectItem>
+                    <SelectItem value="experimentation">Experimentation</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button 
-                  size="sm" 
-                  onClick={handleAssignAnalyst}
-                  disabled={!selectedAnalyst || assignMutation.isPending}
-                  data-testid="button-assign"
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    updateRequestTypeMutation.mutate(editedRequestType);
+                  }}
+                  disabled={updateRequestTypeMutation.isPending || editedRequestType === request.type}
+                  data-testid="button-save-request-type"
                   className="bg-primary hover:bg-primary/90"
+                  title="Save changes"
                 >
                   <Save className="w-4 h-4" />
                 </Button>
               </div>
             </div>
+
+            {isTeamLead && (
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
+                  Assigned To
+                </label>
+                <div className="flex gap-2">
+                  <Select 
+                    value={selectedAnalyst} 
+                    onValueChange={setSelectedAnalyst}
+                    data-testid="select-assign-analyst"
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select analyst..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {analysts.map((analyst) => (
+                        <SelectItem key={analyst.id} value={analyst.id}>
+                          {analyst.firstName} {analyst.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    size="sm" 
+                    onClick={handleAssignAnalyst}
+                    disabled={!selectedAnalyst || assignMutation.isPending}
+                    data-testid="button-assign"
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Save className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

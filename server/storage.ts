@@ -70,6 +70,7 @@ export interface IStorage {
   updateDataRequestStatus(id: string, status: string, estimatedDays?: number): Promise<DataRequest | undefined>;
   assignDataRequest(id: string, analystId: string): Promise<DataRequest | undefined>;
   updateDataRequestPriorityAndDeadline(id: string, priority: string, dueDate: Date): Promise<DataRequest | undefined>;
+  updateDataRequestType(id: string, type: string): Promise<DataRequest | undefined>;
   deleteDataRequest(id: string): Promise<void>;
   purgeAllRequests(): Promise<{ deleted: number }>;
   fixDeliveredRequestsStatus(): Promise<{ updated: number; requestIds: string[] }>;
@@ -512,6 +513,18 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(dataRequests)
       .set(updateData)
+      .where(eq(dataRequests.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateDataRequestType(id: string, type: string): Promise<DataRequest | undefined> {
+    const [updated] = await db
+      .update(dataRequests)
+      .set({ 
+        type: type as any,
+        updatedAt: new Date()
+      })
       .where(eq(dataRequests.id, id))
       .returning();
     return updated;
