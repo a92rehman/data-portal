@@ -941,7 +941,53 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       <ScrollArea className="flex-1">
         {/* 2. Info Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 px-6 py-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
-          {/* Priority Card with Edit Button */}
+          {/* 1. Requested By Card */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
+            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
+              <UserIcon className="w-3 h-3" />
+              Requested By
+            </p>
+            <p className="text-sm font-semibold truncate" data-testid="text-requested-by">
+              {request.requestedBy.firstName} {request.requestedBy.lastName}
+            </p>
+          </div>
+
+          {/* 2. Department & Team Card */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1">Department</p>
+            <p className="text-sm font-semibold capitalize truncate" data-testid="text-department">
+              {request.department}
+            </p>
+            {request.team && (
+              <p className="text-xs text-muted-foreground mt-1 truncate" data-testid="text-team">
+                {request.team}
+              </p>
+            )}
+          </div>
+
+          {/* 3. Request Type Card with Edit Button */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-800/50 shadow-sm relative group">
+            <p className="text-xs text-green-600 dark:text-green-400 uppercase mb-1 flex items-center gap-1">
+              <FileText className="w-3 h-3" />
+              Request Type
+            </p>
+            <p className="text-sm font-semibold truncate" data-testid="text-request-type">
+              {formatRequestType(request.type)}
+            </p>
+            {(isTeamLead || isAnalyst) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => setShowEditRequestTypeDialog(true)}
+                data-testid="button-edit-request-type"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+
+          {/* 4. Priority Card with Edit Button */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm relative group">
             <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1 flex items-center gap-1">
               {getPriorityIcon(request.priority)}
@@ -971,7 +1017,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             )}
           </div>
 
-          {/* Created Date Card */}
+          {/* 5. Created Date Card */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-sm">
             <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1 flex items-center gap-1">
               <Calendar className="w-3 h-3" />
@@ -982,7 +1028,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </p>
           </div>
 
-          {/* Due Date Card with Edit Button */}
+          {/* 6. Due Date Card with Edit Button */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm relative group">
             <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -1012,29 +1058,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             )}
           </div>
 
-          {/* Request Type Card with Edit Button */}
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-800/50 shadow-sm relative group">
-            <p className="text-xs text-green-600 dark:text-green-400 uppercase mb-1 flex items-center gap-1">
-              <FileText className="w-3 h-3" />
-              Request Type
-            </p>
-            <p className="text-sm font-semibold truncate" data-testid="text-request-type">
-              {formatRequestType(request.type)}
-            </p>
-            {(isTeamLead || isAnalyst) && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => setShowEditRequestTypeDialog(true)}
-                data-testid="button-edit-request-type"
-              >
-                <Edit2 className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-
-          {/* Assigned To Card with Edit Button */}
+          {/* 7. Assigned To Card with Edit Button */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-teal-200 dark:border-teal-800/50 shadow-sm relative group">
             <p className="text-xs text-teal-600 dark:text-teal-400 uppercase mb-1 flex items-center gap-1">
               <Users className="w-3 h-3" />
@@ -1054,25 +1078,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <Edit2 className="h-3 w-3" />
               </Button>
             )}
-          </div>
-
-          {/* Department Card */}
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
-            <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1">Department</p>
-            <p className="text-sm font-semibold capitalize truncate" data-testid="text-department">
-              {request.department}
-            </p>
-          </div>
-
-          {/* Requested By Card */}
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
-            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
-              <UserIcon className="w-3 h-3" />
-              Requested By
-            </p>
-            <p className="text-sm font-semibold truncate" data-testid="text-requested-by">
-              {request.requestedBy.firstName} {request.requestedBy.lastName}
-            </p>
           </div>
         </div>
 
