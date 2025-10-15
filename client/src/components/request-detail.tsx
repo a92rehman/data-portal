@@ -823,7 +823,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       <DialogHeader className="border-b px-6 py-6 -m-6 mb-0 pr-16">
         <div className="flex flex-col gap-4">
           {/* Top Action Buttons Row */}
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 mb-3">
             <Button
               variant="ghost"
               size="icon"
@@ -834,12 +834,13 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               <ArrowLeft className="w-5 h-5" />
             </Button>
             
-            {/* Action Buttons Group */}
-            <div className="flex gap-2">
+            {/* Action Buttons Group - Positioned slightly left */}
+            <div className="flex gap-2 mr-4">
               {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
               {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.rejectionReason) && (
                 <>
-                  {(request.status === "pending_review" || request.rejectionReason) && (
+                  {/* Show Accept button if rejected OR pending review */}
+                  {(request.rejectionReason || request.status === "pending_review") && (
                     <Button
                       onClick={() => acceptRequestMutation.mutate()}
                       disabled={acceptRequestMutation.isPending}
@@ -851,7 +852,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
                     </Button>
                   )}
-                  {(request.status === "pending_review" || request.status === "accepted") && (
+                  {/* Show Reject button if accepted OR pending review */}
+                  {(request.status === "accepted" || request.status === "pending_review") && (
                     <Button
                       onClick={() => setShowRejectDialog(true)}
                       disabled={rejectRequestMutation.isPending}
@@ -897,9 +899,13 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
           {/* Title Tile with Status Badge */}
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800/50">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {/* Left spacer for centering */}
+              <div className="w-48"></div>
+              
+              {/* Centered Title and Urgency */}
               <div className="flex-1 flex items-center justify-center gap-3">
-                <DialogTitle className="text-xl font-bold text-indigo-900 dark:text-indigo-100 text-center" data-testid="text-request-title">
+                <DialogTitle className="text-xl font-bold text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
                   {formatRequestType(request.type)}
                 </DialogTitle>
                 {(() => {
@@ -915,20 +921,22 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 })()}
               </div>
 
-              {/* Status Badge on the Right */}
-              {request.status === "accepted" && (
-                <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold" data-testid="badge-request-accepted">
-                  <Check className="w-4 h-4 mr-1.5" />
-                  Request Accepted
-                </Badge>
-              )}
+              {/* Status Badge on the Right - Only ONE shows */}
+              <div className="w-48 flex justify-end">
+                {request.status === "accepted" && !request.rejectionReason && (
+                  <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold" data-testid="badge-request-accepted">
+                    <Check className="w-4 h-4 mr-1.5" />
+                    Request Accepted
+                  </Badge>
+                )}
 
-              {request.rejectionReason && (
-                <Badge className="px-3 py-1.5 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 font-semibold" data-testid="badge-request-rejected">
-                  <XCircle className="w-4 h-4 mr-1.5" />
-                  Request Rejected
-                </Badge>
-              )}
+                {request.rejectionReason && (
+                  <Badge className="px-3 py-1.5 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 font-semibold" data-testid="badge-request-rejected">
+                    <XCircle className="w-4 h-4 mr-1.5" />
+                    Request Rejected
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
         </div>
