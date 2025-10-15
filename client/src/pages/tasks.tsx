@@ -373,11 +373,6 @@ function TaskCard({
             <h3 className="text-lg font-bold hover:text-primary transition-colors line-clamp-1" data-testid={`task-title-${task.id}`}>
               {task.title}
             </h3>
-            {task.description && (
-              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                {task.description}
-              </p>
-            )}
           </div>
 
           {/* Assigned To */}
