@@ -449,8 +449,8 @@ export default function AllRequests() {
                     <TableHead>Request Status</TableHead>
                     <TableHead>Delivery Status</TableHead>
                     <TableHead>Assigned To</TableHead>
-                    <TableHead>Due Date</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Due Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -534,6 +534,9 @@ export default function AllRequests() {
                           )}
                         </TableCell>
                         <TableCell>
+                          {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
+                        </TableCell>
+                        <TableCell>
                           {(() => {
                             const dueDate = new Date(request.dueDate);
                             const today = new Date();
@@ -547,9 +550,6 @@ export default function AllRequests() {
                               </span>
                             );
                           })()}
-                        </TableCell>
-                        <TableCell>
-                          {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <Button

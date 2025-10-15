@@ -659,8 +659,8 @@ export default function Dashboard() {
                     <TableHead>Request Status</TableHead>
                     <TableHead>Delivery Status</TableHead>
                     <TableHead>Assigned To</TableHead>
-                    <TableHead>Due Date</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Due Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -756,6 +756,9 @@ export default function Dashboard() {
                           )}
                         </TableCell>
                         <TableCell>
+                          {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
+                        </TableCell>
+                        <TableCell>
                           {(() => {
                             const dueDate = new Date(request.dueDate);
                             const today = new Date();
@@ -769,9 +772,6 @@ export default function Dashboard() {
                               </span>
                             );
                           })()}
-                        </TableCell>
-                        <TableCell>
-                          {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">

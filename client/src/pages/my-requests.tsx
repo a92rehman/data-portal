@@ -381,8 +381,8 @@ export default function MyRequests() {
                       <TableHead>Department</TableHead>
                       <TableHead>Priority</TableHead>
                       <TableHead>Assigned To</TableHead>
-                      <TableHead>Due Date</TableHead>
                       <TableHead>Created</TableHead>
+                      <TableHead>Due Date</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -421,11 +421,11 @@ export default function MyRequests() {
                           <TableCell data-testid={`cell-assigned-${request.id}`}>
                             {request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : 'Unassigned'}
                           </TableCell>
-                          <TableCell data-testid={`cell-date-${request.id}`}>
-                            {request.dueDate ? formatDate(request.dueDate.toString()) : 'N/A'}
-                          </TableCell>
                           <TableCell data-testid={`cell-created-${request.id}`}>
                             {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
+                          </TableCell>
+                          <TableCell data-testid={`cell-date-${request.id}`}>
+                            {request.dueDate ? formatDate(request.dueDate.toString()) : 'N/A'}
                           </TableCell>
                           <TableCell>
                             <Button

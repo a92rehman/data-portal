@@ -366,8 +366,8 @@ export default function MyAssignments() {
                     <TableHead>Department</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Requester</TableHead>
-                    <TableHead>Due Date</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Due Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -406,11 +406,11 @@ export default function MyAssignments() {
                         <TableCell data-testid={`cell-requester-${request.id}`}>
                           {request.requestedBy.firstName} {request.requestedBy.lastName}
                         </TableCell>
-                        <TableCell data-testid={`cell-date-${request.id}`}>
-                          {request.dueDate ? formatDate(request.dueDate.toString()) : 'N/A'}
-                        </TableCell>
                         <TableCell data-testid={`cell-created-${request.id}`}>
                           {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
+                        </TableCell>
+                        <TableCell data-testid={`cell-date-${request.id}`}>
+                          {request.dueDate ? formatDate(request.dueDate.toString()) : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <Button
