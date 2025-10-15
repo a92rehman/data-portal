@@ -721,6 +721,12 @@ function TaskDetailDialog({
   const isTeamLead = (user as any)?.role === "team_lead";
   const isSubTask = !!task.parentTaskId; // Check if this task is itself a subtask
 
+  // Fetch analysts for assignment
+  const { data: analysts = [] } = useQuery<User[]>({
+    queryKey: ["/api/users/analysts"],
+    enabled: open && isTeamLead,
+  });
+
   // Fetch sub-tasks (only for parent tasks)
   const { data: subTasks = [] } = useQuery<TaskWithDetails[]>({
     queryKey: ["/api/tasks", task.id, "subtasks"],
@@ -742,6 +748,25 @@ function TaskDetailDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({ title: "Success", description: "Task status updated" });
       onUpdate();
+    },
+  });
+
+  const updateAssigneeMutation = useMutation({
+    mutationFn: async (assignedToId: string | null) => {
+      return await apiRequest("PATCH", `/api/tasks/${task.id}/assign`, { assignedToId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+      toast({ title: "Success", description: "Task assignee updated" });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update assignee",
+        variant: "destructive",
+      });
     },
   });
 
@@ -862,9 +887,32 @@ function TaskDetailDialog({
                 </div>
                 <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
-                  <p className="text-sm font-medium mt-0.5 truncate">
-                    {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
-                  </p>
+                  {isTeamLead ? (
+                    <Select
+                      value={task.assignedToId || "unassigned"}
+                      onValueChange={(value) => {
+                        const assignedToId = value === "unassigned" ? null : value;
+                        updateAssigneeMutation.mutate(assignedToId);
+                      }}
+                      disabled={updateAssigneeMutation.isPending}
+                    >
+                      <SelectTrigger className="h-7 text-xs mt-0.5 border-0 bg-transparent p-0 hover:bg-muted/50">
+                        <SelectValue placeholder="Unassigned" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {analysts.map((analyst) => (
+                          <SelectItem key={analyst.id} value={analyst.id}>
+                            {analyst.firstName} {analyst.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm font-medium mt-0.5 truncate">
+                      {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
@@ -1008,11 +1056,50 @@ function TaskDetailDialog({
                       </div>
                       
                       {/* Assigned To Column */}
-                      <div className="col-span-2 flex items-center gap-1.5">
-                        <UserIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                        <span className="text-xs text-muted-foreground truncate">
-                          {subTask.assignedTo ? `${subTask.assignedTo.firstName} ${subTask.assignedTo.lastName}` : "—"}
-                        </span>
+                      <div className="col-span-2">
+                        {isTeamLead ? (
+                          <Select
+                            value={subTask.assignedToId || "unassigned"}
+                            onValueChange={(value) => {
+                              const assignedToId = value === "unassigned" ? null : value;
+                              apiRequest("PATCH", `/api/tasks/${subTask.id}/assign`, { assignedToId })
+                                .then(() => {
+                                  queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+                                  toast({ title: "Success", description: "Sub-task assignee updated" });
+                                })
+                                .catch((error: Error) => {
+                                  toast({ 
+                                    title: "Error", 
+                                    description: error.message || "Failed to update assignee",
+                                    variant: "destructive" 
+                                  });
+                                });
+                            }}
+                          >
+                            <SelectTrigger 
+                              className="w-full h-7 text-xs border-muted"
+                              data-testid={`select-subtask-assignee-${subTask.id}`}
+                            >
+                              <SelectValue placeholder="Unassigned" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned">Unassigned</SelectItem>
+                              {analysts.map((analyst) => (
+                                <SelectItem key={analyst.id} value={analyst.id}>
+                                  {analyst.firstName} {analyst.lastName}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <UserIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <span className="text-xs text-muted-foreground truncate">
+                              {subTask.assignedTo ? `${subTask.assignedTo.firstName} ${subTask.assignedTo.lastName}` : "—"}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Status Column */}
