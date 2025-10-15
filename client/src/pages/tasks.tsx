@@ -991,38 +991,29 @@ function TaskDetailDialog({
                 </div>
               ) : (
                 subTasks.map((subTask) => (
-                  <Card key={subTask.id} className="p-4 bg-white dark:bg-gray-800 border-l-4 border-blue-500 dark:border-blue-600 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <CornerDownRight className="w-4 h-4 text-muted-foreground" />
-                          <h5 className="font-semibold text-sm">{subTask.title}</h5>
-                        </div>
-                        {subTask.description && (
-                          <p className="text-xs text-muted-foreground pl-6">{subTask.description}</p>
-                        )}
-                        <div className="flex items-center gap-3 pl-6 text-xs text-muted-foreground">
-                          {subTask.assignedTo && (
-                            <div className="flex items-center gap-1">
-                              <UserIcon className="w-3 h-3" />
-                              <span>{subTask.assignedTo.firstName} {subTask.assignedTo.lastName}</span>
-                            </div>
-                          )}
-                          {subTask.expectedTime && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{subTask.expectedTime.toFixed(1)}h</span>
-                            </div>
-                          )}
-                          {subTask.dueDate && (
-                            <div className="flex items-center gap-1">
-                              <CalendarIcon className="w-3 h-3" />
-                              <span>{format(new Date(subTask.dueDate), "MMM d")}</span>
-                            </div>
+                  <Card key={subTask.id} className="p-3 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-l-4 border-blue-500 dark:border-blue-600 hover:shadow-md transition-shadow">
+                    <div className="grid grid-cols-12 gap-3 items-center">
+                      {/* Task Title Column */}
+                      <div className="col-span-3 flex items-center gap-2">
+                        <CornerDownRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0">
+                          <h5 className="font-semibold text-sm truncate">{subTask.title}</h5>
+                          {subTask.description && (
+                            <p className="text-xs text-muted-foreground truncate">{subTask.description}</p>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      
+                      {/* Assigned To Column */}
+                      <div className="col-span-2 flex items-center gap-1.5">
+                        <UserIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs text-muted-foreground truncate">
+                          {subTask.assignedTo ? `${subTask.assignedTo.firstName} ${subTask.assignedTo.lastName}` : "—"}
+                        </span>
+                      </div>
+                      
+                      {/* Status Column */}
+                      <div className="col-span-2">
                         <Select 
                           value={subTask.status} 
                           onValueChange={(newStatus) => {
@@ -1042,7 +1033,7 @@ function TaskDetailDialog({
                           }}
                         >
                           <SelectTrigger 
-                            className={`w-32 h-8 text-xs ${getStatusBadge(subTask.status)}`}
+                            className={`w-full h-7 text-xs ${getStatusBadge(subTask.status)}`}
                             data-testid={`select-subtask-status-${subTask.id}`}
                           >
                             <SelectValue />
@@ -1054,15 +1045,44 @@ function TaskDetailDialog({
                             <SelectItem value="completed">Completed</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      
+                      {/* Time Estimate Column */}
+                      <div className="col-span-2 flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs text-muted-foreground">
+                          {subTask.expectedTime ? `${subTask.expectedTime.toFixed(1)}h` : "—"}
+                        </span>
+                      </div>
+                      
+                      {/* Due Date Column */}
+                      <div className="col-span-2 flex items-center gap-1.5">
+                        <CalendarIcon className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs text-muted-foreground">
+                          {subTask.dueDate ? format(new Date(subTask.dueDate), "MMM d") : "—"}
+                        </span>
+                      </div>
+                      
+                      {/* Actions Column */}
+                      <div className="col-span-1 flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onSelectTask(subTask)}
+                          className="h-7 w-7 p-0 hover:bg-primary/10"
+                          data-testid={`button-view-subtask-detail-${subTask.id}`}
+                        >
+                          <Eye className="w-4 h-4 text-muted-foreground" />
+                        </Button>
                         {isTeamLead && (
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => setDeletingSubTaskId(subTask.id)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-white hover:bg-destructive transition-colors"
+                            className="h-7 w-7 p-0 text-destructive hover:text-white hover:bg-destructive transition-colors"
                             data-testid={`button-delete-subtask-${subTask.id}`}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
