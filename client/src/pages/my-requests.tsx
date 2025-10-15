@@ -450,7 +450,7 @@ export default function MyRequests() {
 
       {/* Request Detail Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent className="max-w-[98vw] max-h-[98vh] p-6 overflow-y-auto">
+        <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden [&>button]:hidden" aria-describedby={undefined}>
           {selectedRequest && (
             <RequestDetail
               request={selectedRequest}
