@@ -796,10 +796,14 @@ function TaskDetailDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="dialog-task-detail">
-        <DialogHeader className="pb-4 border-b">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <DialogTitle className="text-2xl font-bold mb-2" data-testid="task-detail-title">{task.title}</DialogTitle>
+        <DialogHeader className="pb-4 border-b pr-12">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <DialogTitle className="text-2xl font-bold" data-testid="task-detail-title">{task.title}</DialogTitle>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 flex-wrap">
                 {task.requestId ? (
                   <Badge className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
@@ -825,22 +829,22 @@ function TaskDetailDialog({
                   </button>
                 )}
               </div>
+              <Select 
+                value={task.status} 
+                onValueChange={(value) => updateStatusMutation.mutate(value)}
+                disabled={updateStatusMutation.isPending}
+              >
+                <SelectTrigger className={`w-40 ${getStatusBadge(task.status)}`} data-testid="select-task-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="to_do">To Do</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select 
-              value={task.status} 
-              onValueChange={(value) => updateStatusMutation.mutate(value)}
-              disabled={updateStatusMutation.isPending}
-            >
-              <SelectTrigger className={`w-40 ${getStatusBadge(task.status)}`} data-testid="select-task-status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="to_do">To Do</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="blocked">Blocked</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </DialogHeader>
 
