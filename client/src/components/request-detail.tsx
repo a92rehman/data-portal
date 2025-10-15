@@ -835,8 +835,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </div>
 
         {/* Title Tile with Status Badge - Full Width */}
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-6 border-y border-indigo-200 dark:border-indigo-800/50">
-          <div className="flex items-center justify-center gap-4 relative">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 py-6 px-0 border-y border-indigo-200 dark:border-indigo-800/50">
+          <div className="flex items-center justify-center gap-4 relative px-6">
             {/* Centered Title and Urgency */}
             <div className="flex items-center gap-3">
               <DialogTitle className="text-xl font-bold text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
@@ -856,7 +856,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
 
             {/* Status Badge on the Right - Absolutely positioned */}
-            <div className="absolute right-0">
+            <div className="absolute right-6">
               {request.status === "accepted" && !request.rejectionReason && (
                 <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold" data-testid="badge-request-accepted">
                   <Check className="w-4 h-4 mr-1.5" />
@@ -875,7 +875,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </div>
 
         {/* Action Buttons Row - Below Title */}
-        <div className="px-6 py-4 bg-gray-50/50 dark:bg-gray-900/20">
+        <div className="px-6 py-5 bg-gray-50/50 dark:bg-gray-900/20">
           <div className="flex items-center justify-center gap-2">
             {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
             {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.rejectionReason) && (
