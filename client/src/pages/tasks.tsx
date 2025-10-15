@@ -795,7 +795,7 @@ function TaskDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="dialog-task-detail">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" data-testid="dialog-task-detail">
         <DialogHeader className="pb-4 border-b pr-12">
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-4">
@@ -849,25 +849,17 @@ function TaskDetailDialog({
         </DialogHeader>
 
         <div className="space-y-6 pt-4">
-          {/* Description Section */}
-          {task.description && (
-            <Card className="p-4 bg-gradient-to-br from-blue-50/30 to-purple-50/30 dark:from-blue-950/20 dark:to-purple-950/20 border-l-4 border-blue-500">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Description</Label>
-              <p className="text-sm mt-2 leading-relaxed">{task.description}</p>
-            </Card>
-          )}
-
-          {/* Task Information Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Task Information Grid - 4 columns in one row */}
+          <div className="grid grid-cols-4 gap-3">
             {/* Assigned To Card */}
-            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-              <div className="flex items-center gap-3">
+            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <UserIcon className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                  <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-300" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
-                  <p className="text-sm font-medium mt-1">
+                  <p className="text-sm font-medium mt-0.5 truncate">
                     {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
                   </p>
                 </div>
@@ -875,29 +867,29 @@ function TaskDetailDialog({
             </Card>
 
             {/* Due Date Card */}
-            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-              <div className="flex items-center gap-3">
+            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                  <CalendarIcon className="w-5 h-5 text-purple-600 dark:text-purple-300" />
+                  <CalendarIcon className="w-4 h-4 text-purple-600 dark:text-purple-300" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Due Date</Label>
-                  <p className="text-sm font-medium mt-1">
-                    {task.dueDate ? format(new Date(task.dueDate), "MMMM d, yyyy") : "No due date"}
+                  <p className="text-sm font-medium mt-0.5 truncate">
+                    {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No due date"}
                   </p>
                 </div>
               </div>
             </Card>
 
             {/* Created By Card */}
-            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-              <div className="flex items-center gap-3">
+            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <UserIcon className="w-5 h-5 text-green-600 dark:text-green-300" />
+                  <UserIcon className="w-4 h-4 text-green-600 dark:text-green-300" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Created By</Label>
-                  <p className="text-sm font-medium mt-1">
+                  <p className="text-sm font-medium mt-0.5 truncate">
                     {task.createdBy ? `${task.createdBy.firstName} ${task.createdBy.lastName}` : "Unknown"}
                   </p>
                 </div>
@@ -905,20 +897,28 @@ function TaskDetailDialog({
             </Card>
 
             {/* Created Date Card */}
-            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-              <div className="flex items-center gap-3">
+            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                  <CalendarIcon className="w-5 h-5 text-orange-600 dark:text-orange-300" />
+                  <CalendarIcon className="w-4 h-4 text-orange-600 dark:text-orange-300" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Created On</Label>
-                  <p className="text-sm font-medium mt-1">
-                    {task.createdAt ? format(new Date(task.createdAt), "MMMM d, yyyy 'at' h:mm a") : "Unknown"}
+                  <p className="text-sm font-medium mt-0.5 truncate">
+                    {task.createdAt ? format(new Date(task.createdAt), "MMM d, yyyy") : "Unknown"}
                   </p>
                 </div>
               </div>
             </Card>
           </div>
+
+          {/* Description Section */}
+          {task.description && (
+            <Card className="p-4 bg-gradient-to-br from-blue-50/30 to-purple-50/30 dark:from-blue-950/20 dark:to-purple-950/20 border-l-4 border-blue-500">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Description</Label>
+              <p className="text-sm mt-2 leading-relaxed">{task.description}</p>
+            </Card>
+          )}
 
           {/* PERT Time Estimate */}
           {(task.optimisticTime || task.mostLikelyTime || task.pessimisticTime) && (
