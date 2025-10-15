@@ -794,6 +794,7 @@ export class DatabaseStorage implements IStorage {
         status: 'accepted',
         reviewedById: reviewerId,
         reviewedAt: new Date(),
+        rejectionReason: null,
       })
       .where(eq(dataRequests.id, id))
       .returning();
