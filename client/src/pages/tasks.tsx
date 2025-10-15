@@ -213,52 +213,32 @@ export default function Tasks() {
             </CardContent>
           </Card>
 
-          {/* Tasks Table */}
-          <Card className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Task</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Expected Time</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                        Loading tasks...
-                      </TableCell>
-                    </TableRow>
-                  ) : sortedTasks.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No tasks found matching your criteria
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    sortedTasks.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        onSelectTask={setSelectedTask}
-                        onSelectRequest={setSelectedRequest}
-                        updateStatusMutation={updateTaskStatusMutation}
-                        getStatusBadge={getStatusBadge}
-                        formatStatus={formatStatus}
-                        setLocation={setLocation}
-                      />
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+          {/* Tasks Grid */}
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
+              <p className="text-muted-foreground">Loading tasks...</p>
             </div>
-          </Card>
+          ) : sortedParentTasks.length === 0 ? (
+            <Card className="p-12 text-center">
+              <p className="text-muted-foreground">No tasks found matching your criteria</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {sortedParentTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  subTasks={subTasksMap.get(task.id) || []}
+                  onSelectTask={setSelectedTask}
+                  onSelectRequest={setSelectedRequest}
+                  updateStatusMutation={updateTaskStatusMutation}
+                  getStatusBadge={getStatusBadge}
+                  formatStatus={formatStatus}
+                />
+              ))}
+            </div>
+          )}
         </main>
       </div>
 
@@ -298,6 +278,193 @@ export default function Tasks() {
         }}
       />
     </div>
+  );
+}
+
+// Task Card Component
+function TaskCard({ 
+  task, 
+  subTasks,
+  onSelectTask,
+  onSelectRequest,
+  updateStatusMutation,
+  getStatusBadge,
+  formatStatus,
+}: { 
+  task: TaskWithDetails;
+  subTasks: TaskWithDetails[];
+  onSelectTask: (task: TaskWithDetails) => void;
+  onSelectRequest: (request: DataRequestWithDetails) => void;
+  updateStatusMutation: any;
+  getStatusBadge: (status: string) => string;
+  formatStatus: (status: string) => string;
+}) {
+  const { isAuthenticated } = useAuth();
+
+  // Fetch sub-task progress
+  const { data: progress } = useQuery<{ total: number; completed: number }>({
+    queryKey: ["/api/tasks", task.id, "subtasks", "progress"],
+    queryFn: async () => {
+      const response = await fetch(`/api/tasks/${task.id}/subtasks/progress`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch sub-task progress');
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  const handleRequestClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (task.request) {
+      try {
+        const response = await fetch(`/api/requests/${task.request.id}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch request');
+        const requestData = await response.json();
+        onSelectRequest(requestData);
+      } catch (error) {
+        console.error('Error fetching request:', error);
+      }
+    }
+  };
+
+  return (
+    <Card 
+      className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      data-testid={`task-card-${task.id}`}
+    >
+      <CardContent className="p-4 space-y-3">
+        {/* Header with Type Badge and Request Link */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap flex-1">
+            {task.requestId ? (
+              <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
+                Request Task
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                Team Task
+              </Badge>
+            )}
+            
+            {task.request && (
+              <button
+                onClick={handleRequestClick}
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors"
+                data-testid={`link-request-${task.id}`}
+              >
+                #{task.request.requestNumber}
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+            
+            {progress && progress.total > 0 && (
+              <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
+                <ListChecks className="w-3 h-3" />
+                {progress.completed}/{progress.total}
+              </Badge>
+            )}
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onSelectTask(task)}
+            className="h-7 px-2"
+            data-testid={`button-view-task-${task.id}`}
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Title and Description */}
+        <div onClick={() => onSelectTask(task)} className="cursor-pointer">
+          <h3 className="text-base font-semibold hover:text-primary transition-colors line-clamp-1" data-testid={`task-title-${task.id}`}>
+            {task.title}
+          </h3>
+          {task.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+              {task.description}
+            </p>
+          )}
+        </div>
+
+        {/* Key Info Grid */}
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center gap-1.5">
+            <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground truncate">
+              {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {task.expectedTime ? `${task.expectedTime.toFixed(1)}h` : "—"}
+            </span>
+          </div>
+          
+          <div className="col-span-2 flex items-center gap-1.5">
+            <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No due date"}
+            </span>
+          </div>
+        </div>
+
+        {/* Status Selector */}
+        <div onClick={(e) => e.stopPropagation()}>
+          <Select 
+            value={task.status} 
+            onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
+          >
+            <SelectTrigger 
+              className={`w-full h-8 ${getStatusBadge(task.status)}`}
+              data-testid={`select-status-${task.id}`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="to_do">To Do</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="blocked">Blocked</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Subtasks Section */}
+        {subTasks.length > 0 && (
+          <div className="border-t pt-3 space-y-2">
+            <div className="flex items-center gap-1.5 mb-2">
+              <ListChecks className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold text-muted-foreground">Subtasks ({subTasks.length})</span>
+            </div>
+            {subTasks.map((subTask) => (
+              <div 
+                key={subTask.id}
+                className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                onClick={() => onSelectTask(subTask)}
+                data-testid={`subtask-${subTask.id}`}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{subTask.title}</p>
+                </div>
+                <Badge 
+                  variant={subTask.status === 'completed' ? 'default' : 'outline'} 
+                  className="text-xs shrink-0"
+                >
+                  {formatStatus(subTask.status)}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
