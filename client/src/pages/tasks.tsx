@@ -456,13 +456,24 @@ function TaskCard({
                     {subTask.assignedTo ? `${subTask.assignedTo.firstName} ${subTask.assignedTo.lastName}` : "—"}
                   </span>
                 </div>
-                <div className="col-span-2">
-                  <Badge 
-                    variant={subTask.status === 'completed' ? 'default' : 'outline'} 
-                    className="text-xs"
+                <div className="col-span-2" onClick={(e) => e.stopPropagation()}>
+                  <Select 
+                    value={subTask.status} 
+                    onValueChange={(newStatus) => updateStatusMutation.mutate({ id: subTask.id, status: newStatus })}
                   >
-                    {formatStatus(subTask.status)}
-                  </Badge>
+                    <SelectTrigger 
+                      className={`w-full h-7 text-xs ${getStatusBadge(subTask.status)}`}
+                      data-testid={`select-status-${subTask.id}`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="to_do">To Do</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="blocked">Blocked</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="col-span-2 flex items-center gap-1.5">
                   <Clock className="w-3 h-3 text-muted-foreground" />
@@ -995,6 +1006,7 @@ function SubTaskForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignedToId, setAssignedToId] = useState("unassigned");
+  const [status, setStatus] = useState("to_do");
 
   const isTeamLead = (user as any)?.role === "team_lead";
 
@@ -1034,7 +1046,7 @@ function SubTaskForm({
     createSubTaskMutation.mutate({
       title: title.trim(),
       description: description.trim() || undefined,
-      status: "to_do",
+      status,
       parentTaskId,
       assignedToId: assignedToId !== "unassigned" ? assignedToId : undefined,
     });
@@ -1064,24 +1076,40 @@ function SubTaskForm({
             data-testid="textarea-subtask-description"
           />
         </div>
-        {isTeamLead && (
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs">Assign To</Label>
-            <Select value={assignedToId} onValueChange={setAssignedToId}>
-              <SelectTrigger className="mt-1" data-testid="select-subtask-assignee">
-                <SelectValue placeholder="Select analyst" />
+            <Label className="text-xs">Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="mt-1" data-testid="select-subtask-status">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {analysts.map((analyst) => (
-                  <SelectItem key={analyst.id} value={analyst.id}>
-                    {analyst.firstName} {analyst.lastName}
-                  </SelectItem>
-                ))}
+                <SelectItem value="to_do">To Do</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        )}
+          {isTeamLead && (
+            <div>
+              <Label className="text-xs">Assign To</Label>
+              <Select value={assignedToId} onValueChange={setAssignedToId}>
+                <SelectTrigger className="mt-1" data-testid="select-subtask-assignee">
+                  <SelectValue placeholder="Select analyst" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {analysts.map((analyst) => (
+                    <SelectItem key={analyst.id} value={analyst.id}>
+                      {analyst.firstName} {analyst.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
         <div className="flex justify-end gap-2">
           <Button
             size="sm"
