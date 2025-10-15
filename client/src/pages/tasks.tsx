@@ -224,7 +224,7 @@ export default function Tasks() {
               <p className="text-muted-foreground">No tasks found matching your criteria</p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="space-y-3">
               {sortedParentTasks.map((task) => (
                 <TaskCard
                   key={task.id}
@@ -332,133 +332,138 @@ function TaskCard({
 
   return (
     <Card 
-      className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow"
       data-testid={`task-card-${task.id}`}
     >
-      <CardContent className="p-4 space-y-3">
-        {/* Header with Type Badge and Request Link */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap flex-1">
-            {task.requestId ? (
-              <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
-                Request Task
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
-                Team Task
-              </Badge>
-            )}
-            
-            {task.request && (
-              <button
-                onClick={handleRequestClick}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors"
-                data-testid={`link-request-${task.id}`}
-              >
-                #{task.request.requestNumber}
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            )}
-            
-            {progress && progress.total > 0 && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700">
-                <ListChecks className="w-3 h-3" />
-                {progress.completed}/{progress.total}
-              </Badge>
+      <CardContent className="p-3">
+        {/* Main Task Row */}
+        <div className="grid grid-cols-12 gap-3 items-center">
+          {/* Task Title and Badges - Takes up more space */}
+          <div className="col-span-4 cursor-pointer" onClick={() => onSelectTask(task)}>
+            <div className="flex items-center gap-2 mb-1">
+              {task.requestId ? (
+                <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
+                  Request Task
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300">
+                  Team Task
+                </Badge>
+              )}
+              
+              {task.request && (
+                <button
+                  onClick={handleRequestClick}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors"
+                  data-testid={`link-request-${task.id}`}
+                >
+                  #{task.request.requestNumber}
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              )}
+              
+              {progress && progress.total > 0 && (
+                <Badge variant="outline" className="text-xs flex items-center gap-1 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                  <ListChecks className="w-3 h-3" />
+                  {progress.completed}/{progress.total}
+                </Badge>
+              )}
+            </div>
+            <h3 className="text-lg font-bold hover:text-primary transition-colors line-clamp-1" data-testid={`task-title-${task.id}`}>
+              {task.title}
+            </h3>
+            {task.description && (
+              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                {task.description}
+              </p>
             )}
           </div>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onSelectTask(task)}
-            className="h-7 px-2"
-            data-testid={`button-view-task-${task.id}`}
-          >
-            <Eye className="w-4 h-4" />
-          </Button>
-        </div>
 
-        {/* Title and Description */}
-        <div onClick={() => onSelectTask(task)} className="cursor-pointer">
-          <h3 className="text-base font-semibold hover:text-primary transition-colors line-clamp-1" data-testid={`task-title-${task.id}`}>
-            {task.title}
-          </h3>
-          {task.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-              {task.description}
-            </p>
-          )}
-        </div>
-
-        {/* Key Info Grid */}
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-1.5">
-            <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground truncate">
+          {/* Assigned To */}
+          <div className="col-span-2 flex items-center gap-1.5">
+            <UserIcon className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm truncate">
               {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
             </span>
           </div>
-          
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">
+
+          {/* Status */}
+          <div className="col-span-2" onClick={(e) => e.stopPropagation()}>
+            <Select 
+              value={task.status} 
+              onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
+            >
+              <SelectTrigger 
+                className={`w-full h-8 ${getStatusBadge(task.status)}`}
+                data-testid={`select-status-${task.id}`}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="to_do">To Do</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Expected Time */}
+          <div className="col-span-2 flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm">
               {task.expectedTime ? `${task.expectedTime.toFixed(1)}h` : "—"}
             </span>
           </div>
-          
+
+          {/* Due Date */}
           <div className="col-span-2 flex items-center gap-1.5">
-            <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">
+            <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm">
               {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No due date"}
             </span>
           </div>
         </div>
 
-        {/* Status Selector */}
-        <div onClick={(e) => e.stopPropagation()}>
-          <Select 
-            value={task.status} 
-            onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
-          >
-            <SelectTrigger 
-              className={`w-full h-8 ${getStatusBadge(task.status)}`}
-              data-testid={`select-status-${task.id}`}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="to_do">To Do</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="blocked">Blocked</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Subtasks Section */}
         {subTasks.length > 0 && (
-          <div className="border-t pt-3 space-y-2">
-            <div className="flex items-center gap-1.5 mb-2">
-              <ListChecks className="w-3.5 h-3.5 text-muted-foreground" />
-              <span className="text-xs font-semibold text-muted-foreground">Subtasks ({subTasks.length})</span>
-            </div>
+          <div className="mt-3 pl-4 border-l-2 border-blue-300 dark:border-blue-700 space-y-1.5">
             {subTasks.map((subTask) => (
               <div 
                 key={subTask.id}
-                className="flex items-center justify-between gap-2 p-2 bg-muted/50 rounded-md hover:bg-muted transition-colors cursor-pointer"
+                className="grid grid-cols-12 gap-3 items-center p-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
                 onClick={() => onSelectTask(subTask)}
                 data-testid={`subtask-${subTask.id}`}
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{subTask.title}</p>
+                <div className="col-span-4">
+                  <p className="text-sm font-medium truncate">{subTask.title}</p>
                 </div>
-                <Badge 
-                  variant={subTask.status === 'completed' ? 'default' : 'outline'} 
-                  className="text-xs shrink-0"
-                >
-                  {formatStatus(subTask.status)}
-                </Badge>
+                <div className="col-span-2 flex items-center gap-1.5">
+                  <UserIcon className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground truncate">
+                    {subTask.assignedTo ? `${subTask.assignedTo.firstName} ${subTask.assignedTo.lastName}` : "—"}
+                  </span>
+                </div>
+                <div className="col-span-2">
+                  <Badge 
+                    variant={subTask.status === 'completed' ? 'default' : 'outline'} 
+                    className="text-xs"
+                  >
+                    {formatStatus(subTask.status)}
+                  </Badge>
+                </div>
+                <div className="col-span-2 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {subTask.expectedTime ? `${subTask.expectedTime.toFixed(1)}h` : "—"}
+                  </span>
+                </div>
+                <div className="col-span-2 flex items-center gap-1.5">
+                  <CalendarIcon className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {subTask.dueDate ? format(new Date(subTask.dueDate), "MMM d") : "—"}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
