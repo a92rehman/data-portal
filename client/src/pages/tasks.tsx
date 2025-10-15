@@ -990,9 +990,19 @@ function SubTaskForm({
   onSuccess: () => void; 
   onCancel: () => void;
 }) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [assignedToId, setAssignedToId] = useState("unassigned");
+
+  const isTeamLead = (user as any)?.role === "team_lead";
+
+  // Fetch analysts for assignment
+  const { data: analysts = [] } = useQuery<User[]>({
+    queryKey: ["/api/users/analysts"],
+    enabled: isTeamLead,
+  });
 
   const createSubTaskMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1026,6 +1036,7 @@ function SubTaskForm({
       description: description.trim() || undefined,
       status: "to_do",
       parentTaskId,
+      assignedToId: assignedToId !== "unassigned" ? assignedToId : undefined,
     });
   };
 
@@ -1053,6 +1064,24 @@ function SubTaskForm({
             data-testid="textarea-subtask-description"
           />
         </div>
+        {isTeamLead && (
+          <div>
+            <Label className="text-xs">Assign To</Label>
+            <Select value={assignedToId} onValueChange={setAssignedToId}>
+              <SelectTrigger className="mt-1" data-testid="select-subtask-assignee">
+                <SelectValue placeholder="Select analyst" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {analysts.map((analyst) => (
+                  <SelectItem key={analyst.id} value={analyst.id}>
+                    {analyst.firstName} {analyst.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="flex justify-end gap-2">
           <Button
             size="sm"
