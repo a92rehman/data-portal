@@ -881,39 +881,42 @@ function TaskDetailDialog({
           <div className="grid grid-cols-4 gap-3">
             {/* Assigned To Card */}
             <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-                </div>
-                <div className="flex-1 min-w-0">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-300" />
+                  </div>
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
-                  {isTeamLead ? (
-                    <Select
-                      value={task.assignedToId || "unassigned"}
-                      onValueChange={(value) => {
-                        const assignedToId = value === "unassigned" ? null : value;
-                        updateAssigneeMutation.mutate(assignedToId);
-                      }}
-                      disabled={updateAssigneeMutation.isPending}
-                    >
-                      <SelectTrigger className="h-7 text-xs mt-0.5 border-0 bg-transparent p-0 hover:bg-muted/50">
-                        <SelectValue placeholder="Unassigned" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {analysts.map((analyst) => (
-                          <SelectItem key={analyst.id} value={analyst.id}>
-                            {analyst.firstName} {analyst.lastName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm font-medium mt-0.5 truncate">
-                      {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
-                    </p>
-                  )}
                 </div>
+                {isTeamLead ? (
+                  <Select
+                    value={task.assignedToId || "unassigned"}
+                    onValueChange={(value) => {
+                      const assignedToId = value === "unassigned" ? null : value;
+                      updateAssigneeMutation.mutate(assignedToId);
+                    }}
+                    disabled={updateAssigneeMutation.isPending}
+                  >
+                    <SelectTrigger 
+                      className="h-8 text-xs w-full"
+                      data-testid="select-task-assignee"
+                    >
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {analysts.map((analyst) => (
+                        <SelectItem key={analyst.id} value={analyst.id}>
+                          {analyst.firstName} {analyst.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm font-medium truncate pl-1">
+                    {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
+                  </p>
+                )}
               </div>
             </Card>
 
