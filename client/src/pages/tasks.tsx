@@ -1469,102 +1469,153 @@ function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl" data-testid="dialog-create-task">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-create-task">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <ListChecks className="w-5 h-5 text-primary" />
+            Create New Task
+          </DialogTitle>
+          <DialogDescription>
+            Create a team task to track work
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label>Task Title</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter task title"
-              className="mt-1"
-              data-testid="input-task-title"
-            />
-          </div>
-
-          <div>
-            <Label>Description (Optional)</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description"
-              className="mt-1"
-              rows={3}
-              data-testid="textarea-task-description"
-            />
-          </div>
-
-          {isTeamLead && (
-            <div>
-              <Label>Assign To</Label>
-              <Select value={assignedToId} onValueChange={setAssignedToId}>
-                <SelectTrigger className="mt-1" data-testid="select-assign-to">
-                  <SelectValue placeholder="Select analyst" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {analysts.map((analyst) => (
-                    <SelectItem key={analyst.id} value={analyst.id}>
-                      {analyst.firstName} {analyst.lastName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <div className="space-y-6 py-4">
+          {/* Basic Information Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <div className="h-px bg-border flex-1" />
+              <span>Task Details</span>
+              <div className="h-px bg-border flex-1" />
             </div>
-          )}
+            
+            <div>
+              <Label className="text-sm font-medium">Task Title *</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Build sales dashboard, Extract user data, Fix metric calculation"
+                className="mt-1.5"
+                data-testid="input-task-title"
+              />
+            </div>
 
-          <div>
-            <Label>Due Date (Optional)</Label>
-            <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="mt-1"
-              data-testid="input-due-date"
-            />
+            <div>
+              <Label className="text-sm font-medium">Description</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add details about what needs to be done, requirements, or any relevant context..."
+                className="mt-1.5 min-h-[100px]"
+                rows={4}
+                data-testid="textarea-task-description"
+              />
+            </div>
           </div>
 
-          <div>
-            <Label>PERT Time Estimates (Optional, in hours)</Label>
-            <div className="grid grid-cols-3 gap-2 mt-1">
+          {/* Assignment & Schedule Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <div className="h-px bg-border flex-1" />
+              <span>Assignment & Schedule</span>
+              <div className="h-px bg-border flex-1" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {isTeamLead && (
+                <div>
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <UserIcon className="w-3.5 h-3.5" />
+                    Assign To
+                  </Label>
+                  <Select value={assignedToId} onValueChange={setAssignedToId}>
+                    <SelectTrigger className="mt-1.5" data-testid="select-assign-to">
+                      <SelectValue placeholder="Select analyst" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {analysts.map((analyst) => (
+                        <SelectItem key={analyst.id} value={analyst.id}>
+                          {analyst.firstName} {analyst.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div>
-                <Label className="text-xs text-muted-foreground">Optimistic</Label>
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <CalendarIcon className="w-3.5 h-3.5" />
+                  Due Date
+                </Label>
                 <Input
-                  type="number"
-                  step="0.1"
-                  value={optimisticTime}
-                  onChange={(e) => setOptimisticTime(e.target.value)}
-                  placeholder="0.0"
-                  className="mt-1"
-                  data-testid="input-optimistic-time"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="mt-1.5"
+                  data-testid="input-due-date"
                 />
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Most Likely</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={mostLikelyTime}
-                  onChange={(e) => setMostLikelyTime(e.target.value)}
-                  placeholder="0.0"
-                  className="mt-1"
-                  data-testid="input-most-likely-time"
-                />
+            </div>
+          </div>
+
+          {/* PERT Time Estimates Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <div className="h-px bg-border flex-1" />
+              <span>Time Estimates (PERT)</span>
+              <div className="h-px bg-border flex-1" />
+            </div>
+            
+            <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium mb-1">Estimate task duration in hours</p>
+                  <p className="text-xs">PERT calculation: (Optimistic + 4 × Most Likely + Pessimistic) ÷ 6</p>
+                </div>
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Pessimistic</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={pessimisticTime}
-                  onChange={(e) => setPessimisticTime(e.target.value)}
-                  placeholder="0.0"
-                  className="mt-1"
-                  data-testid="input-pessimistic-time"
-                />
+              
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground">Best Case (Optimistic)</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={optimisticTime}
+                    onChange={(e) => setOptimisticTime(e.target.value)}
+                    placeholder="2.0"
+                    className="mt-1.5"
+                    data-testid="input-optimistic-time"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground">Expected (Most Likely)</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={mostLikelyTime}
+                    onChange={(e) => setMostLikelyTime(e.target.value)}
+                    placeholder="4.0"
+                    className="mt-1.5"
+                    data-testid="input-most-likely-time"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground">Worst Case (Pessimistic)</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={pessimisticTime}
+                    onChange={(e) => setPessimisticTime(e.target.value)}
+                    placeholder="8.0"
+                    className="mt-1.5"
+                    data-testid="input-pessimistic-time"
+                  />
+                </div>
               </div>
             </div>
           </div>
