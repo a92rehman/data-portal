@@ -782,7 +782,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       {/* 1. Header Row */}
-      <DialogHeader className="border-b px-6 py-6 -m-6 mb-0">
+      <DialogHeader className="border-b px-6 py-6 -m-6 mb-0 pr-16">
         <div className="flex flex-col gap-4">
           {/* Back and Close Button Row with Create Task */}
           <div className="flex items-center justify-between gap-3">
@@ -802,7 +802,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 size="sm"
                 onClick={() => setShowCreateTaskDialog(true)}
                 data-testid="button-create-task-header"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-md"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Create Task
@@ -853,27 +853,32 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </div>
               )}
 
-              {/* Accept/Reject Buttons - Only for Team Lead when status is pending review */}
-              {isTeamLead && request.status === "pending_review" && (
+              {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
+              {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.rejectionReason) && (
                 <div className="flex gap-2 flex-shrink-0">
-                  <Button
-                    onClick={() => acceptRequestMutation.mutate()}
-                    disabled={acceptRequestMutation.isPending}
-                    data-testid="button-accept-request"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
-                  </Button>
-                  <Button
-                    onClick={() => setShowRejectDialog(true)}
-                    disabled={rejectRequestMutation.isPending}
-                    variant="destructive"
-                    data-testid="button-reject-request"
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Reject
-                  </Button>
+                  {(request.status === "pending_review" || request.rejectionReason) && (
+                    <Button
+                      onClick={() => acceptRequestMutation.mutate()}
+                      disabled={acceptRequestMutation.isPending}
+                      data-testid="button-accept-request"
+                      className="bg-green-600 hover:bg-green-700 text-white shadow-md"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
+                    </Button>
+                  )}
+                  {(request.status === "pending_review" || request.status === "accepted") && (
+                    <Button
+                      onClick={() => setShowRejectDialog(true)}
+                      disabled={rejectRequestMutation.isPending}
+                      variant="destructive"
+                      data-testid="button-reject-request"
+                      className="shadow-md"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -896,9 +901,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       </DialogHeader>
 
       <ScrollArea className="flex-1">
-        {/* 2. 4-Column Info Tiles Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-4 border-b bg-indigo-50/50 dark:bg-indigo-950/20">
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50">
+        {/* 2. 5-Column Info Tiles Row */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 px-6 py-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
             <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1 flex items-center gap-1">
               {getPriorityIcon(request.priority)}
               Priority
@@ -915,8 +920,18 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </p>
             )}
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50">
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-sm">
+            <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              Created
+            </p>
+            <p className="text-sm font-semibold truncate" data-testid="text-created-date">
+              {request.createdAt ? new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : 'N/A'}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
             <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
+              <Clock className="w-3 h-3" />
               Due Date
               {request.originalDueDate && new Date(request.originalDueDate).getTime() !== new Date(request.dueDate).getTime() && (
                 <span className="inline-flex items-center justify-center w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" title="Due date has been changed" />
@@ -931,14 +946,17 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </p>
             )}
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50">
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
             <p className="text-xs text-indigo-600 dark:text-indigo-400 uppercase mb-1">Department</p>
             <p className="text-sm font-semibold capitalize truncate" data-testid="text-department">
               {request.department}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50">
-            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1">Requested By</p>
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
+            <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
+              <UserIcon className="w-3 h-3" />
+              Requested By
+            </p>
             <p className="text-sm font-semibold truncate" data-testid="text-requested-by">
               {request.requestedBy.firstName} {request.requestedBy.lastName}
             </p>
@@ -1287,9 +1305,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
           {/* Right Column - Delivery Status Panel */}
           <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Delivery Status</CardTitle>
+            <Card className="border-2 border-purple-200 dark:border-purple-800/50 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Package className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  Delivery Status
+                </CardTitle>
+                {(isAnalyst || (isTeamLead && isAssignedToMe)) && !request.deliveredAt && (
+                  <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-xs text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                      <InfoIcon className="w-4 h-4" />
+                      Your delivery will appear in this box once uploaded
+                    </p>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Unified Delivery Box - Reorganized Layout */}
