@@ -848,31 +848,31 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             )}
           </div>
 
-          {/* Title and Status Banner Tile */}
+          {/* Title and Status Section */}
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800/50">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl font-bold truncate text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
-                  {request.title}
-                </DialogTitle>
-                <div className="flex items-center gap-2 mt-1">
-                  {(() => {
-                    const urgency = calculateUrgency(request);
-                    if (!urgency.label) {
-                      return null;
-                    }
-                    return (
-                      <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${urgency.colorClass}`}>
-                        {urgency.label}
-                      </Badge>
-                    );
-                  })()}
-                </div>
-              </div>
+            {/* Title and Urgency Badge */}
+            <div className="flex items-center gap-3 mb-3">
+              <DialogTitle className="text-xl font-bold text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
+                {formatRequestType(request.type)}
+              </DialogTitle>
+              {(() => {
+                const urgency = calculateUrgency(request);
+                if (!urgency.label) {
+                  return null;
+                }
+                return (
+                  <Badge className={`px-2 py-1 rounded-full text-xs font-semibold ${urgency.colorClass}`}>
+                    {urgency.label}
+                  </Badge>
+                );
+              })()}
+            </div>
 
-              {/* Status Banners - Same line as title */}
+            {/* Status Banners and Action Buttons */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Status Banners */}
               {request.status === "accepted" && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 flex-shrink-0" data-testid="banner-request-accepted">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700" data-testid="banner-request-accepted">
                   <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 whitespace-nowrap">✓ Request Accepted</p>
@@ -882,7 +882,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               )}
 
               {request.rejectionReason && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-700 flex-shrink-0" data-testid="banner-request-rejected">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-700" data-testid="banner-request-rejected">
                   <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 whitespace-nowrap">✗ Request Rejected</p>
@@ -891,48 +891,50 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </div>
               )}
 
-              {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
-              {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.rejectionReason) && (
-                <div className="flex gap-2 flex-shrink-0">
-                  {(request.status === "pending_review" || request.rejectionReason) && (
-                    <Button
-                      onClick={() => acceptRequestMutation.mutate()}
-                      disabled={acceptRequestMutation.isPending}
-                      data-testid="button-accept-request"
-                      className="bg-green-600 hover:bg-green-700 text-white shadow-md"
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
-                    </Button>
-                  )}
-                  {(request.status === "pending_review" || request.status === "accepted") && (
-                    <Button
-                      onClick={() => setShowRejectDialog(true)}
-                      disabled={rejectRequestMutation.isPending}
-                      variant="destructive"
-                      data-testid="button-reject-request"
-                      className="shadow-md"
-                    >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Reject
-                    </Button>
-                  )}
-                </div>
-              )}
+              {/* Action Buttons */}
+              <div className="flex gap-2 ml-auto">
+                {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
+                {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.rejectionReason) && (
+                  <>
+                    {(request.status === "pending_review" || request.rejectionReason) && (
+                      <Button
+                        onClick={() => acceptRequestMutation.mutate()}
+                        disabled={acceptRequestMutation.isPending}
+                        data-testid="button-accept-request"
+                        className="bg-green-600 hover:bg-green-700 text-white shadow-md"
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
+                      </Button>
+                    )}
+                    {(request.status === "pending_review" || request.status === "accepted") && (
+                      <Button
+                        onClick={() => setShowRejectDialog(true)}
+                        disabled={rejectRequestMutation.isPending}
+                        variant="destructive"
+                        data-testid="button-reject-request"
+                        className="shadow-md"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Reject
+                      </Button>
+                    )}
+                  </>
+                )}
 
-              {/* Delete Button - Only for Primary Data Lead */}
-              {isPrimaryDataLead && (
-                <Button
-                  onClick={() => setShowDeleteDialog(true)}
-                  variant="destructive"
-                  size="sm"
-                  data-testid="button-delete-request"
-                  className="flex-shrink-0"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              )}
+                {/* Delete Button - Only for Primary Data Lead */}
+                {isPrimaryDataLead && (
+                  <Button
+                    onClick={() => setShowDeleteDialog(true)}
+                    variant="destructive"
+                    size="sm"
+                    data-testid="button-delete-request"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
