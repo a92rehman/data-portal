@@ -820,10 +820,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       {/* 1. Header Row */}
-      <DialogHeader className="border-b px-6 py-6 -m-6 mb-0 pr-16">
+      <DialogHeader className="border-b px-6 py-6 -m-6 mb-0 pr-16 -mx-6">
         <div className="flex flex-col gap-4">
           {/* Top Action Buttons Row */}
-          <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex items-center justify-between gap-3 mb-8">
             <Button
               variant="ghost"
               size="icon"
@@ -898,8 +898,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
 
           {/* Title Tile with Status Badge */}
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800/50">
-            <div className="flex items-center justify-center gap-4 relative">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-4 border-y border-indigo-200 dark:border-indigo-800/50 -mx-6">
+            <div className="flex items-center justify-center gap-4 relative px-6">
               {/* Centered Title and Urgency */}
               <div className="flex items-center gap-3">
                 <DialogTitle className="text-xl font-bold text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
