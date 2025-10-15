@@ -1858,14 +1858,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const taskData = taskSchema.parse(req.body);
       
+      // Debug logging
+      console.log('[CREATE TASK] Received data:', JSON.stringify(taskData, null, 2));
+      
       // Transform dueDate string to Date if provided
       const transformedData = {
         ...taskData,
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : undefined,
       };
       
+      console.log('[CREATE TASK] Transformed data:', JSON.stringify(transformedData, null, 2));
+      
       // Create task
       const task = await storage.createTask(transformedData, req.user.id);
+      
+      console.log('[CREATE TASK] Created task:', JSON.stringify(task, null, 2));
       
       res.json(task);
     } catch (error) {
