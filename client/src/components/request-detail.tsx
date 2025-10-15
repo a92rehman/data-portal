@@ -886,7 +886,17 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               {((user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
                 <Button
                   size="sm"
-                  onClick={() => setShowCreateTaskDialog(true)}
+                  onClick={() => {
+                    if (requestTasks && requestTasks.length > 0) {
+                      toast({
+                        title: "Task Already Exists",
+                        description: "A task against this request has already been created.",
+                        variant: "destructive",
+                      });
+                    } else {
+                      setShowCreateTaskDialog(true);
+                    }
+                  }}
                   data-testid="button-create-task-header"
                   className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-md"
                 >
@@ -919,7 +929,15 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </div>
 
               {/* Status Badge on the Right - Absolutely positioned */}
-              <div className="absolute right-0">
+              <div className="absolute right-0 flex gap-2">
+                {/* Task Created Badge */}
+                {requestTasks && requestTasks.length > 0 && (
+                  <Badge className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 font-semibold" data-testid="badge-task-created">
+                    <ListChecks className="w-4 h-4 mr-1.5" />
+                    Task Created
+                  </Badge>
+                )}
+                
                 {request.status === "accepted" && !request.rejectionReason && (
                   <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold" data-testid="badge-request-accepted">
                     <Check className="w-4 h-4 mr-1.5" />
