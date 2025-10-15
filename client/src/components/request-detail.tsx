@@ -932,7 +932,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               <div className="absolute right-0 flex gap-2">
                 {/* Task Created Badge */}
                 {requestTasks && requestTasks.length > 0 && (
-                  <Badge className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 font-semibold pl-[12px] pr-[12px] mt-[0px] mb-[0px] ml-[100px] mr-[100px]" data-testid="badge-task-created">
+                  <Badge className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 font-semibold pl-[12px] pr-[12px] mt-[0px] mb-[0px] ml-[-42px] mr-[-42px]" data-testid="badge-task-created">
                     <ListChecks className="w-4 h-4 mr-1.5" />
                     Task Created
                   </Badge>
