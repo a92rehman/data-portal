@@ -1330,19 +1330,37 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 {/* Unified Delivery Box - Reorganized Layout */}
                 {(isAnalyst || (isTeamLead && isAssignedToMe)) && (
                   <div className="space-y-3 border-t pt-4">
+                    {/* Delivery Identification Message */}
+                    {request.deliveredAt ? (
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                          <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                            You have 1 delivery
+                          </p>
+                        </div>
+                        {!isDeliverAgainMode && (
+                          <Button
+                            onClick={() => setIsDeliverAgainMode(true)}
+                            variant="outline"
+                            size="sm"
+                            data-testid="button-deliver-again"
+                          >
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Deliver Again
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mb-2">
+                        <p className="text-sm font-semibold text-muted-foreground">
+                          No delivery yet
+                        </p>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
-                      {request.deliveredAt && !isDeliverAgainMode && (
-                        <Button
-                          onClick={() => setIsDeliverAgainMode(true)}
-                          variant="outline"
-                          size="sm"
-                          data-testid="button-deliver-again"
-                        >
-                          <RefreshCw className="w-4 h-4 mr-2" />
-                          Deliver Again
-                        </Button>
-                      )}
                     </div>
 
                     {/* Show Edit Form if: not delivered yet OR in deliver-again mode */}
@@ -1594,6 +1612,14 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 {/* Read-Only Delivery View for Non-Assignees */}
                 {!(isAnalyst || (isTeamLead && isAssignedToMe)) && request.deliveredAt && (
                   <div className="space-y-3 border-t pt-4">
+                    {/* Delivery Identification Message */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                        This request has 1 delivery
+                      </p>
+                    </div>
+
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
 
                     {/* 1. Delivery Type */}
