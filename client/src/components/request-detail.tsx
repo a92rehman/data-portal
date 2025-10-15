@@ -57,6 +57,7 @@ import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import { calculateUrgency } from "@/lib/urgency";
+import { formatRequestType } from "@/lib/formatters";
 
 interface RequestDetailProps {
   request: DataRequestWithDetails;
@@ -627,22 +628,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       hour: "numeric",
       minute: "2-digit",
     });
-  };
-
-  const formatRequestType = (type: string) => {
-    const typeMap: Record<string, string> = {
-      adhoc_analysis: "Ad-hoc Analysis",
-      new_dashboard: "New Dashboard",
-      modify_dashboard: "Modify Dashboard",
-      data_bug: "Data Bug",
-      bq_access: "BigQuery Access",
-      tracking: "Tracking Request",
-      metric_change: "Metric Change",
-      pipeline_change: "Pipeline Change",
-      powerbi: "Power BI Dashboard",
-      adhoc: "Ad-hoc Request"
-    };
-    return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
   };
 
   const formatStatus = (status: string) => {
