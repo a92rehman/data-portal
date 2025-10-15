@@ -18,23 +18,23 @@ export function formatRequestType(type: string): string {
     case "new_dashboard":
       return "New Dashboard/Report";
     case "modify_dashboard":
-      return "Modification to Existing Dashboard/Report";
+      return "Modify Dashboard/Report";
     case "adhoc_analysis":
-      return "Ad-hoc Data Analysis";
+      return "Ad-hoc Analysis";
     case "data_extraction":
-      return "One-time Data Extraction";
+      return "Data Extraction";
     case "data_bug":
-      return "Data Bug / Data Quality Issue";
+      return "Data Bug";
     case "bq_access":
-      return "BigQuery Access Request";
+      return "BigQuery Access";
     case "tracking":
-      return "Event Tracking / Instrumentation";
+      return "Event Tracking";
     case "metric_change":
-      return "Metric Definition / Business Rule Change";
+      return "Metric Change";
     case "pipeline_change":
-      return "Data Pipeline / Table Change";
+      return "Pipeline Change";
     case "recurring_report":
-      return "Scheduled / Recurring Report";
+      return "Recurring Report";
     case "experimentation":
       return "Experimentation";
     case "other":
