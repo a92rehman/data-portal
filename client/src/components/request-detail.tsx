@@ -825,13 +825,14 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           {/* Top Action Buttons Row */}
           <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-2">
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="default"
               onClick={onClose}
-              className="flex-shrink-0"
+              className="flex-shrink-0 gap-2 shadow-sm hover:shadow-md transition-shadow"
               data-testid="button-back"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4" />
+              <span className="font-medium">Back</span>
             </Button>
             
             {/* Action Buttons Group - Positioned down and slightly left */}
