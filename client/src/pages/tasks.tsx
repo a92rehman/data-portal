@@ -332,10 +332,10 @@ function TaskCard({
 
   return (
     <Card 
-      className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow"
+      className="border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-md hover:shadow-lg transition-all"
       data-testid={`task-card-${task.id}`}
     >
-      <CardContent className="p-3">
+      <CardContent className="p-4">
         {/* Main Task Row */}
         <div className="grid grid-cols-12 gap-3 items-center">
           {/* Task Title and Badges - Takes up more space */}
@@ -427,24 +427,24 @@ function TaskCard({
           {/* View Button */}
           <div className="col-span-1 flex justify-end">
             <Button
-              variant="outline"
               size="sm"
               onClick={() => onSelectTask(task)}
-              className="h-8 px-2 border-primary text-primary hover:bg-primary hover:text-white"
+              className="h-8 px-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-sm hover:shadow-md transition-all"
               data-testid={`button-view-task-${task.id}`}
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-4 h-4 mr-1" />
+              View
             </Button>
           </div>
         </div>
 
         {/* Subtasks Section */}
         {subTasks.length > 0 && (
-          <div className="mt-3 pl-4 border-l-2 border-blue-300 dark:border-blue-700 space-y-1.5">
+          <div className="mt-4 pt-3 pl-4 border-l-4 border-blue-500 dark:border-blue-600 bg-blue-50/30 dark:bg-blue-950/20 rounded-r-lg space-y-2">
             {subTasks.map((subTask) => (
               <div 
                 key={subTask.id}
-                className="grid grid-cols-12 gap-3 items-center p-1.5 rounded-md hover:bg-muted/50 transition-colors"
+                className="grid grid-cols-12 gap-3 items-center p-2 rounded-md bg-white/40 dark:bg-gray-800/40 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-all shadow-sm"
                 data-testid={`subtask-${subTask.id}`}
               >
                 <div className="col-span-3 cursor-pointer" onClick={() => onSelectTask(subTask)}>
@@ -478,13 +478,13 @@ function TaskCard({
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={() => onSelectTask(subTask)}
-                    className="h-7 px-2 border-primary text-primary hover:bg-primary hover:text-white"
+                    className="h-7 px-2 bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow transition-all"
                     data-testid={`button-view-subtask-${subTask.id}`}
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className="w-3.5 h-3.5 mr-1" />
+                    View
                   </Button>
                 </div>
               </div>
@@ -860,8 +860,8 @@ function TaskDetailDialog({
               <Label className="text-sm font-semibold">Sub-tasks ({subTasks.length})</Label>
               <Button
                 size="sm"
-                variant="outline"
                 onClick={() => setShowSubTaskForm(!showSubTaskForm)}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
                 data-testid="button-add-subtask"
               >
                 <Plus className="w-4 h-4 mr-1" />
@@ -886,10 +886,10 @@ function TaskDetailDialog({
                 <p className="text-sm text-muted-foreground text-center py-4">No sub-tasks yet</p>
               ) : (
                 subTasks.map((subTask) => (
-                  <Card key={subTask.id} className="p-3">
+                  <Card key={subTask.id} className="p-3 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30 border-l-4 border-blue-500 dark:border-blue-600">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <h5 className="font-medium text-sm">{subTask.title}</h5>
+                        <h5 className="font-semibold text-sm">{subTask.title}</h5>
                         {subTask.description && (
                           <p className="text-xs text-muted-foreground mt-1">{subTask.description}</p>
                         )}
@@ -906,10 +906,10 @@ function TaskDetailDialog({
                             size="sm"
                             variant="ghost"
                             onClick={() => setDeletingSubTaskId(subTask.id)}
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="h-7 w-7 p-0 text-destructive hover:text-white hover:bg-destructive transition-colors"
                             data-testid={`button-delete-subtask-${subTask.id}`}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
@@ -1058,6 +1058,7 @@ function SubTaskForm({
             size="sm"
             variant="outline"
             onClick={onCancel}
+            className="border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
             data-testid="button-cancel-subtask"
           >
             Cancel
@@ -1066,6 +1067,7 @@ function SubTaskForm({
             size="sm"
             onClick={handleSubmit}
             disabled={createSubTaskMutation.isPending}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-sm"
             data-testid="button-save-subtask"
           >
             {createSubTaskMutation.isPending ? "Creating..." : "Create Sub-task"}
