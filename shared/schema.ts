@@ -84,6 +84,7 @@ export const requestTypeEnum = pgEnum("request_type", [
   "metric_change",
   "pipeline_change",
   "recurring_report",
+  "experimentation",
   "other"
 ]);
 

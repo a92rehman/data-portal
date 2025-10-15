@@ -272,6 +272,7 @@ export default function DataRequestForm() {
       'metricChange': 'metric_change',
       'pipelineChange': 'pipeline_change',
       'recurringReport': 'recurring_report',
+      'experimentation': 'experimentation',
       'other': 'other'
     };
     return mapping[type] || type;
@@ -832,6 +833,7 @@ export default function DataRequestForm() {
                   <option value="metricChange">Metric Definition / Business Rule Change</option>
                   <option value="pipelineChange">Data Pipeline / Table Change</option>
                   <option value="recurringReport">Scheduled / Recurring Report</option>
+                  <option value="experimentation">Experimentation</option>
                   <option value="other">Other</option>
                 </select>
               </div>

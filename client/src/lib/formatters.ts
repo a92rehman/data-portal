@@ -25,6 +25,18 @@ export function formatRequestType(type: string): string {
       return "One-time Data Extraction";
     case "data_bug":
       return "Data Bug / Data Quality Issue";
+    case "bq_access":
+      return "BigQuery Access Request";
+    case "tracking":
+      return "Event Tracking / Instrumentation";
+    case "metric_change":
+      return "Metric Definition / Business Rule Change";
+    case "pipeline_change":
+      return "Data Pipeline / Table Change";
+    case "recurring_report":
+      return "Scheduled / Recurring Report";
+    case "experimentation":
+      return "Experimentation";
     case "other":
       return "Other";
     default:
