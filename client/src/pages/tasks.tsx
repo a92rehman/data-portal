@@ -427,10 +427,10 @@ function TaskCard({
           {/* View Button */}
           <div className="col-span-1 flex justify-end">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => onSelectTask(task)}
-              className="h-8 px-2"
+              className="h-8 px-2 border-primary text-primary hover:bg-primary hover:text-white"
               data-testid={`button-view-task-${task.id}`}
             >
               <Eye className="w-4 h-4" />
@@ -478,10 +478,10 @@ function TaskCard({
                 </div>
                 <div className="col-span-1 flex justify-end">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => onSelectTask(subTask)}
-                    className="h-7 px-2"
+                    className="h-7 px-2 border-primary text-primary hover:bg-primary hover:text-white"
                     data-testid={`button-view-subtask-${subTask.id}`}
                   >
                     <Eye className="w-3.5 h-3.5" />
