@@ -450,13 +450,14 @@ export default function AllRequests() {
                     <TableHead>Delivery Status</TableHead>
                     <TableHead>Assigned To</TableHead>
                     <TableHead>Due Date</TableHead>
+                    <TableHead>Created</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         No requests found
                       </TableCell>
                     </TableRow>
@@ -546,6 +547,9 @@ export default function AllRequests() {
                               </span>
                             );
                           })()}
+                        </TableCell>
+                        <TableCell>
+                          {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <Button

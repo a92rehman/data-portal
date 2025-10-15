@@ -367,13 +367,14 @@ export default function MyAssignments() {
                     <TableHead>Priority</TableHead>
                     <TableHead>Requester</TableHead>
                     <TableHead>Due Date</TableHead>
+                    <TableHead>Created</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         No assignments found
                       </TableCell>
                     </TableRow>
@@ -407,6 +408,9 @@ export default function MyAssignments() {
                         </TableCell>
                         <TableCell data-testid={`cell-date-${request.id}`}>
                           {request.dueDate ? formatDate(request.dueDate.toString()) : 'N/A'}
+                        </TableCell>
+                        <TableCell data-testid={`cell-created-${request.id}`}>
+                          {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <Button

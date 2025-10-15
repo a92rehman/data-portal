@@ -382,13 +382,14 @@ export default function MyRequests() {
                       <TableHead>Priority</TableHead>
                       <TableHead>Assigned To</TableHead>
                       <TableHead>Due Date</TableHead>
+                      <TableHead>Created</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredRequests.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                           No requests found
                         </TableCell>
                       </TableRow>
@@ -422,6 +423,9 @@ export default function MyRequests() {
                           </TableCell>
                           <TableCell data-testid={`cell-date-${request.id}`}>
                             {request.dueDate ? formatDate(request.dueDate.toString()) : 'N/A'}
+                          </TableCell>
+                          <TableCell data-testid={`cell-created-${request.id}`}>
+                            {request.createdAt ? formatDate(request.createdAt.toString()) : 'N/A'}
                           </TableCell>
                           <TableCell>
                             <Button
