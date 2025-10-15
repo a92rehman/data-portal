@@ -249,6 +249,7 @@ export default function Tasks() {
           open={!!selectedTask}
           onClose={() => setSelectedTask(null)}
           onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/tasks"] })}
+          onSelectTask={setSelectedTask}
         />
       )}
 
@@ -700,12 +701,14 @@ function TaskDetailDialog({
   task, 
   open, 
   onClose, 
-  onUpdate 
+  onUpdate,
+  onSelectTask
 }: { 
   task: TaskWithDetails; 
   open: boolean; 
   onClose: () => void;
   onUpdate: () => void;
+  onSelectTask: (task: TaskWithDetails) => void;
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
