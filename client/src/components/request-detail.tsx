@@ -1360,43 +1360,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       )}
                     </div>
 
-                    {/* 1. Assigned Analyst */}
-                    <div className="pb-3 border-b">
-                      <div className="flex items-center gap-2 mb-2">
-                        <User2 className="w-4 h-4 text-muted-foreground" />
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">
-                          Assigned Analyst
-                        </label>
-                      </div>
-                      <div className="flex items-center gap-2 pl-6">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">
-                            {request.assignedTo ? `${request.assignedTo.firstName?.[0] || ''}${request.assignedTo.lastName?.[0] || ''}`.toUpperCase() || request.assignedTo.email[0].toUpperCase() : 'NA'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium" data-testid="text-assigned-analyst">
-                          {request.assignedTo ? `${request.assignedTo.firstName || ''} ${request.assignedTo.lastName || ''}`.trim() || request.assignedTo.email : 'Not assigned'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 2. Request Type */}
-                    <div className="pb-3 border-b">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">
-                          Request Type
-                        </label>
-                      </div>
-                      <Badge variant="secondary" className="ml-6" data-testid="badge-request-type">
-                        {request.type?.replace(/_/g, ' ') || 'Not specified'}
-                      </Badge>
-                    </div>
-
                     {/* Show Edit Form if: not delivered yet OR in deliver-again mode */}
                     {(!request.deliveredAt || isDeliverAgainMode) && (
                       <>
-                        {/* 3. Delivery Type Selector */}
+                        {/* 1. Delivery Type Selector */}
                         <div className="pb-3 border-b">
                           <div className="flex items-center gap-2 mb-2">
                             <Package className="w-4 h-4 text-muted-foreground" />
@@ -1422,7 +1389,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                           </div>
                         </div>
 
-                        {/* 4. Delivery Content Input */}
+                        {/* 2. Delivery Content Input */}
                         <div className="pb-3 border-b">
                           <div className="flex items-center gap-2 mb-2">
                             {deliveryType === "attachment" ? <Paperclip className="w-4 h-4 text-muted-foreground" /> :
@@ -1525,7 +1492,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                     {/* Show Read-Only View if delivered and NOT in deliver-again mode */}
                     {request.deliveredAt && !isDeliverAgainMode && (
                       <>
-                        {/* 3. Delivery Type (Read-Only) */}
+                        {/* 1. Delivery Type (Read-Only) */}
                         <div className="pb-3 border-b">
                           <div className="flex items-center gap-2 mb-2">
                             <Package className="w-4 h-4 text-muted-foreground" />
@@ -1540,7 +1507,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                           </Badge>
                         </div>
 
-                        {/* 4. Delivered Content (Read-Only) */}
+                        {/* 2. Delivered Content (Read-Only) */}
                         <div className="pb-3 border-b">
                           <div className="flex items-center gap-2 mb-2">
                             {request.deliveryType === "attachment" ? <Paperclip className="w-4 h-4 text-muted-foreground" /> :
@@ -1596,7 +1563,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                           </div>
                         </div>
 
-                        {/* 5. Delivered On */}
+                        {/* 3. Delivered On */}
                         <div className="pb-3 border-b">
                           <div className="flex items-center gap-2 mb-2">
                             <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -1612,7 +1579,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                           </div>
                         </div>
 
-                        {/* 6. Delivery Status */}
+                        {/* 4. Delivery Status */}
                         <div>
                           <div className="flex items-center gap-2 mb-2">
                             <Clock className="w-4 h-4 text-muted-foreground" />
@@ -1644,40 +1611,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   <div className="space-y-3 border-t pt-4">
                     <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
 
-                    {/* 1. Assigned Analyst */}
-                    <div className="pb-3 border-b">
-                      <div className="flex items-center gap-2 mb-2">
-                        <User2 className="w-4 h-4 text-muted-foreground" />
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">
-                          Assigned Analyst
-                        </label>
-                      </div>
-                      <div className="flex items-center gap-2 pl-6">
-                        <Avatar className="w-6 h-6">
-                          <AvatarFallback className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300">
-                            {request.assignedTo ? `${request.assignedTo.firstName?.[0] || ''}${request.assignedTo.lastName?.[0] || ''}`.toUpperCase() || request.assignedTo.email[0].toUpperCase() : 'NA'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium" data-testid="text-assigned-analyst-readonly">
-                          {request.assignedTo ? `${request.assignedTo.firstName || ''} ${request.assignedTo.lastName || ''}`.trim() || request.assignedTo.email : 'Not assigned'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 2. Request Type */}
-                    <div className="pb-3 border-b">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">
-                          Request Type
-                        </label>
-                      </div>
-                      <Badge variant="secondary" className="ml-6" data-testid="badge-request-type-readonly">
-                        {request.type?.replace(/_/g, ' ') || 'Not specified'}
-                      </Badge>
-                    </div>
-
-                    {/* 3. Delivery Type */}
+                    {/* 1. Delivery Type */}
                     <div className="pb-3 border-b">
                       <div className="flex items-center gap-2 mb-2">
                         <Package className="w-4 h-4 text-muted-foreground" />
@@ -1748,7 +1682,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       </div>
                     </div>
 
-                    {/* 5. Delivered On */}
+                    {/* 3. Delivered On */}
                     <div className="pb-3 border-b">
                       <div className="flex items-center gap-2 mb-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -1764,7 +1698,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       </div>
                     </div>
 
-                    {/* 6. Delivery Status */}
+                    {/* 4. Delivery Status */}
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <Clock className="w-4 h-4 text-muted-foreground" />
