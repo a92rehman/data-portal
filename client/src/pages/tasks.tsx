@@ -782,97 +782,177 @@ function TaskDetailDialog({
     },
   });
 
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      to_do: "bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700",
+      in_progress: "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+      blocked: "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700",
+      completed: "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700",
+    };
+    return variants[status as keyof typeof variants] || variants.to_do;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl" data-testid="dialog-task-detail">
-        <DialogHeader>
-          <DialogTitle data-testid="task-detail-title">{task.title}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          {task.description && (
-            <div>
-              <Label className="text-xs text-muted-foreground">Description</Label>
-              <p className="text-sm mt-1">{task.description}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Status</Label>
-              <Select 
-                value={task.status} 
-                onValueChange={(value) => updateStatusMutation.mutate(value)}
-                disabled={updateStatusMutation.isPending}
-              >
-                <SelectTrigger className="mt-1" data-testid="select-task-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="to_do">To Do</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="blocked">Blocked</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">Assigned To</Label>
-              <p className="text-sm mt-1">
-                {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
-              </p>
-            </div>
-          </div>
-
-          {(task.optimisticTime || task.mostLikelyTime || task.pessimisticTime) && (
-            <div>
-              <Label className="text-xs text-muted-foreground">PERT Time Estimate</Label>
-              <div className="grid grid-cols-4 gap-2 mt-1">
-                <div className="text-center p-2 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Optimistic</p>
-                  <p className="text-sm font-medium">{task.optimisticTime?.toFixed(1)}h</p>
-                </div>
-                <div className="text-center p-2 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Most Likely</p>
-                  <p className="text-sm font-medium">{task.mostLikelyTime?.toFixed(1)}h</p>
-                </div>
-                <div className="text-center p-2 bg-muted rounded">
-                  <p className="text-xs text-muted-foreground">Pessimistic</p>
-                  <p className="text-sm font-medium">{task.pessimisticTime?.toFixed(1)}h</p>
-                </div>
-                <div className="text-center p-2 bg-primary/10 rounded">
-                  <p className="text-xs text-muted-foreground">Expected</p>
-                  <p className="text-sm font-medium text-primary">{task.expectedTime?.toFixed(1)}h</p>
-                </div>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="dialog-task-detail">
+        <DialogHeader className="pb-4 border-b">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <DialogTitle className="text-2xl font-bold mb-2" data-testid="task-detail-title">{task.title}</DialogTitle>
+              <div className="flex items-center gap-2 flex-wrap">
+                {task.requestId ? (
+                  <Badge className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
+                    Request Task
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-slate-50 dark:bg-slate-900">
+                    Team Task
+                  </Badge>
+                )}
+                {task.request && (
+                  <button
+                    onClick={() => {
+                      if (task.request) {
+                        setLocation(`/requests/${task.request.id}`);
+                        onClose();
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors"
+                  >
+                    Request #{task.request.requestNumber}
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                )}
               </div>
             </div>
+            <Select 
+              value={task.status} 
+              onValueChange={(value) => updateStatusMutation.mutate(value)}
+              disabled={updateStatusMutation.isPending}
+            >
+              <SelectTrigger className={`w-40 ${getStatusBadge(task.status)}`} data-testid="select-task-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="to_do">To Do</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-6 pt-4">
+          {/* Description Section */}
+          {task.description && (
+            <Card className="p-4 bg-gradient-to-br from-blue-50/30 to-purple-50/30 dark:from-blue-950/20 dark:to-purple-950/20 border-l-4 border-blue-500">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Description</Label>
+              <p className="text-sm mt-2 leading-relaxed">{task.description}</p>
+            </Card>
           )}
 
-          {task.request && (
-            <div>
-              <Label className="text-xs text-muted-foreground">Linked Request</Label>
-              <button
-                onClick={() => {
-                  if (task.request) {
-                    setLocation(`/requests/${task.request.id}`);
-                    onClose();
-                  }
-                }}
-                className="text-sm mt-1 text-purple-600 dark:text-purple-400 hover:underline"
-              >
-                #{task.request.requestNumber}: {task.request.title}
-              </button>
-            </div>
+          {/* Task Information Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Assigned To Card */}
+            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <UserIcon className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
+                  <p className="text-sm font-medium mt-1">
+                    {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Due Date Card */}
+            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                  <CalendarIcon className="w-5 h-5 text-purple-600 dark:text-purple-300" />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Due Date</Label>
+                  <p className="text-sm font-medium mt-1">
+                    {task.dueDate ? format(new Date(task.dueDate), "MMMM d, yyyy") : "No due date"}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Created By Card */}
+            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <UserIcon className="w-5 h-5 text-green-600 dark:text-green-300" />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Created By</Label>
+                  <p className="text-sm font-medium mt-1">
+                    {task.createdBy ? `${task.createdBy.firstName} ${task.createdBy.lastName}` : "Unknown"}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Created Date Card */}
+            <Card className="p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                  <CalendarIcon className="w-5 h-5 text-orange-600 dark:text-orange-300" />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Created On</Label>
+                  <p className="text-sm font-medium mt-1">
+                    {task.createdAt ? format(new Date(task.createdAt), "MMMM d, yyyy 'at' h:mm a") : "Unknown"}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* PERT Time Estimate */}
+          {(task.optimisticTime || task.mostLikelyTime || task.pessimisticTime) && (
+            <Card className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 block">PERT Time Estimate</Label>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Optimistic</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">{task.optimisticTime?.toFixed(1)}h</p>
+                </div>
+                <div className="text-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Most Likely</p>
+                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{task.mostLikelyTime?.toFixed(1)}h</p>
+                </div>
+                <div className="text-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Pessimistic</p>
+                  <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{task.pessimisticTime?.toFixed(1)}h</p>
+                </div>
+                <div className="text-center p-3 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 rounded-lg border-2 border-purple-300 dark:border-purple-700">
+                  <p className="text-xs text-muted-foreground mb-1">Expected</p>
+                  <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{task.expectedTime?.toFixed(1)}h</p>
+                </div>
+              </div>
+            </Card>
           )}
 
           {/* Sub-tasks Section */}
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <Label className="text-sm font-semibold">Sub-tasks ({subTasks.length})</Label>
+          <Card className="p-5 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                </div>
+                <Label className="text-base font-bold">Sub-tasks ({subTasks.length})</Label>
+              </div>
               <Button
                 size="sm"
                 onClick={() => setShowSubTaskForm(!showSubTaskForm)}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-md hover:shadow-lg transition-all"
                 data-testid="button-add-subtask"
               >
                 <Plus className="w-4 h-4 mr-1" />
@@ -881,32 +961,66 @@ function TaskDetailDialog({
             </div>
 
             {showSubTaskForm && (
-              <SubTaskForm
-                parentTaskId={task.id}
-                onSuccess={() => {
-                  setShowSubTaskForm(false);
-                  queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
-                  queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-                }}
-                onCancel={() => setShowSubTaskForm(false)}
-              />
+              <div className="mb-4">
+                <SubTaskForm
+                  parentTaskId={task.id}
+                  onSuccess={() => {
+                    setShowSubTaskForm(false);
+                    queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+                    queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+                  }}
+                  onCancel={() => setShowSubTaskForm(false)}
+                />
+              </div>
             )}
 
-            <div className="space-y-2 mt-3">
+            <div className="space-y-3">
               {subTasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No sub-tasks yet</p>
+                <div className="text-center py-8">
+                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-3">
+                    <ListChecks className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">No sub-tasks yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click "Add Sub-task" to create one</p>
+                </div>
               ) : (
                 subTasks.map((subTask) => (
-                  <Card key={subTask.id} className="p-3 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/30 dark:to-purple-950/30 border-l-4 border-blue-500 dark:border-blue-600">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <h5 className="font-semibold text-sm">{subTask.title}</h5>
+                  <Card key={subTask.id} className="p-4 bg-white dark:bg-gray-800 border-l-4 border-blue-500 dark:border-blue-600 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CornerDownRight className="w-4 h-4 text-muted-foreground" />
+                          <h5 className="font-semibold text-sm">{subTask.title}</h5>
+                        </div>
                         {subTask.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{subTask.description}</p>
+                          <p className="text-xs text-muted-foreground pl-6">{subTask.description}</p>
                         )}
+                        <div className="flex items-center gap-3 pl-6 text-xs text-muted-foreground">
+                          {subTask.assignedTo && (
+                            <div className="flex items-center gap-1">
+                              <UserIcon className="w-3 h-3" />
+                              <span>{subTask.assignedTo.firstName} {subTask.assignedTo.lastName}</span>
+                            </div>
+                          )}
+                          {subTask.expectedTime && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{subTask.expectedTime.toFixed(1)}h</span>
+                            </div>
+                          )}
+                          {subTask.dueDate && (
+                            <div className="flex items-center gap-1">
+                              <CalendarIcon className="w-3 h-3" />
+                              <span>{format(new Date(subTask.dueDate), "MMM d")}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={subTask.status === 'completed' ? 'default' : 'outline'} className="text-xs">
+                        <Badge 
+                          variant={subTask.status === 'completed' ? 'default' : 'outline'} 
+                          className={`text-xs ${getStatusBadge(subTask.status)}`}
+                        >
                           {subTask.status === 'to_do' && 'To Do'}
                           {subTask.status === 'in_progress' && 'In Progress'}
                           {subTask.status === 'blocked' && 'Blocked'}
@@ -917,10 +1031,10 @@ function TaskDetailDialog({
                             size="sm"
                             variant="ghost"
                             onClick={() => setDeletingSubTaskId(subTask.id)}
-                            className="h-7 w-7 p-0 text-destructive hover:text-white hover:bg-destructive transition-colors"
+                            className="h-8 w-8 p-0 text-destructive hover:text-white hover:bg-destructive transition-colors"
                             data-testid={`button-delete-subtask-${subTask.id}`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
@@ -929,13 +1043,14 @@ function TaskDetailDialog({
                 ))
               )}
             </div>
-          </div>
+          </Card>
 
           {isTeamLead && (
-            <div className="border-t pt-4 flex justify-end">
+            <div className="border-t pt-6 flex justify-end">
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteDialog(true)}
+                className="bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg transition-all"
                 data-testid="button-delete-task"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
