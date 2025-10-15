@@ -820,10 +820,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       {/* 1. Header Row */}
-      <DialogHeader className="border-b px-6 py-6 -m-6 mb-0 pr-16 -mx-6">
-        <div className="flex flex-col gap-4">
+      <DialogHeader className="border-b px-0 py-6 -m-6 mb-0 pr-16">
+        <div className="flex flex-col gap-4 px-6">
           {/* Top Action Buttons Row */}
-          <div className="flex items-center justify-between gap-3 mb-8">
+          <div className="flex items-center justify-between gap-3 mb-8 pt-4">
             <Button
               variant="ghost"
               size="icon"
