@@ -820,10 +820,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   return (
     <>
       {/* 1. Header Row */}
-      <DialogHeader className="border-b px-6 py-6 -m-6 mb-0 pr-16 -mx-6">
-        <div className="flex flex-col gap-4">
+      <DialogHeader className="border-b -m-6 mb-0">
+        <div className="flex flex-col">
           {/* Top Action Buttons Row */}
-          <div className="flex items-center justify-between gap-3 mb-8">
+          <div className="flex items-center justify-between gap-3 px-6 pt-6 pb-2">
             <Button
               variant="ghost"
               size="icon"
@@ -834,8 +834,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               <ArrowLeft className="w-5 h-5" />
             </Button>
             
-            {/* Action Buttons Group - Positioned slightly left */}
-            <div className="flex gap-2 mr-6">
+            {/* Action Buttons Group - Positioned down and slightly left */}
+            <div className="flex gap-2 mr-10 mt-3">
               {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
               {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.rejectionReason) && (
                 <>
@@ -897,8 +897,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </div>
           </div>
 
-          {/* Title Tile with Status Badge */}
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-4 border-y border-indigo-200 dark:border-indigo-800/50 -mx-6">
+          {/* Title Tile with Status Badge - Full Width */}
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-4 border-y border-indigo-200 dark:border-indigo-800/50 mt-4">
             <div className="flex items-center justify-center gap-4 relative px-6">
               {/* Centered Title and Urgency */}
               <div className="flex items-center gap-3">
