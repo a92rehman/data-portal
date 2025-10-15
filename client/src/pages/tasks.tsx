@@ -339,7 +339,7 @@ function TaskCard({
         {/* Main Task Row */}
         <div className="grid grid-cols-12 gap-3 items-center">
           {/* Task Title and Badges - Takes up more space */}
-          <div className="col-span-4 cursor-pointer" onClick={() => onSelectTask(task)}>
+          <div className="col-span-3 cursor-pointer" onClick={() => onSelectTask(task)}>
             <div className="flex items-center gap-2 mb-1">
               {task.requestId ? (
                 <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300">
@@ -423,6 +423,19 @@ function TaskCard({
               {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No due date"}
             </span>
           </div>
+
+          {/* View Button */}
+          <div className="col-span-1 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSelectTask(task)}
+              className="h-8 px-2"
+              data-testid={`button-view-task-${task.id}`}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Subtasks Section */}
@@ -431,11 +444,10 @@ function TaskCard({
             {subTasks.map((subTask) => (
               <div 
                 key={subTask.id}
-                className="grid grid-cols-12 gap-3 items-center p-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer"
-                onClick={() => onSelectTask(subTask)}
+                className="grid grid-cols-12 gap-3 items-center p-1.5 rounded-md hover:bg-muted/50 transition-colors"
                 data-testid={`subtask-${subTask.id}`}
               >
-                <div className="col-span-4">
+                <div className="col-span-3 cursor-pointer" onClick={() => onSelectTask(subTask)}>
                   <p className="text-sm font-medium truncate">{subTask.title}</p>
                 </div>
                 <div className="col-span-2 flex items-center gap-1.5">
@@ -463,6 +475,17 @@ function TaskCard({
                   <span className="text-xs text-muted-foreground">
                     {subTask.dueDate ? format(new Date(subTask.dueDate), "MMM d") : "—"}
                   </span>
+                </div>
+                <div className="col-span-1 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSelectTask(subTask)}
+                    className="h-7 px-2"
+                    data-testid={`button-view-subtask-${subTask.id}`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
               </div>
             ))}
