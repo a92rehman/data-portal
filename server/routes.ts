@@ -288,10 +288,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let generatedPassword: string | undefined;
       
-      // For analysts, generate random password
-      if (role === 'analyst' && !existingUser && resultUser) {
+      // For analysts, ALWAYS generate random password (both new and re-added users)
+      if (role === 'analyst' && resultUser) {
         try {
-          console.log(`[server] Step 1: Generating password for analyst ${email}`);
+          console.log(`[server] Step 1: Generating password for analyst ${email} (${existingUser ? 're-added user' : 'new user'})`);
           
           // Generate random password (12 characters: letters, numbers, special chars)
           generatedPassword = randomBytes(9).toString('base64').slice(0, 12);
@@ -315,8 +315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("[server] Failed to generate analyst password:", error);
           // Don't fail the request if password generation fails
         }
-      } else {
-        // For requesters and team leads, send regular invitation email
+      } else if (role !== 'analyst') {
+        // For requesters and team leads ONLY, send regular invitation email via Brevo
         try {
           const inviterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || currentUser.email || 'Data Lead';
           
