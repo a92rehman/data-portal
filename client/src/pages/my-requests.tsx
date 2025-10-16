@@ -19,7 +19,6 @@ import { Search, Eye, CircleAlert, MinusCircle, InfoIcon, Calendar as CalendarIc
 import type { DataRequestWithDetails } from "@shared/schema";
 import { calculateUrgency } from "@/lib/urgency";
 import { format } from "date-fns";
-import { getRecencyLabel } from "@/lib/recency";
 
 export default function MyRequests() {
   const { user, isLoading: authLoading } = useAuth();
@@ -403,14 +402,7 @@ export default function MyRequests() {
                             </Badge>
                           </TableCell>
                           <TableCell className="font-medium" data-testid={`cell-type-${request.id}`}>
-                            <div className="flex items-center gap-2">
-                              {formatRequestType(request.type)}
-                              {getRecencyLabel(request.createdAt) && (
-                                <Badge className="text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-                                  {getRecencyLabel(request.createdAt)}
-                                </Badge>
-                              )}
-                            </div>
+                            {formatRequestType(request.type)}
                           </TableCell>
                           <TableCell data-testid={`cell-status-${request.id}`}>
                             <Badge className={`status-badge ${getStatusBadge(request.status)}`}>

@@ -20,7 +20,6 @@ import type { DataRequestWithDetails, User } from "@shared/schema";
 import { DEPARTMENTS } from "@shared/constants";
 import { format } from "date-fns";
 import { calculateUrgency } from "@/lib/urgency";
-import { getRecencyLabel } from "@/lib/recency";
 
 export default function AllRequests() {
   const { user, isLoading: authLoading } = useAuth();
@@ -488,16 +487,7 @@ export default function AllRequests() {
                           )}
                         </TableCell>
                         <TableCell className="capitalize">{request.department}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {formatRequestType(request.type)}
-                            {getRecencyLabel(request.createdAt) && (
-                              <Badge className="text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-                                {getRecencyLabel(request.createdAt)}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
+                        <TableCell>{formatRequestType(request.type)}</TableCell>
                         <TableCell>
                           <Badge className={`status-badge ${getStatusBadge(request.status)}`}>
                             {formatStatus(request.status)}
