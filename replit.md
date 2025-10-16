@@ -4,6 +4,18 @@
 
 DataHub is a full-stack data request management system designed to streamline data request and analytics workflows. It facilitates data request submission by team leads and efficient management, review, and completion by data analysts. The system offers features such as request tracking with status management, commenting, email/password authentication, task management with PERT time estimation, and comprehensive analytics dashboards. Built with React, shadcn/ui, Express, and PostgreSQL, DataHub aims to provide a modern, responsive user experience, improve transparency in data operations, and deliver actionable insights.
 
+## Recent Changes (October 16, 2025)
+
+### Request Assignment Fix
+- Fixed Request Assignments page for analysts to show only requests where they are assigned (assignedToId = analyst.id)
+- Previously showed all requests regardless of assignment status
+
+### Task Auto-Completion
+- Implemented automatic task completion when parent request is delivered or completed
+- When a request status changes to "delivered" or "completed", all linked tasks (via task.requestId) automatically mark as completed
+- Added error handling to prevent delivery/completion failures if task auto-complete fails
+- Logic added to both `/api/requests/:id/delivered` and `/api/requests/:id/complete` endpoints
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
