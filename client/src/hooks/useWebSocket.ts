@@ -1,5 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-toastify';
+import { getNotificationPriority, playNotificationSound, getPriorityIcon } from '@/lib/notificationUtils';
 
 interface TypingIndicator {
   requestId: string;
@@ -99,6 +101,34 @@ export function useWebSocket(userId: string | undefined) {
         } else {
           // Handle other notifications
           console.log('[WebSocket] Invalidating queries for notification');
+          
+          // Determine priority and show toast
+          const priority = getNotificationPriority(notification);
+          const priorityIcon = getPriorityIcon(priority);
+          
+          // Play notification sound
+          playNotificationSound(priority);
+          
+          // Show toast notification
+          const toastConfig = {
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          };
+          
+          if (priority === 'critical') {
+            toast.error(`${priorityIcon} ${notification.title}`, {
+              ...toastConfig,
+              autoClose: 8000, // Show longer for critical
+            });
+          } else if (priority === 'high') {
+            toast.warning(`${priorityIcon} ${notification.title}`, toastConfig);
+          } else {
+            toast.info(`${priorityIcon} ${notification.title}`, toastConfig);
+          }
+          
           queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
           queryClient.invalidateQueries({ queryKey: ['/api/requests'] });
           

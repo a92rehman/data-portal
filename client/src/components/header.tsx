@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import type { User, Notification } from "@shared/schema";
 import MobileNav from "@/components/mobile-nav";
+import { getNotificationPriority, getPriorityColors, isNewNotification, getPriorityIcon } from "@/lib/notificationUtils";
 
 interface HeaderProps {
   user: User | null;
@@ -25,6 +26,8 @@ export default function Header({ user }: HeaderProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [badgeAnimate, setBadgeAnimate] = useState(false);
+  const prevUnreadCount = useRef(0);
   const { logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -51,6 +54,15 @@ export default function Header({ user }: HeaderProps) {
   });
 
   const unreadCount = notifications.filter(n => n.read === 'false').length;
+
+  // Trigger badge animation when unread count increases
+  useEffect(() => {
+    if (unreadCount > prevUnreadCount.current) {
+      setBadgeAnimate(true);
+      setTimeout(() => setBadgeAnimate(false), 1000);
+    }
+    prevUnreadCount.current = unreadCount;
+  }, [unreadCount]);
 
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) => 
@@ -124,19 +136,33 @@ export default function Header({ user }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 border-b-2 border-purple-200 dark:border-purple-700 sticky top-0 z-40 shadow-md">
-      <div className="flex items-center justify-between px-6 py-4 pt-[12px] pb-[12px]">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            className="border-2 border-transparent hover:border-purple-300 rounded-lg transition-all"
-            data-testid="button-back"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
+    <>
+      <MobileNav open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen} user={user} />
+      
+      <header className="bg-white dark:bg-gray-800 border-b-2 border-purple-200 dark:border-purple-700 sticky top-0 z-40 shadow-md">
+        <div className="flex items-center justify-between px-6 py-4 pt-[12px] pb-[12px]">
+          <div className="flex items-center gap-4">
+            {/* Hamburger Menu - Mobile Only */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileNavOpen(true)}
+              className="md:hidden border-2 border-transparent hover:border-purple-300 rounded-lg transition-all"
+              data-testid="button-mobile-menu"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="border-2 border-transparent hover:border-purple-300 rounded-lg transition-all"
+              data-testid="button-back"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
           <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
             <ChartLine className="w-7 h-7 text-white" />
           </div>
@@ -184,7 +210,7 @@ export default function Header({ user }: HeaderProps) {
                 >
                   <Bell className="w-4 h-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    <span className={`absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold ${badgeAnimate ? 'animate-bounce' : ''}`}>
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -214,38 +240,53 @@ export default function Header({ user }: HeaderProps) {
                   </div>
                 ) : (
                   <div className="divide-y">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        onClick={() => handleNotificationClick(notification)}
-                        className={`p-4 cursor-pointer transition-colors border-l-4 ${
-                          notification.read === 'false' 
-                            ? 'bg-blue-50 dark:bg-blue-900/20 border-purple-500 hover:bg-blue-100 dark:hover:bg-blue-900/30' 
-                            : 'bg-gray-50/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                        data-testid={`notification-${notification.id}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${notification.read === 'false' ? 'text-purple-900 dark:text-purple-300' : 'text-gray-800 dark:text-gray-200'}`}>
-                              {notification.title}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-2">
-                              {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                              {notification.read === 'true' && (
-                                <span className="text-gray-400 dark:text-gray-500">• Read</span>
-                              )}
-                            </p>
+                    {notifications.map((notification) => {
+                      const priority = getNotificationPriority(notification);
+                      const colors = getPriorityColors(priority);
+                      const isNew = isNewNotification(notification);
+                      const priorityEmoji = getPriorityIcon(priority);
+                      
+                      return (
+                        <div
+                          key={notification.id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={`p-4 cursor-pointer transition-colors border-l-4 ${
+                            notification.read === 'false' 
+                              ? `${colors.bg} ${colors.border} ${colors.hover}` 
+                              : 'bg-gray-50/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                          data-testid={`notification-${notification.id}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-sm">{priorityEmoji}</span>
+                                <p className={`text-sm font-medium ${notification.read === 'false' ? colors.text : 'text-gray-800 dark:text-gray-200'}`}>
+                                  {notification.title}
+                                </p>
+                                {isNew && notification.read === 'false' && (
+                                  <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded uppercase">
+                                    New
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                                {notification.message}
+                              </p>
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-2">
+                                {notification.createdAt && formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                                {notification.read === 'true' && (
+                                  <span className="text-gray-400 dark:text-gray-500">• Read</span>
+                                )}
+                              </p>
+                            </div>
+                            {notification.read === 'false' && (
+                              <div className={`w-2 h-2 ${colors.badge} rounded-full mt-1 flex-shrink-0`} />
+                            )}
                           </div>
-                          {notification.read === 'false' && (
-                            <div className="w-2 h-2 bg-purple-600 rounded-full mt-1 flex-shrink-0" />
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </ScrollArea>
@@ -342,5 +383,6 @@ export default function Header({ user }: HeaderProps) {
         </div>
       </div>
     </header>
+    </>
   );
 }
