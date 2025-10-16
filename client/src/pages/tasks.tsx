@@ -1257,15 +1257,17 @@ function SubTaskForm({
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedToId, setAssignedToId] = useState("unassigned");
+  const [assignedToId, setAssignedToId] = useState("self");
   const [status, setStatus] = useState("to_do");
 
   const isTeamLead = (user as any)?.role === "team_lead";
+  const isAnalyst = (user as any)?.role === "analyst";
+  const canAssignSubtask = isTeamLead || isAnalyst;
 
   // Fetch analysts for assignment
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
-    enabled: isTeamLead,
+    enabled: canAssignSubtask,
   });
 
   const createSubTaskMutation = useMutation({
@@ -1300,7 +1302,9 @@ function SubTaskForm({
       description: description.trim() || undefined,
       status,
       parentTaskId,
-      assignedToId: assignedToId !== "unassigned" ? assignedToId : undefined,
+      // "self" means auto-assign to creator (don't send assignedToId)
+      // otherwise send the selected assignedToId
+      assignedToId: assignedToId === "self" ? undefined : assignedToId,
     });
   };
 
@@ -1343,15 +1347,15 @@ function SubTaskForm({
               </SelectContent>
             </Select>
           </div>
-          {isTeamLead && (
+          {canAssignSubtask && (
             <div>
               <Label className="text-xs">Assign To</Label>
               <Select value={assignedToId} onValueChange={setAssignedToId}>
                 <SelectTrigger className="mt-1" data-testid="select-subtask-assignee">
-                  <SelectValue placeholder="Select analyst" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  <SelectItem value="self">Assign to yourself</SelectItem>
                   {analysts.map((analyst) => (
                     <SelectItem key={analyst.id} value={analyst.id}>
                       {analyst.firstName} {analyst.lastName}
@@ -1401,19 +1405,10 @@ function CreateTaskDialog({
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedToId, setAssignedToId] = useState("unassigned");
   const [optimisticTime, setOptimisticTime] = useState("");
   const [mostLikelyTime, setMostLikelyTime] = useState("");
   const [pessimisticTime, setPessimisticTime] = useState("");
   const [dueDate, setDueDate] = useState("");
-
-  const isTeamLead = (user as any)?.role === "team_lead";
-
-  // Fetch analysts for assignment
-  const { data: analysts = [] } = useQuery<User[]>({
-    queryKey: ["/api/users/analysts"],
-    enabled: isTeamLead && open,
-  });
 
   const createTaskMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1423,7 +1418,6 @@ function CreateTaskDialog({
       toast({ title: "Success", description: "Task created successfully" });
       setTitle("");
       setDescription("");
-      setAssignedToId("");
       setOptimisticTime("");
       setMostLikelyTime("");
       setPessimisticTime("");
@@ -1453,7 +1447,6 @@ function CreateTaskDialog({
       title: title.trim(),
       description: description.trim() || undefined,
       status: "to_do",
-      assignedToId: assignedToId === "unassigned" ? undefined : assignedToId,
       dueDate: dueDate || undefined,
     };
 
@@ -1512,50 +1505,29 @@ function CreateTaskDialog({
             </div>
           </div>
 
-          {/* Assignment & Schedule Section */}
+          {/* Schedule Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
               <div className="h-px bg-border flex-1" />
-              <span>Assignment & Schedule</span>
+              <span>Schedule</span>
               <div className="h-px bg-border flex-1" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {isTeamLead && (
-                <div>
-                  <Label className="text-sm font-medium flex items-center gap-1.5">
-                    <UserIcon className="w-3.5 h-3.5" />
-                    Assign To
-                  </Label>
-                  <Select value={assignedToId} onValueChange={setAssignedToId}>
-                    <SelectTrigger className="mt-1.5" data-testid="select-assign-to">
-                      <SelectValue placeholder="Select analyst" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {analysts.map((analyst) => (
-                        <SelectItem key={analyst.id} value={analyst.id}>
-                          {analyst.firstName} {analyst.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div>
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <CalendarIcon className="w-3.5 h-3.5" />
-                  Due Date
-                </Label>
-                <Input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="mt-1.5"
-                  data-testid="input-due-date"
-                />
-              </div>
+            <div>
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <CalendarIcon className="w-3.5 h-3.5" />
+                Due Date
+              </Label>
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="mt-1.5"
+                data-testid="input-due-date"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Task will be automatically assigned to you. Data Lead can reassign it later if needed.
+              </p>
             </div>
           </div>
 
