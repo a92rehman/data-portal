@@ -252,7 +252,7 @@ export default function MyAssignments() {
           </div>
 
           {/* Filters */}
-          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md sticky top-[73px] z-30">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="relative">
