@@ -991,31 +991,6 @@ function TaskDetailDialog({
             </Card>
           )}
 
-          {/* PERT Time Estimate */}
-          {(task.optimisticTime || task.mostLikelyTime || task.pessimisticTime) && (
-            <Card className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 block">PERT Time Estimate</Label>
-              <div className="grid grid-cols-4 gap-3">
-                <div className="text-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Optimistic</p>
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400">{task.optimisticTime?.toFixed(1)}h</p>
-                </div>
-                <div className="text-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Most Likely</p>
-                  <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{task.mostLikelyTime?.toFixed(1)}h</p>
-                </div>
-                <div className="text-center p-3 bg-white/60 dark:bg-gray-800/60 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Pessimistic</p>
-                  <p className="text-lg font-bold text-orange-600 dark:text-orange-400">{task.pessimisticTime?.toFixed(1)}h</p>
-                </div>
-                <div className="text-center p-3 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 rounded-lg border-2 border-purple-300 dark:border-purple-700">
-                  <p className="text-xs text-muted-foreground mb-1">Expected</p>
-                  <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{task.expectedTime?.toFixed(1)}h</p>
-                </div>
-              </div>
-            </Card>
-          )}
-
           {/* Sub-tasks Section - Only show for parent tasks, not subtasks */}
           {!isSubTask && (
             <Card className="p-5 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
