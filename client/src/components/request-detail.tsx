@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { 
   X, 
   Save, 
@@ -89,6 +90,15 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   
   const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // Auto-fill task title and due date when dialog opens
+  useEffect(() => {
+    if (showCreateTaskDialog) {
+      const autoTitle = `${formatRequestType(request.type)} - ${request.requestedBy.firstName} ${request.requestedBy.lastName}`;
+      setNewTaskTitle(autoTitle);
+      setNewTaskDueDate(new Date(request.dueDate).toISOString().split('T')[0]);
+    }
+  }, [showCreateTaskDialog, request]);
 
   // Cleanup typing indicator on unmount
   useEffect(() => {
@@ -1988,17 +1998,30 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </Card>
         </div>
 
-        {/* 6. Tasks Section - Full Width */}
+        {/* 6. Tasks Section - Full Width with Collapsible Groups */}
         {(request.assignedToId || (user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
           <div className="px-6 py-4 border-t">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ListTodo className="w-5 h-5" />
-                  Linked Tasks ({requestTasks.filter((t: any) => !t.parentTaskId).length})
-                </CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ListTodo className="w-5 h-5" />
+                    Linked Tasks
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'in_progress').length} In Progress
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'to_do').length} Pending
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'completed').length} Completed
+                    </Badge>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent>
                 {requestTasks.filter((t: any) => !t.parentTaskId).length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
                     <ListTodo className="w-12 h-12 mx-auto text-muted-foreground/40 mb-2" />
@@ -2006,87 +2029,175 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                     <p className="text-xs text-muted-foreground mt-1">Create tasks to organize the work for this request</p>
                   </div>
                 ) : (
-                  requestTasks
-                    .filter((t: any) => !t.parentTaskId)
-                    .map((task: any) => {
-                      const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
-                      return (
-                        <div key={task.id} className="border rounded-lg overflow-hidden">
-                          {/* Parent Task */}
-                          <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="font-medium text-sm">{task.title}</h4>
-                                  {subTasks.length > 0 && (
-                                    <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                                      {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} sub-tasks
-                                    </Badge>
-                                  )}
-                                </div>
-                                {task.description && (
-                                  <p className="text-xs text-muted-foreground mb-2">{task.description}</p>
-                                )}
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                  {task.assignedTo && (
-                                    <span>Assigned to: {task.assignedTo.firstName} {task.assignedTo.lastName}</span>
-                                  )}
-                                  <Badge variant="outline" className="text-xs">
-                                    {task.status === 'to_do' && 'To Do'}
-                                    {task.status === 'in_progress' && 'In Progress'}
-                                    {task.status === 'blocked' && 'Blocked'}
-                                    {task.status === 'completed' && 'Completed'}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => window.location.href = '/tasks'}
-                                className="text-purple-600 hover:text-purple-700"
-                              >
-                                View
-                              </Button>
-                            </div>
+                  <Accordion type="multiple" defaultValue={["in_progress", "to_do"]} className="w-full">
+                    {/* In Progress Tasks */}
+                    {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'in_progress').length > 0 && (
+                      <AccordionItem value="in_progress" className="border rounded-lg mb-2">
+                        <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-blue-50 dark:hover:bg-blue-950/20">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                            <span className="text-sm font-semibold">In Progress</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'in_progress').length}
+                            </Badge>
                           </div>
-
-                          {/* Sub-Tasks */}
-                          {subTasks.length > 0 && (
-                            <div className="border-t bg-gray-50/50 dark:bg-gray-900/20">
-                              {subTasks.map((subTask: any) => (
-                                <div 
-                                  key={subTask.id} 
-                                  className="p-3 pl-8 border-b last:border-b-0 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 border-2 border-purple-400 rounded-sm" />
-                                        <h5 className="font-medium text-xs">{subTask.title}</h5>
-                                      </div>
-                                      {subTask.description && (
-                                        <p className="text-xs text-muted-foreground mt-1 ml-5">{subTask.description}</p>
-                                      )}
-                                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 ml-5">
-                                        <Badge 
-                                          variant={subTask.status === 'completed' ? 'default' : 'outline'} 
-                                          className="text-xs"
-                                        >
-                                          {subTask.status === 'to_do' && 'To Do'}
-                                          {subTask.status === 'in_progress' && 'In Progress'}
-                                          {subTask.status === 'blocked' && 'Blocked'}
-                                          {subTask.status === 'completed' && 'Completed'}
-                                        </Badge>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-0 pb-0">
+                          <div className="max-h-[300px] overflow-y-auto">
+                            {requestTasks
+                              .filter((t: any) => !t.parentTaskId && t.status === 'in_progress')
+                              .map((task: any) => {
+                                const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
+                                return (
+                                  <div key={task.id} className="border-t p-2">
+                                    <div className="flex items-start gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-medium text-sm truncate">{task.title}</h4>
+                                        {task.description && (
+                                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                          {task.assignedTo && (
+                                            <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                                          )}
+                                          {subTasks.length > 0 && (
+                                            <Badge variant="outline" className="text-xs">
+                                              {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} subtasks
+                                            </Badge>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
+                                    {subTasks.length > 0 && (
+                                      <div className="mt-2 ml-4 space-y-1 border-l-2 border-blue-200 dark:border-blue-800 pl-2">
+                                        {subTasks.map((subTask: any) => (
+                                          <div key={subTask.id} className="flex items-center gap-1.5 text-xs">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${subTask.status === 'completed' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                            <span className="truncate">{subTask.title}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
+                                );
+                              })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {/* Pending Tasks */}
+                    {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'to_do').length > 0 && (
+                      <AccordionItem value="to_do" className="border rounded-lg mb-2">
+                        <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-amber-50 dark:hover:bg-amber-950/20">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                            <span className="text-sm font-semibold">Pending</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'to_do').length}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-0 pb-0">
+                          <div className="max-h-[300px] overflow-y-auto">
+                            {requestTasks
+                              .filter((t: any) => !t.parentTaskId && t.status === 'to_do')
+                              .map((task: any) => {
+                                const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
+                                return (
+                                  <div key={task.id} className="border-t p-2">
+                                    <div className="flex items-start gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-medium text-sm truncate">{task.title}</h4>
+                                        {task.description && (
+                                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                          {task.assignedTo && (
+                                            <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                                          )}
+                                          {subTasks.length > 0 && (
+                                            <Badge variant="outline" className="text-xs">
+                                              {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} subtasks
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {subTasks.length > 0 && (
+                                      <div className="mt-2 ml-4 space-y-1 border-l-2 border-amber-200 dark:border-amber-800 pl-2">
+                                        {subTasks.map((subTask: any) => (
+                                          <div key={subTask.id} className="flex items-center gap-1.5 text-xs">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${subTask.status === 'completed' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                            <span className="truncate">{subTask.title}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+
+                    {/* Completed Tasks */}
+                    {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'completed').length > 0 && (
+                      <AccordionItem value="completed" className="border rounded-lg">
+                        <AccordionTrigger className="px-3 py-2 hover:no-underline hover:bg-green-50 dark:hover:bg-green-950/20">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span className="text-sm font-semibold">Completed</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {requestTasks.filter((t: any) => !t.parentTaskId && t.status === 'completed').length}
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-0 pb-0">
+                          <div className="max-h-[300px] overflow-y-auto">
+                            {requestTasks
+                              .filter((t: any) => !t.parentTaskId && t.status === 'completed')
+                              .map((task: any) => {
+                                const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
+                                return (
+                                  <div key={task.id} className="border-t p-2">
+                                    <div className="flex items-start gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="font-medium text-sm truncate line-through text-muted-foreground">{task.title}</h4>
+                                        {task.description && (
+                                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
+                                        )}
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                          {task.assignedTo && (
+                                            <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                                          )}
+                                          {subTasks.length > 0 && (
+                                            <Badge variant="outline" className="text-xs">
+                                              {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} subtasks
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {subTasks.length > 0 && (
+                                      <div className="mt-2 ml-4 space-y-1 border-l-2 border-green-200 dark:border-green-800 pl-2">
+                                        {subTasks.map((subTask: any) => (
+                                          <div key={subTask.id} className="flex items-center gap-1.5 text-xs">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${subTask.status === 'completed' ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                            <span className="truncate line-through text-muted-foreground">{subTask.title}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+                  </Accordion>
                 )}
               </CardContent>
             </Card>
@@ -2094,136 +2205,67 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         )}
       </ScrollArea>
 
-      {/* Create Task Dialog */}
-      <Dialog open={showCreateTaskDialog} onOpenChange={setShowCreateTaskDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" data-testid="dialog-create-task">
+      {/* Create Task Dialog - Compact */}
+      <Dialog 
+        open={showCreateTaskDialog} 
+        onOpenChange={(open) => {
+          setShowCreateTaskDialog(open);
+          if (open) {
+            // Auto-fill title and due date when opening dialog
+            const autoTitle = `${formatRequestType(request.type)} - ${request.requestedBy.firstName} ${request.requestedBy.lastName}`;
+            setNewTaskTitle(autoTitle);
+            setNewTaskDueDate(new Date(request.dueDate).toISOString().split('T')[0]);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg" data-testid="dialog-create-task">
           <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <ListChecks className="w-5 h-5 text-primary" />
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <ListChecks className="w-4 h-4 text-primary" />
               Create New Task
             </DialogTitle>
             <DialogDescription>
-              Create a task to track work for "{request.title}"
+              Track work for this request
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
-            {/* Basic Information Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <div className="h-px bg-border flex-1" />
-                <span>Task Details</span>
-                <div className="h-px bg-border flex-1" />
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium">Task Title *</Label>
-                <Input
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="e.g., Build sales dashboard, Extract user data, Fix metric calculation"
-                  className="mt-1.5"
-                  data-testid="input-task-title"
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Description</Label>
-                <Textarea
-                  value={newTaskDescription}
-                  onChange={(e) => setNewTaskDescription(e.target.value)}
-                  placeholder="Add details about what needs to be done, requirements, or any relevant context..."
-                  className="mt-1.5 min-h-[100px]"
-                  rows={4}
-                  data-testid="textarea-task-description"
-                />
-              </div>
+          <div className="space-y-3 py-4">
+            <div>
+              <Label className="text-sm font-medium">Task Title *</Label>
+              <Input
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Task title..."
+                className="mt-1.5"
+                data-testid="input-task-title"
+              />
             </div>
 
-            {/* Schedule Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <div className="h-px bg-border flex-1" />
-                <span>Schedule</span>
-                <div className="h-px bg-border flex-1" />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  Due Date
-                </Label>
-                <Input
-                  type="date"
-                  value={newTaskDueDate}
-                  onChange={(e) => setNewTaskDueDate(e.target.value)}
-                  className="mt-1.5"
-                  data-testid="input-due-date"
-                />
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  Task will be automatically assigned to you. Data Lead can reassign it later if needed.
-                </p>
-              </div>
+            <div>
+              <Label className="text-sm font-medium">Description</Label>
+              <Textarea
+                value={newTaskDescription}
+                onChange={(e) => setNewTaskDescription(e.target.value)}
+                placeholder="Add details..."
+                className="mt-1.5 min-h-[80px] resize-none"
+                data-testid="textarea-task-description"
+              />
             </div>
 
-            {/* PERT Time Estimates Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <div className="h-px bg-border flex-1" />
-                <span>Time Estimates (PERT)</span>
-                <div className="h-px bg-border flex-1" />
-              </div>
-              
-              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-                <div className="flex items-start gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
-                  <div className="text-sm text-muted-foreground">
-                    <p className="font-medium mb-1">Estimate task duration in hours</p>
-                    <p className="text-xs">PERT calculation: (Optimistic + 4 × Most Likely + Pessimistic) ÷ 6</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground">Best Case (Optimistic)</Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={newTaskOptimisticTime}
-                      onChange={(e) => setNewTaskOptimisticTime(e.target.value)}
-                      placeholder="2.0"
-                      className="mt-1.5"
-                      data-testid="input-optimistic-time"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground">Expected (Most Likely)</Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={newTaskMostLikelyTime}
-                      onChange={(e) => setNewTaskMostLikelyTime(e.target.value)}
-                      placeholder="4.0"
-                      className="mt-1.5"
-                      data-testid="input-most-likely-time"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground">Worst Case (Pessimistic)</Label>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={newTaskPessimisticTime}
-                      onChange={(e) => setNewTaskPessimisticTime(e.target.value)}
-                      placeholder="8.0"
-                      className="mt-1.5"
-                      data-testid="input-pessimistic-time"
-                    />
-                  </div>
-                </div>
-              </div>
+            <div>
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                Due Date
+              </Label>
+              <Input
+                type="date"
+                value={newTaskDueDate}
+                onChange={(e) => setNewTaskDueDate(e.target.value)}
+                className="mt-1.5"
+                data-testid="input-due-date"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Task will be automatically assigned to you. Data Lead can reassign it later if needed.
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -2234,9 +2276,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 setNewTaskTitle("");
                 setNewTaskDescription("");
                 setNewTaskDueDate("");
-                setNewTaskOptimisticTime("");
-                setNewTaskMostLikelyTime("");
-                setNewTaskPessimisticTime("");
               }}
               data-testid="button-cancel-create-task"
             >
@@ -2251,13 +2290,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   requestId: request.id,
                   dueDate: newTaskDueDate || undefined,
                 };
-
-                // Add PERT estimates if provided
-                if (newTaskOptimisticTime || newTaskMostLikelyTime || newTaskPessimisticTime) {
-                  taskData.optimisticTime = newTaskOptimisticTime ? parseFloat(newTaskOptimisticTime) : undefined;
-                  taskData.mostLikelyTime = newTaskMostLikelyTime ? parseFloat(newTaskMostLikelyTime) : undefined;
-                  taskData.pessimisticTime = newTaskPessimisticTime ? parseFloat(newTaskPessimisticTime) : undefined;
-                }
 
                 createTaskMutation.mutate(taskData);
               }}

@@ -6,7 +6,28 @@ DataHub is a full-stack data request management system designed to streamline da
 
 ## Recent Changes (October 16, 2025)
 
-### Email System Bug Fix (Latest)
+### UI Improvements - Compact Design & Task Section Redesign (Latest)
+- **Comments Section**: Redesigned with ultra-compact vertical table layout
+  - Removed horizontal card tiles, now uses single-column table with subtle background colors to distinguish different commenters
+  - Reduced padding (p-1.5) and avatar size (w-6 h-6) for space efficiency
+  - Compact text input with inline send button (circular arrow icon positioned inside textarea)
+- **Task Section Redesign**: Implemented collapsible accordion groups for better task management
+  - Tasks organized by status: In Progress (blue), Pending (amber), Completed (green)
+  - Each group shows count badge and collapses/expands independently
+  - Scrollable containers (max-height: 300px) within each status group
+  - Subtasks display with indented left border and status indicators
+  - Default expanded: In Progress and Pending groups; Completed collapsed
+- **Task Creation Auto-fill**: Streamlined task creation from request detail
+  - Auto-fills title with "Request Type - Requester Name" format
+  - Auto-fills due date from parent request
+  - Removed PERT time estimation section for compact form
+  - Form now only includes: Title, Description, Due Date
+- **Rejection Reason Display**: Added prominent alert box for rejected requests
+  - Red/pink background with AlertTriangle icon
+  - Displays after DialogHeader in request detail view
+  - Includes test IDs for automated testing (rejection-reason-alert, text-rejection-reason)
+
+### Email System Bug Fix
 - **Fixed analyst re-invitation bug**: Previously, re-adding an analyst (after removal) did not generate a new password or send credentials via EmailJS
 - **Root cause**: Condition `!existingUser` prevented password generation for existing users being re-added
 - **Solution**: Removed `!existingUser` check for analysts - now generates fresh password for both new and re-added analysts
