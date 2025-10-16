@@ -135,6 +135,8 @@ export default function DataRequestForm() {
   const [pipelineModification, setPipelineModification] = useState('');
   const [reportMetrics, setReportMetrics] = useState('');
   const [otherDescription, setOtherDescription] = useState('');
+  const [experimentDescription, setExperimentDescription] = useState('');
+  const [experimentDocLink, setExperimentDocLink] = useState('');
 
 
   useEffect(() => {
@@ -240,6 +242,9 @@ export default function DataRequestForm() {
         // For recurringReport, check if frequency fields have been interacted with
         isSection2Complete = !!(reportMetrics && decisionAction && frequencyInteracted);
         break;
+      case 'experimentation':
+        isSection2Complete = !!(experimentDescription && experimentDocLink);
+        break;
       case 'other':
         isSection2Complete = !!otherDescription;
         break;
@@ -255,7 +260,7 @@ export default function DataRequestForm() {
     fileFormat, bugDescription, bugLocation, bqEmail, bqDatasets, bqPurpose,
     trackingFeature, trackingTrigger, metricName, currentDefinition, newDefinition,
     pipelineDataset, pipelineModification, reportMetrics, otherDescription, isManualEdit,
-    frequencyInteracted
+    frequencyInteracted, experimentDescription, experimentDocLink
   ]);
 
 
@@ -361,6 +366,10 @@ export default function DataRequestForm() {
         if (!decisionAction) missingFields.push("decision/action");
         if (frequency && (!duration || !unit)) missingFields.push("frequency duration and unit");
         break;
+      case 'experimentation':
+        if (!experimentDescription) missingFields.push("experiment description");
+        if (!experimentDocLink) missingFields.push("document/link");
+        break;
       case 'other':
         if (!otherDescription) missingFields.push("request description");
         break;
@@ -441,6 +450,10 @@ export default function DataRequestForm() {
           payload.primaryQuestion = reportMetrics;
           payload.decisionAction = decisionAction;
           break;
+        case 'experimentation':
+          payload.primaryQuestion = experimentDescription;
+          payload.businessProblem = experimentDocLink;
+          break;
         case 'other':
           payload.primaryQuestion = otherDescription;
           break;
@@ -495,6 +508,8 @@ export default function DataRequestForm() {
       setPipelineModification('');
       setReportMetrics('');
       setOtherDescription('');
+      setExperimentDescription('');
+      setExperimentDocLink('');
       
       // Reset section visibility, manual edit mode, and frequency interaction
       setSection1Open(true);
@@ -711,6 +726,19 @@ export default function DataRequestForm() {
             </div>
             {renderCommonDecisionField()}
             {renderFrequencyFields()}
+          </>
+        );
+      case 'experimentation':
+        return (
+          <>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Review the Experiment *</label>
+              <Textarea placeholder="Describe the experiment you want reviewed" className="mt-1" value={experimentDescription} onChange={(e) => setExperimentDescription(e.target.value)} />
+            </div>
+            <div className="mb-3">
+              <label className="text-sm font-medium">Document/Link *</label>
+              <Input placeholder="Provide a link or reference to the experiment document" className="mt-1" value={experimentDocLink} onChange={(e) => setExperimentDocLink(e.target.value)} />
+            </div>
           </>
         );
       case 'other':
