@@ -1733,22 +1733,79 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </div>
                 )}
 
-                {/* On Time Indicator - For Requester or Team Lead when NOT assigned and NOT delivered */}
+                {/* Pending Delivery View - For Requester or Team Lead when NOT assigned and NOT delivered */}
                 {(isRequester || (isTeamLead && !isAssignedToMe)) && !request.deliveredAt && (
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Timeline Status</p>
-                    <div className={`flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
-                      {isOnTime() ? (
-                        <>
-                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          <span className="text-sm font-semibold text-green-700 dark:text-green-400">On Time</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-                          <span className="text-sm font-semibold text-red-700 dark:text-red-400">Overdue</span>
-                        </>
-                      )}
+                  <div className="space-y-3 border-t pt-4">
+                    {/* No Delivery Message */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="w-5 h-5 text-muted-foreground" />
+                      <p className="text-sm font-semibold text-muted-foreground">
+                        No delivery yet
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground uppercase font-semibold">Delivery Status</p>
+
+                    {/* 1. Delivery Type - Pending */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Delivery Type
+                        </label>
+                      </div>
+                      <Badge variant="outline" className="ml-6 bg-gray-50 dark:bg-gray-900 text-muted-foreground">
+                        Pending
+                      </Badge>
+                    </div>
+
+                    {/* 2. Content - Pending */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Content
+                        </label>
+                      </div>
+                      <p className="text-sm text-muted-foreground ml-6">
+                        Awaiting delivery from analyst
+                      </p>
+                    </div>
+
+                    {/* 3. Delivered On - Pending */}
+                    <div className="pb-3 border-b">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Delivered On
+                        </label>
+                      </div>
+                      <p className="text-sm text-muted-foreground ml-6">
+                        Not delivered yet
+                      </p>
+                    </div>
+
+                    {/* 4. Timeline Status */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">
+                          Timeline Status
+                        </label>
+                      </div>
+                      <div className={`ml-6 flex items-center gap-2 p-2 rounded-lg ${isOnTime() ? 'bg-green-50 dark:bg-green-950/30' : 'bg-red-50 dark:bg-red-950/30'}`}>
+                        {isOnTime() ? (
+                          <>
+                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-400">On Time</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                            <span className="text-sm font-semibold text-red-700 dark:text-red-400">Overdue</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
