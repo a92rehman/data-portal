@@ -1876,39 +1876,68 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Comments List */}
-              <div className="max-h-[400px] overflow-y-auto space-y-3">
+              {/* Comments List - Compact Table Layout */}
+              <div className="max-h-[400px] overflow-y-auto border rounded-lg">
                 {request.comments.length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed rounded-lg">
                     <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground/40 mb-2" />
                     <p className="text-sm text-muted-foreground">No comments yet</p>
                   </div>
                 ) : (
-                  request.comments.map((comment) => (
-                    <div key={comment.id} className="border rounded-lg p-3">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={comment.user.profileImageUrl ?? ""} />
-                          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                            {getInitials(comment.user.firstName ?? undefined, comment.user.lastName ?? undefined)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline justify-between gap-2 mb-1">
-                            <span className="text-sm font-semibold" data-testid={`comment-author-${comment.id}`}>
-                              {comment.user.firstName} {comment.user.lastName}
-                            </span>
-                            <span className="text-xs text-muted-foreground" data-testid={`comment-date-${comment.id}`}>
-                              {comment.createdAt ? formatDate(comment.createdAt.toString()) : ''}
-                            </span>
+                  <div className="divide-y">
+                    {request.comments.map((comment, index) => {
+                      // Determine background color based on commenter
+                      const prevComment = index > 0 ? request.comments[index - 1] : null;
+                      const isDifferentCommenter = !prevComment || prevComment.userId !== comment.userId;
+                      
+                      // Color rotation for different users
+                      const userColors = [
+                        'bg-blue-50/50 dark:bg-blue-950/20',
+                        'bg-purple-50/50 dark:bg-purple-950/20',
+                        'bg-green-50/50 dark:bg-green-950/20',
+                        'bg-amber-50/50 dark:bg-amber-950/20',
+                      ];
+                      
+                      const colorIndex = request.comments
+                        .slice(0, index)
+                        .filter((c, i) => {
+                          const prev = i > 0 ? request.comments[i - 1] : null;
+                          return !prev || prev.userId !== c.userId;
+                        })
+                        .filter(c => c.userId !== comment.userId).length % userColors.length;
+                      
+                      const bgColor = userColors[colorIndex];
+                      
+                      return (
+                        <div 
+                          key={comment.id} 
+                          className={`p-2.5 ${bgColor} hover:brightness-95 dark:hover:brightness-110 transition-all`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <Avatar className="w-7 h-7 flex-shrink-0">
+                              <AvatarImage src={comment.user.profileImageUrl ?? ""} />
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                {getInitials(comment.user.firstName ?? undefined, comment.user.lastName ?? undefined)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                                <span className="text-xs font-semibold" data-testid={`comment-author-${comment.id}`}>
+                                  {comment.user.firstName} {comment.user.lastName}
+                                </span>
+                                <span className="text-xs text-muted-foreground" data-testid={`comment-date-${comment.id}`}>
+                                  {comment.createdAt ? formatDate(comment.createdAt.toString()) : ''}
+                                </span>
+                              </div>
+                              <p className="text-sm break-words leading-relaxed" data-testid={`comment-content-${comment.id}`}>
+                                {comment.content}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-sm break-words" data-testid={`comment-content-${comment.id}`}>
-                            {comment.content}
-                          </p>
                         </div>
-                      </div>
-                    </div>
-                  ))
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
