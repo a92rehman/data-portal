@@ -84,9 +84,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskAssignedTo, setNewTaskAssignedTo] = useState("unassigned");
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
-  const [newTaskOptimisticTime, setNewTaskOptimisticTime] = useState("");
-  const [newTaskMostLikelyTime, setNewTaskMostLikelyTime] = useState("");
-  const [newTaskPessimisticTime, setNewTaskPessimisticTime] = useState("");
   
   const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
@@ -549,9 +546,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       setNewTaskTitle("");
       setNewTaskDescription("");
       setNewTaskDueDate("");
-      setNewTaskOptimisticTime("");
-      setNewTaskMostLikelyTime("");
-      setNewTaskPessimisticTime("");
       // Invalidate request tasks
       queryClient.invalidateQueries({ queryKey: ["/api/requests", request.id, "tasks"] });
       // Invalidate all task queries including those with filters
