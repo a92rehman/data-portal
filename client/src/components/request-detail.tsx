@@ -538,7 +538,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       setShowCreateTaskDialog(false);
       setNewTaskTitle("");
       setNewTaskDescription("");
-      setNewTaskAssignedTo("unassigned");
       setNewTaskDueDate("");
       setNewTaskOptimisticTime("");
       setNewTaskMostLikelyTime("");
@@ -2030,50 +2029,29 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </div>
             </div>
 
-            {/* Assignment & Schedule Section */}
+            {/* Schedule Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <div className="h-px bg-border flex-1" />
-                <span>Assignment & Schedule</span>
+                <span>Schedule</span>
                 <div className="h-px bg-border flex-1" />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {((user as any)?.role === 'team_lead') && (
-                  <div>
-                    <Label className="text-sm font-medium flex items-center gap-1.5">
-                      <UserIcon className="w-3.5 h-3.5" />
-                      Assign To
-                    </Label>
-                    <Select value={newTaskAssignedTo} onValueChange={setNewTaskAssignedTo}>
-                      <SelectTrigger className="mt-1.5" data-testid="select-assign-to">
-                        <SelectValue placeholder="Select analyst" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {analysts.map((analyst) => (
-                          <SelectItem key={analyst.id} value={analyst.id}>
-                            {analyst.firstName} {analyst.lastName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div>
-                  <Label className="text-sm font-medium flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Due Date
-                  </Label>
-                  <Input
-                    type="date"
-                    value={newTaskDueDate}
-                    onChange={(e) => setNewTaskDueDate(e.target.value)}
-                    className="mt-1.5"
-                    data-testid="input-due-date"
-                  />
-                </div>
+              <div>
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  Due Date
+                </Label>
+                <Input
+                  type="date"
+                  value={newTaskDueDate}
+                  onChange={(e) => setNewTaskDueDate(e.target.value)}
+                  className="mt-1.5"
+                  data-testid="input-due-date"
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Task will be automatically assigned to you. Data Lead can reassign it later if needed.
+                </p>
               </div>
             </div>
 
@@ -2145,7 +2123,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 setShowCreateTaskDialog(false);
                 setNewTaskTitle("");
                 setNewTaskDescription("");
-                setNewTaskAssignedTo("unassigned");
                 setNewTaskDueDate("");
                 setNewTaskOptimisticTime("");
                 setNewTaskMostLikelyTime("");
@@ -2162,7 +2139,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   description: newTaskDescription.trim() || undefined,
                   status: "to_do",
                   requestId: request.id,
-                  assignedToId: newTaskAssignedTo === "unassigned" ? undefined : newTaskAssignedTo,
                   dueDate: newTaskDueDate || undefined,
                 };
 

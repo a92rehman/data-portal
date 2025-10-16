@@ -1474,6 +1474,9 @@ export default function RequestWorkspace() {
                               data-testid="input-task-description"
                             />
                           </div>
+                          <p className="text-xs text-muted-foreground">
+                            Task will be automatically assigned to you. Data Lead can reassign it later if needed.
+                          </p>
                           <Button
                             onClick={() => {
                               if (!newTaskTitle.trim()) return;
