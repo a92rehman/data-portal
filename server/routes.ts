@@ -1454,6 +1454,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
+      // Auto-complete all tasks linked to this request
+      try {
+        const linkedTasks = await storage.getTasks({ requestId: request.id });
+        for (const task of linkedTasks) {
+          if (task.status !== 'completed') {
+            await storage.updateTaskStatus(task.id, 'completed');
+            console.log(`[auto-complete] Task ${task.id} marked as completed for delivered request ${request.id}`);
+          }
+        }
+      } catch (taskError) {
+        console.error('[auto-complete] Failed to auto-complete linked tasks:', taskError);
+        // Don't fail the delivery if task completion fails
+      }
+
       // Notify stakeholders
       const wsServer = getWebSocketServer();
       const notifyUsers = [];
