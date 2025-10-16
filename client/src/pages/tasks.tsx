@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, Clock, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskWithDetails, User, DataRequestWithDetails } from "@shared/schema";
+import { getRecencyLabel } from "@/lib/recency";
 
 export default function Tasks() {
   const { user, isAuthenticated } = useAuth();
@@ -72,21 +73,35 @@ export default function Tasks() {
     }
   });
 
-  // Sort parent tasks by creation date (newest first)
+  // Sort parent tasks by status (original sorting)
   const sortedParentTasks = [...parentTasks].sort((a, b) => {
+    const statusOrder = {
+      'to_do': 1,
+      'in_progress': 2,
+      'blocked': 3,
+      'completed': 4,
+    };
+    
+    const orderA = statusOrder[a.status as keyof typeof statusOrder] || 999;
+    const orderB = statusOrder[b.status as keyof typeof statusOrder] || 999;
+    
+    // Primary sort: by status
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    
+    // Secondary sort: by due date (if exists)
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    
+    // Tertiary sort: by creation date (newest first)
     const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return bTime - aTime;
   });
-  
-  // Check if task is new (created in last 24 hours)
-  const isNewTask = (createdAt: Date | string | null) => {
-    if (!createdAt) return false;
-    const taskDate = new Date(createdAt);
-    const now = new Date();
-    const dayInMs = 24 * 60 * 60 * 1000;
-    return (now.getTime() - taskDate.getTime()) < dayInMs;
-  };
 
   // Create flattened list with sub-tasks nested under parents
   const sortedTasks: TaskWithDetails[] = [];
@@ -211,12 +226,11 @@ export default function Tasks() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {sortedParentTasks.map((task, index) => (
+              {sortedParentTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
-                  taskOrder={index + 1}
-                  isNew={isNewTask(task.createdAt)}
+                  recencyLabel={getRecencyLabel(task.createdAt)}
                   subTasks={subTasksMap.get(task.id) || []}
                   onSelectTask={setSelectedTask}
                   onSelectRequest={setSelectedRequest}
@@ -274,8 +288,7 @@ export default function Tasks() {
 // Task Card Component
 function TaskCard({ 
   task,
-  taskOrder,
-  isNew,
+  recencyLabel,
   subTasks,
   onSelectTask,
   onSelectRequest,
@@ -284,8 +297,7 @@ function TaskCard({
   formatStatus,
 }: { 
   task: TaskWithDetails;
-  taskOrder: number;
-  isNew: boolean;
+  recencyLabel: string | null;
   subTasks: TaskWithDetails[];
   onSelectTask: (task: TaskWithDetails) => void;
   onSelectRequest: (request: DataRequestWithDetails) => void;
@@ -335,15 +347,10 @@ function TaskCard({
           {/* Task Title and Badges - Takes up more space */}
           <div className="col-span-3 cursor-pointer" onClick={() => onSelectTask(task)}>
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              {/* Order Badge */}
-              <Badge variant="outline" className="text-xs font-bold bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-950 dark:to-blue-950 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700">
-                #{taskOrder}
-              </Badge>
-              
-              {/* NEW Badge for tasks created in last 24 hours */}
-              {isNew && (
-                <Badge className="text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white animate-pulse">
-                  NEW
+              {/* Time-based recency badge */}
+              {recencyLabel && (
+                <Badge className="text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                  {recencyLabel}
                 </Badge>
               )}
               

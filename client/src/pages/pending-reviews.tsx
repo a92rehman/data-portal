@@ -15,6 +15,7 @@ import RequestDetail from "@/components/request-detail";
 import { Search, Eye, CircleAlert, MinusCircle, InfoIcon } from "lucide-react";
 import type { DataRequestWithDetails } from "@shared/schema";
 import { calculateUrgency } from "@/lib/urgency";
+import { getRecencyLabel } from "@/lib/recency";
 
 export default function PendingReviews() {
   const { user, isLoading: authLoading } = useAuth();
@@ -214,7 +215,14 @@ export default function PendingReviews() {
                           {request.department}
                         </TableCell>
                         <TableCell data-testid={`cell-type-${request.id}`}>
-                          {formatRequestType(request.type)}
+                          <div className="flex items-center gap-2">
+                            {formatRequestType(request.type)}
+                            {getRecencyLabel(request.createdAt) && (
+                              <Badge className="text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                                {getRecencyLabel(request.createdAt)}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell data-testid={`cell-priority-${request.id}`}>
                           <div className="flex items-center gap-1">
