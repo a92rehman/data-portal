@@ -1911,17 +1911,17 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       return (
                         <div 
                           key={comment.id} 
-                          className={`p-2.5 ${bgColor} hover:brightness-95 dark:hover:brightness-110 transition-all`}
+                          className={`p-1.5 ${bgColor} hover:brightness-95 dark:hover:brightness-110 transition-all`}
                         >
-                          <div className="flex items-start gap-2">
-                            <Avatar className="w-7 h-7 flex-shrink-0">
+                          <div className="flex items-start gap-1.5">
+                            <Avatar className="w-6 h-6 flex-shrink-0">
                               <AvatarImage src={comment.user.profileImageUrl ?? ""} />
                               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                                 {getInitials(comment.user.firstName ?? undefined, comment.user.lastName ?? undefined)}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                              <div className="flex items-baseline justify-between gap-1.5">
                                 <span className="text-xs font-semibold" data-testid={`comment-author-${comment.id}`}>
                                   {comment.user.firstName} {comment.user.lastName}
                                 </span>
@@ -1929,7 +1929,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                                   {comment.createdAt ? formatDate(comment.createdAt.toString()) : ''}
                                 </span>
                               </div>
-                              <p className="text-sm break-words leading-relaxed" data-testid={`comment-content-${comment.id}`}>
+                              <p className="text-sm break-words leading-snug" data-testid={`comment-content-${comment.id}`}>
                                 {comment.content}
                               </p>
                             </div>
@@ -1960,32 +1960,26 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 </div>
               )}
 
-              {/* Add Comment Form */}
-              <form onSubmit={onCommentSubmit} className="space-y-3 pt-2">
-                <Textarea
-                  value={newComment}
-                  onChange={handleCommentChange}
-                  placeholder="Write a comment or ask a question..."
-                  className="min-h-[80px]"
-                  data-testid="input-new-comment"
-                />
-                <div className="flex justify-end">
+              {/* Add Comment Form - Compact with inline send button */}
+              <form onSubmit={onCommentSubmit} className="pt-2">
+                <div className="relative">
+                  <Textarea
+                    value={newComment}
+                    onChange={handleCommentChange}
+                    placeholder="Write a comment..."
+                    className="min-h-[60px] pr-12 resize-none"
+                    data-testid="input-new-comment"
+                  />
                   <Button 
                     type="submit" 
                     disabled={!newComment.trim() || addCommentMutation.isPending}
                     data-testid="button-add-comment"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="absolute right-2 bottom-2 h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700 text-white rounded-full"
                   >
                     {addCommentMutation.isPending ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Posting...
-                      </>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Post Comment
-                      </>
+                      <Send className="w-4 h-4" />
                     )}
                   </Button>
                 </div>
