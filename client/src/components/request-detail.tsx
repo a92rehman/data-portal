@@ -952,6 +952,27 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       </DialogHeader>
 
       <ScrollArea className="flex-1">
+        {/* Rejection Reason Alert - Shown prominently when request is rejected */}
+        {request.rejectionReason && (
+          <div className="mx-6 mt-4 mb-4">
+            <div className="bg-rose-50 dark:bg-rose-950/20 border-l-4 border-rose-500 dark:border-rose-600 p-4 rounded-r-lg shadow-sm" data-testid="rejection-reason-alert">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-rose-800 dark:text-rose-300 mb-1">
+                    Request Rejected
+                  </h3>
+                  <p className="text-sm text-rose-700 dark:text-rose-400 leading-relaxed" data-testid="text-rejection-reason">
+                    {request.rejectionReason}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 2. Info Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 px-6 py-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
           {/* 1. Requested By Card */}
