@@ -755,6 +755,57 @@ export class DatabaseStorage implements IStorage {
     ];
   }
 
+  async getTeamWorkload(): Promise<Array<{
+    analystId: string;
+    firstName: string;
+    lastName: string;
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+  }>> {
+    // Get all analysts
+    const analysts = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'analyst'));
+
+    const workload = await Promise.all(
+      analysts.map(async (analyst) => {
+        // Get task counts by status for this analyst
+        const statusCounts = await db
+          .select({
+            status: tasks.status,
+            count: count(),
+          })
+          .from(tasks)
+          .where(eq(tasks.assignedToId, analyst.id))
+          .groupBy(tasks.status);
+
+        const statusMap = statusCounts.reduce((acc, item) => {
+          acc[item.status] = item.count;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
+
+        return {
+          analystId: analyst.id,
+          firstName: analyst.firstName || '',
+          lastName: analyst.lastName || '',
+          totalTasks,
+          toDo: statusMap['to_do'] || 0,
+          inProgress: statusMap['in_progress'] || 0,
+          blocked: statusMap['blocked'] || 0,
+          completed: statusMap['completed'] || 0,
+        };
+      })
+    );
+
+    return workload.sort((a, b) => b.totalTasks - a.totalTasks);
+  }
+
   async deleteDataRequest(id: string): Promise<void> {
     await db.delete(dataRequests).where(eq(dataRequests.id, id));
   }

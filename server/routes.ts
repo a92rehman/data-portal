@@ -2463,6 +2463,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/analytics/tasks/workload', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead') {
+        return res.status(403).json({ message: "Access denied. Only Data Lead can view workload analytics." });
+      }
+
+      const workload = await storage.getTeamWorkload();
+      res.json(workload);
+    } catch (error) {
+      console.error("Error fetching team workload:", error);
+      res.status(500).json({ message: "Failed to fetch team workload" });
+    }
+  });
+
   // Auth logs - restricted to Data Lead only
   app.get('/api/auth-logs', isAuthenticated, async (req: any, res) => {
     try {
