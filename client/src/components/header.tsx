@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Search, ChartLine, X, Check, ArrowLeft, Moon, Sun, Settings, LogOut } from "lucide-react";
+import { Bell, Search, ChartLine, X, Check, ArrowLeft, Moon, Sun, Settings, LogOut, Menu } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +14,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocketContext } from "@/contexts/WebSocketContext";
 import type { User, Notification } from "@shared/schema";
+import MobileNav from "@/components/mobile-nav";
 
 interface HeaderProps {
   user: User | null;
@@ -23,6 +24,7 @@ export default function Header({ user }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const { logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -123,7 +125,7 @@ export default function Header({ user }: HeaderProps) {
 
   return (
     <header className="bg-white dark:bg-gray-800 border-b-2 border-purple-200 dark:border-purple-700 sticky top-0 z-40 shadow-md">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-6 py-4 pt-[12px] pb-[12px]">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
