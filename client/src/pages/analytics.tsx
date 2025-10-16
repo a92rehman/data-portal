@@ -354,19 +354,6 @@ export default function Analytics() {
                     </p>
                   </CardContent>
                 </Card>
-
-                <Card className="gradient-card">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Expected Time</CardTitle>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
-                      <Clock className="w-4 h-4 text-white" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{taskStats?.avgExpectedTime || 0}h</div>
-                    <p className="text-xs text-muted-foreground mt-1">Per task estimate</p>
-                  </CardContent>
-                </Card>
               </div>
 
               {/* Detailed Analytics */}
