@@ -894,7 +894,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
           {/* Title Tile with Status Badge - Full Width */}
           <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-4 border-y border-indigo-200 dark:border-indigo-800/50 mt-4">
-            <div className="flex items-center justify-center gap-4 relative px-6">
+            <div className="flex items-center justify-center gap-4 relative px-6 ml-[80px] mr-[80px]">
               {/* Centered Title and Urgency */}
               <div className="flex items-center gap-3">
                 <DialogTitle className="text-xl font-bold text-indigo-900 dark:text-indigo-100" data-testid="text-request-title">
