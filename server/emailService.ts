@@ -840,3 +840,131 @@ export async function sendPasswordResetEmail(data: PasswordResetEmailData) {
     throw error;
   }
 }
+
+interface DeliveryEmailData {
+  recipientName: string;
+  recipientEmail: string;
+  taskTitle: string;
+  deliveryType: 'attachment' | 'link' | 'text';
+  deliveredBy: string;
+  department: string;
+  requestId: string;
+}
+
+export async function sendDeliveryEmail(data: DeliveryEmailData) {
+  try {
+    const { recipientName, recipientEmail, taskTitle, deliveryType, deliveredBy, department, requestId } = data;
+
+    const deliveryTypeLabels: Record<string, string> = {
+      attachment: '📎 File Attachment',
+      link: '🔗 Link',
+      text: '📝 Text/Notes'
+    };
+
+    const deliveryTypeLabel = deliveryTypeLabels[deliveryType] || deliveryType;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">🎉 Work Delivered!</h1>
+                    <p style="margin: 10px 0 0; color: #d1fae5; font-size: 16px;">DataHub Data Request</p>
+                  </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <p style="margin: 0 0 20px; color: #1f2937; font-size: 16px; line-height: 1.5;">
+                      Hi <strong>${recipientName}</strong>,
+                    </p>
+                    
+                    <p style="margin: 0 0 30px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                      Great news! <strong>${deliveredBy}</strong> has delivered the work for your data request.
+                    </p>
+
+                    <!-- Request Details Card -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ecfdf5; border-radius: 8px; border: 2px solid #10b981; margin-bottom: 30px;">
+                      <tr>
+                        <td style="padding: 24px;">
+                          <h2 style="margin: 0 0 16px; color: #065f46; font-size: 20px; font-weight: 600;">${taskTitle}</h2>
+                          
+                          <!-- Details Grid -->
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #047857; font-size: 14px;">Department:</span>
+                                <span style="color: #065f46; font-size: 14px; font-weight: 500; margin-left: 8px; text-transform: capitalize;">${department}</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #047857; font-size: 14px;">Delivery Type:</span>
+                                <span style="color: #065f46; font-size: 14px; font-weight: 500; margin-left: 8px;">${deliveryTypeLabel}</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="padding: 8px 0;">
+                                <span style="color: #047857; font-size: 14px;">Delivered By:</span>
+                                <span style="color: #065f46; font-size: 14px; font-weight: 500; margin-left: 8px;">${deliveredBy}</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin: 0 0 20px; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                      Please log in to the DataHub system to review and download the delivery.
+                    </p>
+
+                    <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                      <strong>Request ID:</strong> ${requestId.slice(0, 12)}...
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
+                      DataHub Data Analytics Team
+                    </p>
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                      This is an automated notification. Please do not reply to this email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.to = [{ email: recipientEmail, name: recipientName }];
+    sendSmtpEmail.sender = { email: SENDER_EMAIL, name: SENDER_NAME };
+    sendSmtpEmail.subject = `Work Delivered: ${taskTitle}`;
+    sendSmtpEmail.htmlContent = htmlContent;
+
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`[email] Delivery email sent successfully to ${recipientEmail}:`, result);
+    return result;
+  } catch (error) {
+    console.error('[email] Failed to send delivery email:', error);
+    throw error;
+  }
+}
