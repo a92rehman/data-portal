@@ -2118,6 +2118,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
+      // If updating assignedToId, enforce assignment rules
+      if (req.body.assignedToId !== undefined) {
+        const isMainTask = !task.parentTaskId;
+        const isDataLead = user?.role === 'team_lead';
+        const isAnalyst = user?.role === 'analyst';
+        
+        if (isMainTask) {
+          // Only Data Lead can reassign main tasks
+          if (!isDataLead) {
+            return res.status(403).json({ message: "Only Data Lead can reassign main tasks" });
+          }
+        } else {
+          // Both Data Lead and Analyst can reassign subtasks
+          if (!isDataLead && !isAnalyst) {
+            return res.status(403).json({ message: "Only Data Lead or Analyst can reassign subtasks" });
+          }
+        }
+      }
+
       const updatedTask = await storage.updateTask(req.params.id, req.body);
       res.json(updatedTask);
     } catch (error) {
@@ -2163,16 +2182,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = await storage.getUser(req.user.id);
       const { assignedToId } = req.body;
-
-      // Team lead can assign to anyone, analysts can self-assign
-      const canAssign = user?.role === 'team_lead' || assignedToId === req.user.id;
-
-      if (!canAssign) {
-        return res.status(403).json({ message: "Access denied" });
+      
+      // Get the task to check if it's a main task or subtask
+      const task = await storage.getTask(req.params.id);
+      
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
       }
 
-      const task = await storage.assignTask(req.params.id, assignedToId);
-      res.json(task);
+      // Authorization rules based on task type:
+      // Main task (parentTaskId is null): Only Data Lead can reassign
+      // Subtask (parentTaskId is not null): Both Data Lead and Analyst can reassign
+      
+      const isMainTask = !task.parentTaskId;
+      const isDataLead = user?.role === 'team_lead';
+      const isAnalyst = user?.role === 'analyst';
+      
+      let canAssign = false;
+      
+      if (isMainTask) {
+        // Only Data Lead can reassign main tasks
+        canAssign = isDataLead;
+        if (!canAssign) {
+          return res.status(403).json({ message: "Only Data Lead can reassign main tasks" });
+        }
+      } else {
+        // Both Data Lead and Analyst can reassign subtasks
+        canAssign = isDataLead || isAnalyst;
+        if (!canAssign) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
+
+      const updatedTask = await storage.assignTask(req.params.id, assignedToId);
+      res.json(updatedTask);
     } catch (error) {
       console.error("Error assigning task:", error);
       res.status(500).json({ message: "Failed to assign task" });
