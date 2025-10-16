@@ -51,10 +51,10 @@ export default function RequestAssignments() {
 
   // Fetch requests assigned to current user (analyst or data lead)
   // For team leads: if they haven't selected a specific analyst in the filter, show only their assignments
-  // For analysts: use all filters as-is
+  // For analysts: ALWAYS show only their own assignments (cannot filter by other analysts)
   const queryParams = (user as any)?.role === 'team_lead' 
     ? { ...filters, assignedToId: filters.assignedToId || (user as any)?.id }
-    : filters;
+    : { ...filters, assignedToId: (user as any)?.id }; // Force analyst's own ID
     
   const { data: requests = [], isLoading, refetch } = useQuery<DataRequestWithDetails[]>({
     queryKey: ["/api/requests", queryParams],
@@ -374,7 +374,7 @@ export default function RequestAssignments() {
                   </SelectContent>
                 </Select>
 
-                {((user as any)?.role === "team_lead" || (user as any)?.role === "analyst") && (
+                {(user as any)?.role === "team_lead" && (
                   <Select value={filters.assignedToId || "all"} onValueChange={(value) => setFilters({...filters, assignedToId: value === "all" ? "" : value})}>
                     <SelectTrigger className="w-40" data-testid="select-assigned">
                       <SelectValue placeholder="All Analysts" />
