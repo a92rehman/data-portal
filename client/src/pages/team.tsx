@@ -320,7 +320,7 @@ export default function Team() {
         <Header user={user as any} />
         <div className="flex">
           <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
-          <main className="flex-1 ml-64 p-6 flex items-center justify-center">
+          <main className="flex-1 p-6 flex items-center justify-center">
             <Card className="max-w-md">
               <CardContent className="p-6 text-center">
                 <p className="text-muted-foreground">Only Data Leads can access team management.</p>
@@ -339,7 +339,7 @@ export default function Team() {
       <div className="flex">
         <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
         
-        <main className="flex-1 ml-64 p-6">
+        <main className="flex-1 p-6">
           <div className="mb-6 flex justify-between items-start">
             <div>
               <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-2">
