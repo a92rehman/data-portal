@@ -25,7 +25,7 @@ function isAuthenticated(req: any, res: any, next: any) {
 }
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail, sendAnalystCredentialsViaEmailJS, sendPasswordResetEmail } from "./emailService";
+import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail, sendAnalystCredentialsViaEmailJS, sendPasswordResetEmail, sendDeliveryEmail } from "./emailService";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 
@@ -1477,6 +1477,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `Request "${request.title}" has been delivered`,
           });
         });
+      }
+
+      // Send email notifications and create persistent notifications for all stakeholders
+      const deliveredByName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Analyst';
+      
+      // Get all stakeholders
+      const requester = request.requestedById ? await storage.getUser(request.requestedById) : null;
+      const reviewer = request.reviewedById ? await storage.getUser(request.reviewedById) : null;
+      const assignedAnalyst = request.assignedToId ? await storage.getUser(request.assignedToId) : null;
+      
+      // Notify requester
+      if (requester && requester.id !== user.id && requester.email) {
+        const requesterName = `${requester.firstName || ''} ${requester.lastName || ''}`.trim() || requester.email;
+        
+        // Send email
+        try {
+          await sendDeliveryEmail({
+            recipientName: requesterName,
+            recipientEmail: requester.email,
+            taskTitle: request.title,
+            deliveryType: deliveryType,
+            deliveredBy: deliveredByName,
+            department: request.department,
+            requestId: request.id,
+          });
+          console.log(`[email] Delivery notification sent to requester ${requester.email}`);
+        } catch (emailError) {
+          console.error("[email] Failed to send delivery notification to requester:", emailError);
+        }
+        
+        // Create persistent notification
+        try {
+          await storage.createNotification({
+            userId: requester.id,
+            type: 'request_delivered',
+            title: 'Work Delivered',
+            message: `${deliveredByName} has delivered the work for "${request.title}"`,
+            requestId: request.id,
+          });
+        } catch (notifError) {
+          console.error('[notification] Failed to create requester notification:', notifError);
+        }
+      }
+      
+      // Notify Data Lead (reviewer)
+      if (reviewer && reviewer.id !== user.id && reviewer.email) {
+        const reviewerName = `${reviewer.firstName || ''} ${reviewer.lastName || ''}`.trim() || reviewer.email;
+        
+        // Send email
+        try {
+          await sendDeliveryEmail({
+            recipientName: reviewerName,
+            recipientEmail: reviewer.email,
+            taskTitle: request.title,
+            deliveryType: deliveryType,
+            deliveredBy: deliveredByName,
+            department: request.department,
+            requestId: request.id,
+          });
+          console.log(`[email] Delivery notification sent to Data Lead ${reviewer.email}`);
+        } catch (emailError) {
+          console.error("[email] Failed to send delivery notification to Data Lead:", emailError);
+        }
+        
+        // Create persistent notification
+        try {
+          await storage.createNotification({
+            userId: reviewer.id,
+            type: 'request_delivered',
+            title: 'Work Delivered',
+            message: `${deliveredByName} has delivered the work for "${request.title}"`,
+            requestId: request.id,
+          });
+        } catch (notifError) {
+          console.error('[notification] Failed to create Data Lead notification:', notifError);
+        }
+      }
+      
+      // Notify assigned analyst (if different from the person delivering)
+      if (assignedAnalyst && assignedAnalyst.id !== user.id && assignedAnalyst.email) {
+        const analystName = `${assignedAnalyst.firstName || ''} ${assignedAnalyst.lastName || ''}`.trim() || assignedAnalyst.email;
+        
+        // Send email
+        try {
+          await sendDeliveryEmail({
+            recipientName: analystName,
+            recipientEmail: assignedAnalyst.email,
+            taskTitle: request.title,
+            deliveryType: deliveryType,
+            deliveredBy: deliveredByName,
+            department: request.department,
+            requestId: request.id,
+          });
+          console.log(`[email] Delivery notification sent to assigned analyst ${assignedAnalyst.email}`);
+        } catch (emailError) {
+          console.error("[email] Failed to send delivery notification to analyst:", emailError);
+        }
+        
+        // Create persistent notification
+        try {
+          await storage.createNotification({
+            userId: assignedAnalyst.id,
+            type: 'request_delivered',
+            title: 'Work Delivered',
+            message: `${deliveredByName} has delivered the work for "${request.title}"`,
+            requestId: request.id,
+          });
+        } catch (notifError) {
+          console.error('[notification] Failed to create analyst notification:', notifError);
+        }
       }
 
       res.json(request);
