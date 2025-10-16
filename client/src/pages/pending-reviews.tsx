@@ -150,7 +150,7 @@ export default function PendingReviews() {
       <div className="flex">
         <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
         
-        <main className="flex-1 p-6">
+        <main className="flex-1 ml-64 p-6">
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-2">
               Pending Reviews
