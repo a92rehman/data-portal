@@ -54,7 +54,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
   const navItems = getNavItems();
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-800 border-r-2 border-purple-200 dark:border-purple-700 min-h-[calc(100vh-73px)] p-4 shadow-md">
+    <aside className="w-64 bg-white dark:bg-gray-800 border-r-2 border-purple-200 dark:border-purple-700 fixed left-0 top-[73px] bottom-0 p-4 shadow-md overflow-y-auto z-30 hidden md:block">
       <nav className="space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;

@@ -147,10 +147,10 @@ export default function PendingReviews() {
     <div className="min-h-screen">
       <Header user={user as any} />
       
-      <div className="flex">
+      <div>
         <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
         
-        <main className="flex-1 p-6">
+        <main className="md:ml-64 p-6">
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-2">
               Pending Reviews
@@ -161,7 +161,7 @@ export default function PendingReviews() {
           </div>
 
           {/* Search Filter */}
-          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md sticky top-[73px] z-20">
             <CardContent className="p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />

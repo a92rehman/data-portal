@@ -155,12 +155,12 @@ export default function Tasks() {
     <div className="min-h-screen">
       <Header user={user as any} />
       
-      <div className="flex">
+      <div>
         <Sidebar 
           onNewRequest={() => setLocation("/new-request")} 
           user={user as any} 
         />
-        <main className="flex-1 p-6">
+        <main className="md:ml-64 p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -178,7 +178,7 @@ export default function Tasks() {
           </div>
 
           {/* Filters */}
-          <Card className="mb-6">
+          <Card className="mb-6 sticky top-[73px] z-20 bg-white dark:bg-gray-800">
             <CardContent className="p-4">
               <div className="flex gap-3">
                 <Select value={filterStatus || "all"} onValueChange={(value) => setFilterStatus(value === "all" ? "" : value)}>

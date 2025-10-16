@@ -265,10 +265,10 @@ export default function MyRequests() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header user={user as any} />
       
-      <div className="flex">
+      <div>
         <Sidebar onNewRequest={() => setLocation("/requests/new")} user={user} />
 
-        <main className="flex-1 p-8 mt-[73px]">
+        <main className="md:ml-64 p-8">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-2">
               My Requests
@@ -278,7 +278,7 @@ export default function MyRequests() {
             </p>
 
             {/* Filters */}
-            <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+            <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md sticky top-[73px] z-20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="relative">

@@ -429,10 +429,10 @@ export default function Dashboard() {
     <div className="min-h-screen">
       <Header user={user as any} />
       
-      <div className="flex">
+      <div>
         <Sidebar onNewRequest={() => setLocation("/requests/new")} user={user as any} />
         
-        <main className="flex-1 p-6">
+        <main className="md:ml-64 p-6">
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4">Dashboard Overview</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -496,7 +496,7 @@ export default function Dashboard() {
           </div>
 
           {/* Filters and Actions */}
-          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md sticky top-[73px] z-20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-3 flex-wrap">
