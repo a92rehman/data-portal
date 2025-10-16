@@ -187,9 +187,11 @@ export default function Team() {
           });
         }
       } else {
+        // For team_lead and requester, invitation email is sent via Brevo from backend
+        const roleText = variables.role === 'team_lead' ? 'Data Lead' : 'Data Requester';
         toast({
           title: "Success",
-          description: "Team member invited successfully. They can now sign in.",
+          description: `${roleText} invited successfully. Invitation email has been sent to ${variables.email}.`,
         });
       }
       
