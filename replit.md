@@ -6,7 +6,27 @@ DataHub is a full-stack data request management system designed to streamline da
 
 ## Recent Changes (October 16, 2025)
 
-### UI Improvements - Compact Design & Task Section Redesign (Latest)
+### Team Tasks UI Overhaul (Latest)
+- **Removed PERT Time Display**: Eliminated time clock (expected time) from all task displays since PERT calculation was removed
+- **Removed Order Numbers**: Removed order badges (#1, #2, etc.) for cleaner visual hierarchy
+- **Clickable Request Badge**: Made request task badge clickable to directly open linked request details
+  - Shows as interactive button with "Request #XXX" and external link icon
+  - Click triggers request detail modal with full context
+- **Enhanced Tile Layout**: Completely redesigned task cards for improved UX
+  - Two-section layout: top (title/badges/view button), bottom (metadata grid)
+  - Larger, more prominent task titles (text-xl)
+  - Icon-based metadata display with circular colored backgrounds
+  - Hover effects with border color changes and shadow transitions
+  - Rounded corners (rounded-xl) for modern appearance
+- **Improved Subtask Display**: Redesigned subtask section
+  - Clear "SUBTASKS (N)" header with corner-down-right icon
+  - Gradient background cards for better visual separation
+  - Compact horizontal layout with status dropdown and view button
+  - Removed time display from subtasks as well
+- **NEW Badge Enhancement**: Added sparkle emoji (✨) to NEW badge for tasks created in last 24 hours
+- **Consistent Styling**: Applied gradient backgrounds, better spacing, and improved dark mode support throughout
+
+### UI Improvements - Compact Design & Task Section Redesign
 - **Comments Section**: Redesigned with ultra-compact vertical table layout
   - Removed horizontal card tiles, now uses single-column table with subtle background colors to distinguish different commenters
   - Reduced padding (p-1.5) and avatar size (w-6 h-6) for space efficiency
