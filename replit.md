@@ -6,7 +6,24 @@ DataHub is a full-stack data request management system designed to streamline da
 
 ## Recent Changes (October 16, 2025)
 
-### Task Assignment Rules (Latest)
+### Email System Bug Fix (Latest)
+- **Fixed analyst re-invitation bug**: Previously, re-adding an analyst (after removal) did not generate a new password or send credentials via EmailJS
+- **Root cause**: Condition `!existingUser` prevented password generation for existing users being re-added
+- **Solution**: Removed `!existingUser` check for analysts - now generates fresh password for both new and re-added analysts
+- **Email flow now correct**:
+  - New analysts: Generate password → Send via EmailJS ✓
+  - Re-added analysts: Generate NEW password → Send via EmailJS ✓
+  - New team_lead/requester: Send invitation via Brevo ✓
+  - Re-added team_lead/requester: Send invitation via Brevo ✓
+- Updated frontend to show email confirmation for all roles (not just analysts)
+
+### Form Consistency Improvements
+- Standardized all task creation forms across different flows (Tasks page, Request Detail, Request Workspace)
+- Removed unused assignee state management from task creation dialogs
+- Added consistent help text: "Task will be automatically assigned to you. Data Lead can reassign it later if needed."
+- All dialogs now follow consistent pattern: DialogHeader → py-4 content → DialogFooter with Cancel/Action buttons
+
+### Task Assignment Rules
 - **Auto-assign to creator**: All tasks (main and subtasks) automatically assign to their creator upon creation
 - **Main task reassignment**: Only Data Lead can change the assignee of main tasks (tasks where `parentTaskId` is null)
 - **Subtask reassignment**: Both Data Lead and Analyst can reassign subtasks (tasks where `parentTaskId` is not null)
@@ -115,6 +132,48 @@ Preferred communication style: Simple, everyday language.
 
 **API Design Patterns:**
 - Authentication middleware, Zod schema validation, consistent error handling.
+
+### Email & Notification System
+
+**Email Services:**
+- **EmailJS** (Client-side): Used for sending analyst credentials
+  - Configured via environment variables: `VITE_EMAILJS_PUBLIC_KEY`, `VITE_EMAILJS_SERVICE_ID`, `VITE_EMAILJS_TEMPLATE_ID`
+  - Sends password and login details to newly invited or re-added analysts
+  - Template: Custom analyst credentials template with password, email, and inviter name
+  
+- **Brevo** (Server-side): Used for all other transactional emails
+  - Configured via: `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME`
+  - Email types sent:
+    - Team member invitations (Data Lead, Requester)
+    - Request assignments to analysts
+    - Request acceptance/rejection notifications
+    - Request delivery notifications
+  - Rich HTML email templates with gradient styling
+
+**Email Flows:**
+1. **Analyst Invitation**:
+   - Backend generates random 12-character password
+   - Password hashed with scrypt and stored in database
+   - Plain password returned to frontend
+   - Frontend sends credentials via EmailJS template
+   - Works for both new and re-added analysts
+
+2. **Team Lead/Requester Invitation**:
+   - Backend sends invitation email via Brevo
+   - Includes role, department, and inviter information
+   - User sets password on first login
+
+3. **Request Notifications**:
+   - Assignment emails sent when analyst assigned to request
+   - Acceptance/rejection emails sent to requester
+   - Delivery confirmation emails sent to requester
+
+**In-App Notifications:**
+- Real-time WebSocket notifications for live updates
+- Persistent notifications stored in `notifications` table
+- Notification types: request assignments, status changes, comments
+- Unread count badge in header
+- Mark as read functionality (individual or bulk)
 
 ## External Dependencies
 
