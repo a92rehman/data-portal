@@ -821,8 +821,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             
             {/* Action Buttons Group - Positioned down and slightly left */}
             <div className="flex gap-2 mr-10 mt-3">
-              {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
-              {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.status === "rejected") && (
+              {/* Accept/Reject Buttons - Data Lead can manage request status */}
+              {isTeamLead && request.status !== "completed" && request.status !== "cancelled" && (
                 <>
                   {/* Show Accept button for pending_review OR rejected status */}
                   {(request.status === "pending_review" || request.status === "rejected") && (
@@ -837,8 +837,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
                     </Button>
                   )}
-                  {/* Show Reject button for pending_review OR accepted status (not rejected) */}
-                  {(request.status === "pending_review" || request.status === "accepted") && (
+                  {/* Show Reject button for any non-rejected, non-completed, non-cancelled request */}
+                  {request.status !== "rejected" && (
                     <Button
                       onClick={() => setShowRejectDialog(true)}
                       disabled={rejectRequestMutation.isPending}
@@ -923,7 +923,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </Badge>
                 )}
                 
-                {request.status === "accepted" && !request.rejectionReason && (
+                {/* Show "Request Accepted" badge for any status after acceptance (accepted, assigned, in_progress, blocked, completed) */}
+                {(request.status === "accepted" || request.status === "assigned" || request.status === "in_progress" || request.status === "blocked" || request.status === "completed") && !request.rejectionReason && (
                   <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold ml-[40px] mr-[40px]" data-testid="badge-request-accepted">
                     <Check className="w-4 h-4 mr-1.5" />
                     Request Accepted
