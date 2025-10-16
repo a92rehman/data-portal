@@ -823,10 +823,10 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             {/* Action Buttons Group - Positioned down and slightly left */}
             <div className="flex gap-2 mr-10 mt-3">
               {/* Accept/Reject Buttons - Data Lead can toggle between accept and reject */}
-              {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.rejectionReason) && (
+              {isTeamLead && (request.status === "pending_review" || request.status === "accepted" || request.status === "rejected") && (
                 <>
-                  {/* Show Accept button ONLY if rejected */}
-                  {request.rejectionReason && (
+                  {/* Show Accept button for pending_review OR rejected status */}
+                  {(request.status === "pending_review" || request.status === "rejected") && (
                     <Button
                       onClick={() => acceptRequestMutation.mutate()}
                       disabled={acceptRequestMutation.isPending}
@@ -838,8 +838,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       {acceptRequestMutation.isPending ? "Accepting..." : "Accept"}
                     </Button>
                   )}
-                  {/* Show Reject button ONLY if accepted OR pending review (not rejected) */}
-                  {(request.status === "accepted" || request.status === "pending_review") && !request.rejectionReason && (
+                  {/* Show Reject button for pending_review OR accepted status (not rejected) */}
+                  {(request.status === "pending_review" || request.status === "accepted") && (
                     <Button
                       onClick={() => setShowRejectDialog(true)}
                       disabled={rejectRequestMutation.isPending}
