@@ -250,6 +250,7 @@ export default function Tasks() {
           onClose={() => setSelectedTask(null)}
           onUpdate={() => queryClient.invalidateQueries({ queryKey: ["/api/tasks"] })}
           onSelectTask={setSelectedTask}
+          onSelectRequest={setSelectedRequest}
         />
       )}
 
@@ -697,18 +698,19 @@ function TaskDetailDialog({
   open, 
   onClose, 
   onUpdate,
-  onSelectTask
+  onSelectTask,
+  onSelectRequest
 }: { 
   task: TaskWithDetails; 
   open: boolean; 
   onClose: () => void;
   onUpdate: () => void;
   onSelectTask: (task: TaskWithDetails) => void;
+  onSelectRequest: (request: DataRequestWithDetails) => void;
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
   const [showSubTaskForm, setShowSubTaskForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingSubTaskId, setDeletingSubTaskId] = useState<string | null>(null);
@@ -846,10 +848,23 @@ function TaskDetailDialog({
                 )}
                 {task.request && (
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (task.request) {
-                        setLocation(`/requests/${task.request.id}`);
-                        onClose();
+                        try {
+                          const response = await fetch(`/api/requests/${task.request.id}`, {
+                            credentials: 'include',
+                          });
+                          if (!response.ok) throw new Error('Failed to fetch request');
+                          const requestData = await response.json();
+                          onSelectRequest(requestData);
+                        } catch (error) {
+                          console.error('Error fetching request:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to load request details",
+                            variant: "destructive"
+                          });
+                        }
                       }
                     }}
                     className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-colors"
