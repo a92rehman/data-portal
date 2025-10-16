@@ -6,6 +6,13 @@ DataHub is a full-stack data request management system designed to streamline da
 
 ## Recent Changes (October 16, 2025)
 
+### Task Assignment Rules (Latest)
+- **Auto-assign to creator**: All tasks (main and subtasks) automatically assign to their creator upon creation
+- **Main task reassignment**: Only Data Lead can change the assignee of main tasks (tasks where `parentTaskId` is null)
+- **Subtask reassignment**: Both Data Lead and Analyst can reassign subtasks (tasks where `parentTaskId` is not null)
+- Updated backend authorization in `/api/tasks/:id/assign` and `/api/tasks/:id` endpoints
+- Updated frontend forms: main task form removes assignee field (auto-assigns), subtask form shows assignee dropdown for both roles with "Assign to yourself" as default
+
 ### Request Assignment Fix
 - Fixed Request Assignments page for analysts to show only requests where they are assigned (assignedToId = analyst.id)
 - Previously showed all requests regardless of assignment status

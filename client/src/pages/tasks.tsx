@@ -714,12 +714,19 @@ function TaskDetailDialog({
   const [deletingSubTaskId, setDeletingSubTaskId] = useState<string | null>(null);
 
   const isTeamLead = (user as any)?.role === "team_lead";
+  const isAnalyst = (user as any)?.role === "analyst";
   const isSubTask = !!task.parentTaskId; // Check if this task is itself a subtask
+  
+  // Determine if user can reassign THIS task based on task type
+  // Main tasks: only Data Lead can reassign
+  // Subtasks: both Data Lead and Analyst can reassign
+  const canReassign = isSubTask ? (isTeamLead || isAnalyst) : isTeamLead;
 
-  // Fetch analysts for assignment
+  // Fetch analysts for assignment dropdown
+  // Always fetch for Data Lead or Analyst (needed for reassigning subtasks even when viewing a main task)
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
-    enabled: open && isTeamLead,
+    enabled: open && (isTeamLead || isAnalyst),
   });
 
   // Fetch sub-tasks (only for parent tasks)
@@ -883,7 +890,7 @@ function TaskDetailDialog({
                   </div>
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
                 </div>
-                {isTeamLead ? (
+                {canReassign ? (
                   <Select
                     value={task.assignedToId || "unassigned"}
                     onValueChange={(value) => {
@@ -1055,7 +1062,7 @@ function TaskDetailDialog({
                       
                       {/* Assigned To Column */}
                       <div className="col-span-2">
-                        {isTeamLead ? (
+                        {(isTeamLead || isAnalyst) ? (
                           <Select
                             value={subTask.assignedToId || "unassigned"}
                             onValueChange={(value) => {
@@ -1264,7 +1271,7 @@ function SubTaskForm({
   const isAnalyst = (user as any)?.role === "analyst";
   const canAssignSubtask = isTeamLead || isAnalyst;
 
-  // Fetch analysts for assignment
+  // Fetch all analysts for assignment dropdown (both team leads and analysts can assign subtasks)
   const { data: analysts = [] } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
     enabled: canAssignSubtask,
