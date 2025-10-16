@@ -923,8 +923,16 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </Badge>
                 )}
                 
-                {/* Show "Request Accepted" badge for any status after acceptance (accepted, assigned, in_progress, blocked, completed) */}
-                {(request.status === "accepted" || request.status === "assigned" || request.status === "in_progress" || request.status === "blocked" || request.status === "completed") && !request.rejectionReason && (
+                {/* Show "Request Completed" badge for completed requests */}
+                {request.status === "completed" && !request.rejectionReason && (
+                  <Badge className="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 font-semibold ml-[40px] mr-[40px]" data-testid="badge-request-completed">
+                    <CheckCircle className="w-4 h-4 mr-1.5" />
+                    Request Completed
+                  </Badge>
+                )}
+
+                {/* Show "Request Accepted" badge for other accepted statuses (accepted, assigned, in_progress, blocked) */}
+                {(request.status === "accepted" || request.status === "assigned" || request.status === "in_progress" || request.status === "blocked") && !request.rejectionReason && (
                   <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold ml-[40px] mr-[40px]" data-testid="badge-request-accepted">
                     <Check className="w-4 h-4 mr-1.5" />
                     Request Accepted
