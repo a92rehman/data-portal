@@ -2022,8 +2022,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const taskData = taskSchema.parse(req.body);
       
       // Transform dueDate string to Date if provided
+      // Auto-assign to creator if no assignee specified
       const transformedData = {
         ...taskData,
+        assignedToId: taskData.assignedToId || req.user.id, // Auto-assign to creator
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : undefined,
       };
       
