@@ -2148,7 +2148,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert dueDate string to Date object if present
       const updateData = { ...req.body };
       if (updateData.dueDate !== undefined && updateData.dueDate !== null) {
+        console.log('Received dueDate:', updateData.dueDate, 'Type:', typeof updateData.dueDate);
         updateData.dueDate = new Date(updateData.dueDate);
+        console.log('Converted dueDate:', updateData.dueDate, 'Type:', typeof updateData.dueDate);
       }
 
       const updatedTask = await storage.updateTask(req.params.id, updateData);
