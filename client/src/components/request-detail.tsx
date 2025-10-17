@@ -986,8 +986,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-        {/* Work Started Info - Shown when request is in progress */}
-        {request.status === "in_progress" && request.workStartedAt && request.assignedTo && (
+        {/* Work Started Info - Shown when request has workStartedAt timestamp */}
+        {request.workStartedAt && request.assignedTo && (
           <div className="mx-6 mt-4 mb-4">
             <div className="bg-emerald-50 dark:bg-emerald-950/20 border-l-4 border-emerald-500 dark:border-emerald-600 p-4 rounded-r-lg shadow-sm" data-testid="work-started-alert">
               <div className="flex items-start gap-3">
