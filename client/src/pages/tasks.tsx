@@ -60,10 +60,11 @@ export default function Tasks() {
     enabled: isAuthenticated && isTeamLead,
   });
 
-  // Check for requestId URL param and fetch specific request
+  // Check for requestId or taskId URL param and fetch specific request/task
   useEffect(() => {
     const urlParams = new URLSearchParams(searchString);
     const requestId = urlParams.get('requestId');
+    const taskId = urlParams.get('taskId');
     
     if (requestId) {
       // Fetch the specific request directly
@@ -85,6 +86,39 @@ export default function Tasks() {
         })
         .catch(err => {
           console.error('Failed to fetch request:', err);
+          toast({ 
+            title: "Error", 
+            description: "Could not load the requested item", 
+            variant: "destructive" 
+          });
+          // Clear the URL param
+          setLocation(location);
+        });
+    } else if (taskId) {
+      // Fetch the specific task directly
+      fetch(`/api/tasks/${taskId}`, {
+        credentials: 'include',
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch task: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(task => {
+          if (task && task.id) {
+            setSelectedTask(task);
+          }
+          // Clear the URL param
+          setLocation(location);
+        })
+        .catch(err => {
+          console.error('Failed to fetch task:', err);
+          toast({ 
+            title: "Error", 
+            description: "Could not load the requested task", 
+            variant: "destructive" 
+          });
           // Clear the URL param
           setLocation(location);
         });

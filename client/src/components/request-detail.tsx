@@ -6,6 +6,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +72,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [newComment, setNewComment] = useState("");
   const [selectedAnalyst, setSelectedAnalyst] = useState(request.assignedToId || "unassigned");
   const [editedPriority, setEditedPriority] = useState(request.priority);
@@ -88,6 +90,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   
   const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // Handler to navigate to tasks page with specific task
+  const handleTaskClick = (taskId: string) => {
+    onClose(); // Close the request detail dialog
+    setLocation(`/tasks?taskId=${taskId}`); // Navigate to tasks page with task ID
+  };
 
   // Auto-fill task title and due date when dialog opens
   useEffect(() => {
@@ -986,101 +994,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
-        {/* Work Started Info - Shown when request has workStartedAt timestamp */}
-        {request.workStartedAt && request.assignedTo && (
-          <div className="mx-6 mt-4 mb-4">
-            <div className="bg-emerald-50 dark:bg-emerald-950/20 border-l-4 border-emerald-500 dark:border-emerald-600 p-4 rounded-r-lg shadow-sm" data-testid="work-started-alert">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <PlayCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-1">
-                    Work Started
-                  </h3>
-                  <p className="text-sm text-emerald-700 dark:text-emerald-400 leading-relaxed" data-testid="text-work-started-info">
-                    {request.assignedTo.firstName} {request.assignedTo.lastName} started working on this request on {new Date(request.workStartedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Status History Timeline - Horizontal */}
-        {(request.reviewedAt || request.workStartedAt || request.deliveredAt) && (
-          <div className="mx-6 mt-4 mb-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Status History
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pb-3">
-                <div className="relative pt-6 pb-2">
-                  {/* Horizontal line */}
-                  <div className="absolute top-6 left-8 right-8 h-0.5 bg-gradient-to-r from-blue-200 via-emerald-200 via-purple-200 to-green-200 dark:from-blue-800 dark:via-emerald-800 dark:via-purple-800 dark:to-green-800" />
-                  
-                  <div className="flex justify-between items-start px-4">
-                    {/* Submitted */}
-                    <div className="relative flex-1 text-center" data-testid="timeline-submitted">
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full bg-blue-500 dark:bg-blue-400 border-2 border-white dark:border-gray-900" />
-                      <div className="mt-3">
-                        <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Submitted</p>
-                        <Badge variant="outline" className="text-[10px] px-1 py-0">
-                          {request.createdAt ? new Date(request.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : 'N/A'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Accepted */}
-                    <div className={`relative flex-1 text-center ${!request.reviewedAt && 'opacity-40'}`} data-testid="timeline-accepted">
-                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.reviewedAt ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                      <div className="mt-3">
-                        <p className={`text-xs font-semibold mb-1 ${request.reviewedAt ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>Accepted</p>
-                        {request.reviewedAt && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            {new Date(request.reviewedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Work Started */}
-                    <div className={`relative flex-1 text-center ${!request.workStartedAt && 'opacity-40'}`} data-testid="timeline-work-started">
-                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.workStartedAt ? 'bg-purple-500 dark:bg-purple-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                      <div className="mt-3">
-                        <p className={`text-xs font-semibold mb-1 ${request.workStartedAt ? 'text-purple-700 dark:text-purple-400' : 'text-muted-foreground'}`}>Work Started</p>
-                        {request.workStartedAt && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            {new Date(request.workStartedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Delivered/Completed */}
-                    <div className={`relative flex-1 text-center ${!request.deliveredAt && 'opacity-40'}`} data-testid="timeline-completed">
-                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.deliveredAt ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                      <div className="mt-3">
-                        <p className={`text-xs font-semibold mb-1 ${request.deliveredAt ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}`}>Completed</p>
-                        {request.deliveredAt && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            {new Date(request.deliveredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* 2. Info Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 px-6 py-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
+        {/* Info Cards Grid - Moved to top for better visibility */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 px-6 py-4 mt-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
           {/* 1. Requested By Card */}
           <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
             <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
@@ -1221,7 +1136,79 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         </div>
 
-        {/* 3. 2-Column Main Content */}
+        {/* Status History Timeline - Horizontal */}
+        {(request.reviewedAt || request.workStartedAt || request.deliveredAt) && (
+          <div className="mx-6 mt-4 mb-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Status History
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pb-3">
+                <div className="relative pt-6 pb-2">
+                  {/* Horizontal line */}
+                  <div className="absolute top-6 left-8 right-8 h-0.5 bg-gradient-to-r from-blue-200 via-emerald-200 via-purple-200 to-green-200 dark:from-blue-800 dark:via-emerald-800 dark:via-purple-800 dark:to-green-800" />
+                  
+                  <div className="flex justify-between items-start px-4">
+                    {/* Submitted */}
+                    <div className="relative flex-1 text-center" data-testid="timeline-submitted">
+                      <div className="absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full bg-blue-500 dark:bg-blue-400 border-2 border-white dark:border-gray-900" />
+                      <div className="mt-3">
+                        <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Submitted</p>
+                        <Badge variant="outline" className="text-[10px] px-1 py-0">
+                          {request.createdAt ? new Date(request.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : 'N/A'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Accepted */}
+                    <div className={`relative flex-1 text-center ${!request.reviewedAt && 'opacity-40'}`} data-testid="timeline-accepted">
+                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.reviewedAt ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                      <div className="mt-3">
+                        <p className={`text-xs font-semibold mb-1 ${request.reviewedAt ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>Accepted</p>
+                        {request.reviewedAt && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            {new Date(request.reviewedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Work Started */}
+                    <div className={`relative flex-1 text-center ${!request.workStartedAt && 'opacity-40'}`} data-testid="timeline-work-started">
+                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.workStartedAt ? 'bg-purple-500 dark:bg-purple-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                      <div className="mt-3">
+                        <p className={`text-xs font-semibold mb-1 ${request.workStartedAt ? 'text-purple-700 dark:text-purple-400' : 'text-muted-foreground'}`}>Work Started</p>
+                        {request.workStartedAt && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            {new Date(request.workStartedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Delivered/Completed */}
+                    <div className={`relative flex-1 text-center ${!request.deliveredAt && 'opacity-40'}`} data-testid="timeline-completed">
+                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.deliveredAt ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                      <div className="mt-3">
+                        <p className={`text-xs font-semibold mb-1 ${request.deliveredAt ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}`}>Completed</p>
+                        {request.deliveredAt && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0">
+                            {new Date(request.deliveredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* 2-Column Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 px-6 py-4">
           {/* Left Column - Request Details */}
           <div className="space-y-4">
@@ -1912,27 +1899,50 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                               .map((task: any) => {
                                 const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
                                 return (
-                                  <div key={task.id} className="border-t p-2">
-                                    <div className="flex items-start gap-2">
+                                  <div key={task.id} className="border-t p-2 hover:bg-blue-50/50 dark:hover:bg-blue-950/10 transition-colors">
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                          <ListTodo className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                      </div>
                                       <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-sm truncate">{task.title}</h4>
+                                        <h4 
+                                          onClick={() => handleTaskClick(task.id)}
+                                          className="font-medium text-sm truncate cursor-pointer text-blue-700 dark:text-blue-400 hover:underline" 
+                                          data-testid={`task-link-${task.id}`}
+                                        >
+                                          {task.title}
+                                        </h4>
                                         {task.description && (
                                           <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
                                         )}
                                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                                           {task.assignedTo && (
-                                            <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                                            <span className="flex items-center gap-1">
+                                              <User2 className="w-3 h-3" />
+                                              {task.assignedTo.firstName} {task.assignedTo.lastName}
+                                            </span>
                                           )}
                                           {subTasks.length > 0 && (
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950/30">
                                               {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} subtasks
                                             </Badge>
                                           )}
                                         </div>
                                       </div>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => handleTaskClick(task.id)}
+                                        data-testid={`button-view-task-${task.id}`}
+                                      >
+                                        <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                                      </Button>
                                     </div>
                                     {subTasks.length > 0 && (
-                                      <div className="mt-2 ml-4 space-y-1 border-l-2 border-blue-200 dark:border-blue-800 pl-2">
+                                      <div className="mt-2 ml-9 space-y-1 border-l-2 border-blue-200 dark:border-blue-800 pl-2">
                                         {subTasks.map((subTask: any) => (
                                           <div key={subTask.id} className="flex items-center gap-1.5 text-xs">
                                             <div className={`w-1.5 h-1.5 rounded-full ${subTask.status === 'completed' ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -1968,27 +1978,50 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                               .map((task: any) => {
                                 const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
                                 return (
-                                  <div key={task.id} className="border-t p-2">
-                                    <div className="flex items-start gap-2">
+                                  <div key={task.id} className="border-t p-2 hover:bg-amber-50/50 dark:hover:bg-amber-950/10 transition-colors">
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                          <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                        </div>
+                                      </div>
                                       <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-sm truncate">{task.title}</h4>
+                                        <h4 
+                                          onClick={() => handleTaskClick(task.id)}
+                                          className="font-medium text-sm truncate cursor-pointer text-amber-700 dark:text-amber-400 hover:underline" 
+                                          data-testid={`task-link-${task.id}`}
+                                        >
+                                          {task.title}
+                                        </h4>
                                         {task.description && (
                                           <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
                                         )}
                                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                                           {task.assignedTo && (
-                                            <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                                            <span className="flex items-center gap-1">
+                                              <User2 className="w-3 h-3" />
+                                              {task.assignedTo.firstName} {task.assignedTo.lastName}
+                                            </span>
                                           )}
                                           {subTasks.length > 0 && (
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge variant="outline" className="text-xs bg-amber-50 dark:bg-amber-950/30">
                                               {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} subtasks
                                             </Badge>
                                           )}
                                         </div>
                                       </div>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => handleTaskClick(task.id)}
+                                        data-testid={`button-view-task-${task.id}`}
+                                      >
+                                        <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                                      </Button>
                                     </div>
                                     {subTasks.length > 0 && (
-                                      <div className="mt-2 ml-4 space-y-1 border-l-2 border-amber-200 dark:border-amber-800 pl-2">
+                                      <div className="mt-2 ml-9 space-y-1 border-l-2 border-amber-200 dark:border-amber-800 pl-2">
                                         {subTasks.map((subTask: any) => (
                                           <div key={subTask.id} className="flex items-center gap-1.5 text-xs">
                                             <div className={`w-1.5 h-1.5 rounded-full ${subTask.status === 'completed' ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -2024,27 +2057,50 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                               .map((task: any) => {
                                 const subTasks = requestTasks.filter((t: any) => t.parentTaskId === task.id);
                                 return (
-                                  <div key={task.id} className="border-t p-2">
-                                    <div className="flex items-start gap-2">
+                                  <div key={task.id} className="border-t p-2 hover:bg-green-50/50 dark:hover:bg-green-950/10 transition-colors">
+                                    <div className="flex items-start gap-3">
+                                      <div className="flex-shrink-0 mt-0.5">
+                                        <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                          <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                                        </div>
+                                      </div>
                                       <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-sm truncate line-through text-muted-foreground">{task.title}</h4>
+                                        <h4 
+                                          onClick={() => handleTaskClick(task.id)}
+                                          className="font-medium text-sm truncate cursor-pointer text-green-700 dark:text-green-400 hover:underline line-through" 
+                                          data-testid={`task-link-${task.id}`}
+                                        >
+                                          {task.title}
+                                        </h4>
                                         {task.description && (
                                           <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
                                         )}
                                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                                           {task.assignedTo && (
-                                            <span>{task.assignedTo.firstName} {task.assignedTo.lastName}</span>
+                                            <span className="flex items-center gap-1">
+                                              <User2 className="w-3 h-3" />
+                                              {task.assignedTo.firstName} {task.assignedTo.lastName}
+                                            </span>
                                           )}
                                           {subTasks.length > 0 && (
-                                            <Badge variant="outline" className="text-xs">
+                                            <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/30">
                                               {subTasks.filter((st: any) => st.status === 'completed').length}/{subTasks.length} subtasks
                                             </Badge>
                                           )}
                                         </div>
                                       </div>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => handleTaskClick(task.id)}
+                                        data-testid={`button-view-task-${task.id}`}
+                                      >
+                                        <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+                                      </Button>
                                     </div>
                                     {subTasks.length > 0 && (
-                                      <div className="mt-2 ml-4 space-y-1 border-l-2 border-green-200 dark:border-green-800 pl-2">
+                                      <div className="mt-2 ml-9 space-y-1 border-l-2 border-green-200 dark:border-green-800 pl-2">
                                         {subTasks.map((subTask: any) => (
                                           <div key={subTask.id} className="flex items-center gap-1.5 text-xs">
                                             <div className={`w-1.5 h-1.5 rounded-full ${subTask.status === 'completed' ? 'bg-green-500' : 'bg-gray-400'}`} />
