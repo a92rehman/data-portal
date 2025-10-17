@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
@@ -26,6 +26,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
+  const searchString = useSearch();
   const [filterStatus, setFilterStatus] = useState("");
   const [filterAssignee, setFilterAssignee] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -58,6 +59,37 @@ export default function Tasks() {
     queryKey: ["/api/users/analysts"],
     enabled: isAuthenticated && isTeamLead,
   });
+
+  // Check for requestId URL param and fetch specific request
+  useEffect(() => {
+    const urlParams = new URLSearchParams(searchString);
+    const requestId = urlParams.get('requestId');
+    
+    if (requestId) {
+      // Fetch the specific request directly
+      fetch(`/api/requests/${requestId}`, {
+        credentials: 'include',
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch request: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(request => {
+          if (request && request.id) {
+            setSelectedRequest(request);
+          }
+          // Clear the URL param
+          setLocation(location);
+        })
+        .catch(err => {
+          console.error('Failed to fetch request:', err);
+          // Clear the URL param
+          setLocation(location);
+        });
+    }
+  }, [searchString, location, setLocation]);
 
   // Organize tasks with sub-tasks nested under parents
   const parentTasks = tasks.filter(t => !t.parentTaskId);

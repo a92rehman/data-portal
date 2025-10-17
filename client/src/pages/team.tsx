@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +15,9 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
+import RequestDetail from "@/components/request-detail";
 import { Users, Mail, UserCog, UserMinus, Settings, UserPlus } from "lucide-react";
-import type { User } from "@shared/schema";
+import type { User, DataRequestWithDetails } from "@shared/schema";
 import emailjs from "@emailjs/browser";
 
 export default function Team() {
@@ -45,8 +46,10 @@ export default function Team() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const searchString = useSearch();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
@@ -66,6 +69,37 @@ export default function Team() {
     queryKey: ["/api/users"],
     enabled: isDataLead,
   });
+
+  // Check for requestId URL param and fetch specific request
+  useEffect(() => {
+    const urlParams = new URLSearchParams(searchString);
+    const requestId = urlParams.get('requestId');
+    
+    if (requestId) {
+      // Fetch the specific request directly
+      fetch(`/api/requests/${requestId}`, {
+        credentials: 'include',
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch request: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(request => {
+          if (request && request.id) {
+            setSelectedRequest(request);
+          }
+          // Clear the URL param
+          setLocation(location);
+        })
+        .catch(err => {
+          console.error('Failed to fetch request:', err);
+          // Clear the URL param
+          setLocation(location);
+        });
+    }
+  }, [searchString, location, setLocation]);
 
   const updateUserMutation = useMutation({
     mutationFn: async (data: { userId: string; firstName?: string; lastName?: string; email?: string; role?: string; department?: string }) => {
@@ -730,6 +764,22 @@ export default function Team() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Request Detail Dialog */}
+      {selectedRequest && (
+        <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
+          <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden [&>button]:hidden" aria-describedby={undefined}>
+            <RequestDetail 
+              request={selectedRequest}
+              onClose={() => setSelectedRequest(null)}
+              onUpdate={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+                setSelectedRequest(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
