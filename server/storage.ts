@@ -873,6 +873,7 @@ export class DatabaseStorage implements IStorage {
         status: 'in_progress', // Automatically set to In Progress when assigned
         assignedToId: analystId,
         dueDate: dueDate || undefined,
+        workStartedAt: new Date(), // Record when work started
       })
       .where(eq(dataRequests.id, id))
       .returning();

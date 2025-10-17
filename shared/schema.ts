@@ -146,6 +146,9 @@ export const dataRequests = pgTable("data_requests", {
   reviewedAt: timestamp("reviewed_at"),
   rejectionReason: text("rejection_reason"),
   
+  // Work tracking
+  workStartedAt: timestamp("work_started_at"), // When analyst started working on the request
+  
   // Delivery fields
   deliveryType: varchar("delivery_type"), // "attachment", "link", or "text"
   deliveryLink: text("delivery_link"), // Link if delivery type is link
