@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink } from "lucide-react";
+import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink, Edit2, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskWithDetails, User, DataRequestWithDetails } from "@shared/schema";
 
@@ -727,10 +727,18 @@ function TaskDetailDialog({
   const [showSubTaskForm, setShowSubTaskForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingSubTaskId, setDeletingSubTaskId] = useState<string | null>(null);
+  const [editingDueDate, setEditingDueDate] = useState(false);
+  const [dueDateValue, setDueDateValue] = useState(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
 
   const isTeamLead = (user as any)?.role === "team_lead";
   const isAnalyst = (user as any)?.role === "analyst";
   const isSubTask = !!task.parentTaskId; // Check if this task is itself a subtask
+  
+  // Update dueDateValue when task changes
+  useEffect(() => {
+    setDueDateValue(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
+    setEditingDueDate(false);
+  }, [task.id, task.dueDate]);
   
   // Determine if user can reassign THIS task based on task type
   // Main tasks: only Data Lead can reassign
@@ -782,6 +790,26 @@ function TaskDetailDialog({
       toast({
         title: "Error",
         description: error.message || "Failed to update assignee",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateDueDateMutation = useMutation({
+    mutationFn: async (dueDate: string | null) => {
+      return await apiRequest("PATCH", `/api/tasks/${task.id}`, { dueDate });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+      toast({ title: "Success", description: "Due date updated" });
+      setEditingDueDate(false);
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update due date",
         variant: "destructive",
       });
     },
@@ -951,17 +979,62 @@ function TaskDetailDialog({
             </Card>
 
             {/* Due Date Card */}
-            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
                   <CalendarIcon className="w-4 h-4 text-purple-600 dark:text-purple-300" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Due Date</Label>
-                  <p className="text-sm font-medium mt-0.5 truncate">
-                    {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No due date"}
-                  </p>
+                  {editingDueDate ? (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Input
+                        type="date"
+                        value={dueDateValue}
+                        onChange={(e) => setDueDateValue(e.target.value)}
+                        className="h-7 text-xs"
+                        data-testid="input-edit-due-date"
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => updateDueDateMutation.mutate(dueDateValue || null)}
+                        disabled={updateDueDateMutation.isPending}
+                        data-testid="button-save-due-date"
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => {
+                          setEditingDueDate(false);
+                          setDueDateValue(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
+                        }}
+                        data-testid="button-cancel-due-date"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium mt-0.5 truncate">
+                      {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "No due date"}
+                    </p>
+                  )}
                 </div>
+                {isTeamLead && !editingDueDate && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setEditingDueDate(true)}
+                    data-testid="button-edit-due-date"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </Card>
 

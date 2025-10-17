@@ -2118,6 +2118,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
 
+      // If updating dueDate, only Data Lead can edit
+      if (req.body.dueDate !== undefined) {
+        const isDataLead = user?.role === 'team_lead';
+        if (!isDataLead) {
+          return res.status(403).json({ message: "Only Data Lead can edit due dates" });
+        }
+      }
+
       // If updating assignedToId, enforce assignment rules
       if (req.body.assignedToId !== undefined) {
         const isMainTask = !task.parentTaskId;
