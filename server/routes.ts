@@ -1715,11 +1715,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Create notification for requester
         try {
+          const analystFullName = `${assignedAnalyst?.firstName || ''} ${assignedAnalyst?.lastName || ''}`.trim() || assignedAnalyst?.email || 'an analyst';
+          const dataLeadName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Data Lead';
+          
           await storage.createNotification({
             userId: requester.id,
             type: 'request_accepted',
-            title: 'Request Accepted',
-            message: `Your request "${request.title}" has been accepted and assigned to ${assignedAnalyst?.firstName || assignedAnalyst?.email || 'an analyst'}`,
+            title: 'Request Accepted & In Progress',
+            message: `Your request "${request.title}" has been accepted by ${dataLeadName} and assigned to ${analystFullName}. Work has started and is expected to be completed by ${dueDateString}.`,
             requestId: request.id,
             read: 'false',
           });
