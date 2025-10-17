@@ -1029,7 +1029,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">Submitted</p>
                         <Badge variant="outline" className="text-xs">
-                          {new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                          {request.createdAt ? new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : 'N/A'}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -1965,7 +1965,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 )}
 
                 {/* Manual Status Controls - For Data Lead and Analyst */}
-                {(isTeamLead || (isAnalyst && isAssignedToMe)) && request.status === "in_progress" && (
+                {(isTeamLead || (isAnalyst && isAssignedToMe)) && (request.status === "in_progress" || request.status === "blocked" || request.status === "accepted") && (
                   <div className="space-y-3">
                     <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                       <Label className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2 block">
@@ -1988,7 +1988,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
-                        Change status to Blocked if you encounter issues, or revert to Accepted if needed
+                        Change status to Blocked if you encounter issues, or resume with In Progress when ready
                       </p>
                     </div>
                     
