@@ -6,7 +6,18 @@ DataHub is a full-stack data request management system designed to streamline da
 
 ## Recent Changes (October 17, 2025)
 
-### Subtask Due Date Feature (Latest)
+### Task Due Date Editing (Latest)
+- **Data Lead Exclusive Editing**: Implemented due date editing functionality for tasks and subtasks
+  - Only Data Lead role can edit due dates (enforced in backend and UI)
+  - Edit button appears on hover over Due Date card (opacity transition)
+  - In-place editing with date input field and save/cancel controls (check/x icons)
+  - Backend authorization check prevents non-Data Leads from updating due dates (403 error)
+  - State management with useEffect ensures correct date displayed when switching between tasks
+  - Prevents stale date values from being submitted to wrong tasks
+  - Works for both main tasks and subtasks
+  - Test IDs: `button-edit-due-date`, `input-edit-due-date`, `button-save-due-date`, `button-cancel-due-date`
+
+### Subtask Due Date Feature
 - **Independent Due Date Selection**: Added due date field to subtask creation form
   - Subtasks now have their own independent due dates (not inherited from parent task)
   - Optional date picker added to SubTaskForm between description and status fields
