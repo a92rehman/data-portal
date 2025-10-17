@@ -2145,7 +2145,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const updatedTask = await storage.updateTask(req.params.id, req.body);
+      // Convert dueDate string to Date object if present
+      const updateData = { ...req.body };
+      if (updateData.dueDate !== undefined && updateData.dueDate !== null) {
+        updateData.dueDate = new Date(updateData.dueDate);
+      }
+
+      const updatedTask = await storage.updateTask(req.params.id, updateData);
       res.json(updatedTask);
     } catch (error) {
       console.error("Error updating task:", error);
