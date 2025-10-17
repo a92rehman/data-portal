@@ -1102,10 +1102,16 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Convert dueDate to Date object if it's a string
+    const updateData: any = { ...taskUpdate };
+    if (updateData.dueDate !== undefined && updateData.dueDate !== null && typeof updateData.dueDate === 'string') {
+      updateData.dueDate = new Date(updateData.dueDate);
+    }
+
     const [updated] = await db
       .update(tasks)
       .set({
-        ...taskUpdate,
+        ...updateData,
         ...(expectedTime !== undefined && { expectedTime }),
         updatedAt: new Date(),
       })
