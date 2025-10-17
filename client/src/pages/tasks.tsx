@@ -1259,6 +1259,7 @@ function SubTaskForm({
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
   const [assignedToId, setAssignedToId] = useState("self");
   const [status, setStatus] = useState("to_do");
 
@@ -1304,6 +1305,7 @@ function SubTaskForm({
       description: description.trim() || undefined,
       status,
       parentTaskId,
+      dueDate: dueDate || undefined,
       // "self" means auto-assign to creator (don't send assignedToId)
       // otherwise send the selected assignedToId
       assignedToId: assignedToId === "self" ? undefined : assignedToId,
@@ -1332,6 +1334,16 @@ function SubTaskForm({
             className="mt-1"
             rows={2}
             data-testid="textarea-subtask-description"
+          />
+        </div>
+        <div>
+          <Label className="text-xs">Due Date (Optional)</Label>
+          <Input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="mt-1"
+            data-testid="input-subtask-due-date"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
