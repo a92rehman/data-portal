@@ -3,6 +3,13 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { setupWebSocketServer, getWebSocketServer } from "./websocket";
+import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema, dataRequests } from "@shared/schema";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail, sendAnalystCredentialsViaEmailJS, sendPasswordResetEmail, sendDeliveryEmail } from "./emailService";
+import { randomBytes } from "crypto";
+import { z } from "zod";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -23,11 +30,6 @@ function isAuthenticated(req: any, res: any, next: any) {
   }
   res.status(401).json({ message: "Unauthorized" });
 }
-import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema } from "@shared/schema";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail, sendAnalystCredentialsViaEmailJS, sendPasswordResetEmail, sendDeliveryEmail } from "./emailService";
-import { randomBytes } from "crypto";
-import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -2034,6 +2036,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create task
       const task = await storage.createTask(transformedData, req.user.id);
+      
+      // Auto-change request status to "in_progress" if task is linked to an "accepted" request
+      if (taskData.requestId) {
+        const request = await storage.getDataRequest(taskData.requestId);
+        
+        if (request && request.status === 'accepted') {
+          // Update request to in_progress and record workStartedAt using direct db access
+          const [updatedRequest] = await db
+            .update(dataRequests)
+            .set({
+              status: 'in_progress',
+              workStartedAt: new Date(),
+            })
+            .where(eq(dataRequests.id, taskData.requestId))
+            .returning();
+          
+          // Send notification to requester
+          const requester = await storage.getUser(request.requestedById);
+          const analyst = await storage.getUser(req.user.id);
+          const dataLead = request.reviewedById ? await storage.getUser(request.reviewedById) : null;
+          
+          if (requester && analyst) {
+            const dueDateString = request.dueDate 
+              ? new Date(request.dueDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+              : "not set";
+            
+            const leadName = dataLead 
+              ? `${dataLead.firstName} ${dataLead.lastName}`
+              : "Data Lead";
+            
+            // Send email notification using existing email service
+            try {
+              await sendAssignmentEmail({
+                assigneeName: `${requester.firstName || ''} ${requester.lastName || ''}`.trim() || requester.email,
+                assigneeEmail: requester.email,
+                taskTitle: request.title,
+                taskDescription: request.primaryQuestion || '',
+                taskId: request.id,
+                dueDate: dueDateString,
+                priority: request.priority,
+                assignerName: `${analyst.firstName || ''} ${analyst.lastName || ''}`.trim() || analyst.email,
+                department: request.department,
+              });
+              console.log(`[email] Work started notification sent to ${requester.email}`);
+            } catch (emailError) {
+              console.error("[email] Failed to send work started notification:", emailError);
+            }
+            
+            // Send in-app notification
+            await storage.createNotification({
+              userId: requester.id,
+              type: 'status_changed',
+              title: 'Work Started on Your Request',
+              message: `${analyst.firstName} ${analyst.lastName} has started working on "${request.title}"`,
+              requestId: request.id,
+            });
+          }
+        }
+      }
       
       res.json(task);
     } catch (error) {
