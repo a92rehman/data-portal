@@ -797,7 +797,9 @@ function TaskDetailDialog({
 
   const updateDueDateMutation = useMutation({
     mutationFn: async (dueDate: string | null) => {
-      return await apiRequest("PATCH", `/api/tasks/${task.id}`, { dueDate });
+      // Convert date string to ISO timestamp for the database
+      const formattedDate = dueDate ? new Date(dueDate).toISOString() : null;
+      return await apiRequest("PATCH", `/api/tasks/${task.id}`, { dueDate: formattedDate });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
