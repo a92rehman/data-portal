@@ -1102,11 +1102,26 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
+    // Build the update object with proper type conversions
+    const updateData: Record<string, any> = {};
+    
     // Convert dueDate to Date object if it's a string
-    const updateData: any = { ...taskUpdate };
-    if (updateData.dueDate !== undefined && updateData.dueDate !== null && typeof updateData.dueDate === 'string') {
-      updateData.dueDate = new Date(updateData.dueDate);
+    if (taskUpdate.dueDate !== undefined) {
+      if (taskUpdate.dueDate === null) {
+        updateData.dueDate = null;
+      } else if (typeof taskUpdate.dueDate === 'string') {
+        updateData.dueDate = new Date(taskUpdate.dueDate);
+      } else {
+        updateData.dueDate = taskUpdate.dueDate;
+      }
     }
+    
+    // Copy over other fields
+    Object.keys(taskUpdate).forEach(key => {
+      if (key !== 'dueDate') {
+        updateData[key] = taskUpdate[key as keyof typeof taskUpdate];
+      }
+    });
 
     const [updated] = await db
       .update(tasks)
