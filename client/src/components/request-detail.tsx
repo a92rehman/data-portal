@@ -52,7 +52,8 @@ import {
   ListTodo,
   ListChecks,
   Plus,
-  Users
+  Users,
+  PlayCircle
 } from "lucide-react";
 import type { DataRequestWithDetails, User } from "@shared/schema";
 import { ObjectUploader } from "@/components/ObjectUploader";
@@ -935,8 +936,16 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </Badge>
                 )}
 
-                {/* Show "Request Accepted" badge for other accepted statuses (accepted, assigned, in_progress, blocked) */}
-                {(request.status === "accepted" || request.status === "assigned" || request.status === "in_progress" || request.status === "blocked") && !request.rejectionReason && (
+                {/* Show "Request Accepted & In Progress" badge for in_progress status with work started info */}
+                {request.status === "in_progress" && request.workStartedAt && !request.rejectionReason && (
+                  <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold" data-testid="badge-request-in-progress">
+                    <CheckCircle className="w-4 h-4 mr-1.5" />
+                    Request Accepted & In Progress
+                  </Badge>
+                )}
+                
+                {/* Show "Request Accepted" badge for other accepted statuses (accepted, assigned, blocked) */}
+                {(request.status === "accepted" || request.status === "assigned" || request.status === "blocked") && !request.rejectionReason && (
                   <Badge className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 font-semibold" data-testid="badge-request-accepted">
                     <Check className="w-4 h-4 mr-1.5" />
                     Request Accepted
@@ -970,6 +979,27 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </h3>
                   <p className="text-sm text-rose-700 dark:text-rose-400 leading-relaxed" data-testid="text-rejection-reason">
                     {request.rejectionReason}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Work Started Info - Shown when request is in progress */}
+        {request.status === "in_progress" && request.workStartedAt && request.assignedTo && (
+          <div className="mx-6 mt-4 mb-4">
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 border-l-4 border-emerald-500 dark:border-emerald-600 p-4 rounded-r-lg shadow-sm" data-testid="work-started-alert">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <PlayCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-1">
+                    Work Started
+                  </h3>
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400 leading-relaxed" data-testid="text-work-started-info">
+                    {request.assignedTo.firstName} {request.assignedTo.lastName} started working on this request on {new Date(request.workStartedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
                   </p>
                 </div>
               </div>
