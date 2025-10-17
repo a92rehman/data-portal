@@ -1011,37 +1011,37 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         {(request.reviewedAt || request.workStartedAt || request.deliveredAt) && (
           <div className="mx-6 mt-4 mb-4">
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   Status History
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="relative pt-8 pb-4">
+              <CardContent className="pb-3">
+                <div className="relative pt-6 pb-2">
                   {/* Horizontal line */}
-                  <div className="absolute top-8 left-8 right-8 h-0.5 bg-gradient-to-r from-blue-200 via-emerald-200 via-purple-200 to-green-200 dark:from-blue-800 dark:via-emerald-800 dark:via-purple-800 dark:to-green-800" />
+                  <div className="absolute top-6 left-8 right-8 h-0.5 bg-gradient-to-r from-blue-200 via-emerald-200 via-purple-200 to-green-200 dark:from-blue-800 dark:via-emerald-800 dark:via-purple-800 dark:to-green-800" />
                   
                   <div className="flex justify-between items-start px-4">
                     {/* Submitted */}
                     <div className="relative flex-1 text-center" data-testid="timeline-submitted">
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-4 w-4 h-4 rounded-full bg-blue-500 dark:bg-blue-400 border-2 border-white dark:border-gray-900" />
-                      <div className="mt-4">
+                      <div className="absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full bg-blue-500 dark:bg-blue-400 border-2 border-white dark:border-gray-900" />
+                      <div className="mt-3">
                         <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Submitted</p>
                         <Badge variant="outline" className="text-[10px] px-1 py-0">
-                          {request.createdAt ? new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : 'N/A'}
+                          {request.createdAt ? new Date(request.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : 'N/A'}
                         </Badge>
                       </div>
                     </div>
 
                     {/* Accepted */}
                     <div className={`relative flex-1 text-center ${!request.reviewedAt && 'opacity-40'}`} data-testid="timeline-accepted">
-                      <div className={`absolute left-1/2 -translate-x-1/2 -top-4 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.reviewedAt ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                      <div className="mt-4">
+                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.reviewedAt ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                      <div className="mt-3">
                         <p className={`text-xs font-semibold mb-1 ${request.reviewedAt ? 'text-emerald-700 dark:text-emerald-400' : 'text-muted-foreground'}`}>Accepted</p>
                         {request.reviewedAt && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            {new Date(request.reviewedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            {new Date(request.reviewedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </Badge>
                         )}
                       </div>
@@ -1049,12 +1049,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
                     {/* Work Started */}
                     <div className={`relative flex-1 text-center ${!request.workStartedAt && 'opacity-40'}`} data-testid="timeline-work-started">
-                      <div className={`absolute left-1/2 -translate-x-1/2 -top-4 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.workStartedAt ? 'bg-purple-500 dark:bg-purple-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                      <div className="mt-4">
+                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.workStartedAt ? 'bg-purple-500 dark:bg-purple-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                      <div className="mt-3">
                         <p className={`text-xs font-semibold mb-1 ${request.workStartedAt ? 'text-purple-700 dark:text-purple-400' : 'text-muted-foreground'}`}>Work Started</p>
                         {request.workStartedAt && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            {new Date(request.workStartedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            {new Date(request.workStartedAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </Badge>
                         )}
                       </div>
@@ -1062,12 +1062,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
 
                     {/* Delivered/Completed */}
                     <div className={`relative flex-1 text-center ${!request.deliveredAt && 'opacity-40'}`} data-testid="timeline-completed">
-                      <div className={`absolute left-1/2 -translate-x-1/2 -top-4 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.deliveredAt ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                      <div className="mt-4">
+                      <div className={`absolute left-1/2 -translate-x-1/2 -top-3 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${request.deliveredAt ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                      <div className="mt-3">
                         <p className={`text-xs font-semibold mb-1 ${request.deliveredAt ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}`}>Completed</p>
                         {request.deliveredAt && (
                           <Badge variant="outline" className="text-[10px] px-1 py-0">
-                            {new Date(request.deliveredAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            {new Date(request.deliveredAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </Badge>
                         )}
                       </div>
@@ -1734,55 +1734,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </div>
                 )}
 
-                {/* Manual Status Controls - For Data Lead and Analyst */}
-                {(isTeamLead || (isAnalyst && isAssignedToMe)) && (request.status === "in_progress" || request.status === "blocked" || request.status === "accepted") && (
-                  <div className="space-y-3">
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                      <Label className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2 block">
-                        Manual Status Control
-                      </Label>
-                      <Select 
-                        value={request.status} 
-                        onValueChange={(value) => {
-                          updateStatusMutation.mutate({ status: value });
-                        }}
-                        data-testid="select-manual-status"
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="blocked">Blocked</SelectItem>
-                          <SelectItem value="accepted">Revert to Accepted</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
-                        Change status to Blocked if you encounter issues, or resume with In Progress when ready
-                      </p>
-                    </div>
-                    
-                    {/* Request Completed Button */}
-                    <Button
-                      onClick={() => completeRequestMutation.mutate()}
-                      disabled={completeRequestMutation.isPending}
-                      data-testid="button-mark-complete"
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {completeRequestMutation.isPending ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                          Completing...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Mark as Complete
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
