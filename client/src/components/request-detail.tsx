@@ -1007,6 +1007,96 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           </div>
         )}
 
+        {/* Status History Timeline */}
+        {(request.reviewedAt || request.workStartedAt || request.deliveredAt) && (
+          <div className="mx-6 mt-4 mb-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Status History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="relative pl-6">
+                  {/* Vertical line */}
+                  <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-emerald-200 to-green-200 dark:from-blue-800 dark:via-emerald-800 dark:to-green-800" />
+                  
+                  {/* Submitted */}
+                  <div className="relative mb-6" data-testid="timeline-submitted">
+                    <div className="absolute left-[-1.35rem] top-1 w-4 h-4 rounded-full bg-blue-500 dark:bg-blue-400 border-2 border-white dark:border-gray-900" />
+                    <div className="ml-4">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">Submitted</p>
+                        <Badge variant="outline" className="text-xs">
+                          {new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Request created by {request.requestedBy.firstName} {request.requestedBy.lastName}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Accepted */}
+                  {request.reviewedAt && (
+                    <div className="relative mb-6" data-testid="timeline-accepted">
+                      <div className="absolute left-[-1.35rem] top-1 w-4 h-4 rounded-full bg-emerald-500 dark:bg-emerald-400 border-2 border-white dark:border-gray-900" />
+                      <div className="ml-4">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">Accepted</p>
+                          <Badge variant="outline" className="text-xs">
+                            {new Date(request.reviewedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Request reviewed and accepted
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Work Started */}
+                  {request.workStartedAt && request.assignedTo && (
+                    <div className="relative mb-6" data-testid="timeline-work-started">
+                      <div className="absolute left-[-1.35rem] top-1 w-4 h-4 rounded-full bg-purple-500 dark:bg-purple-400 border-2 border-white dark:border-gray-900" />
+                      <div className="ml-4">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-purple-700 dark:text-purple-400">Work Started</p>
+                          <Badge variant="outline" className="text-xs">
+                            {new Date(request.workStartedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {request.assignedTo.firstName} {request.assignedTo.lastName} started working on this request
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delivered/Completed */}
+                  {request.deliveredAt && (
+                    <div className="relative" data-testid="timeline-completed">
+                      <div className="absolute left-[-1.35rem] top-1 w-4 h-4 rounded-full bg-green-500 dark:bg-green-400 border-2 border-white dark:border-gray-900" />
+                      <div className="ml-4">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-green-700 dark:text-green-400">Completed</p>
+                          <Badge variant="outline" className="text-xs">
+                            {new Date(request.deliveredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Request delivered and completed
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* 2. Info Cards Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 px-6 py-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
           {/* 1. Requested By Card */}
