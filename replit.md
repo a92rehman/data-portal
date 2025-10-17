@@ -4,9 +4,16 @@
 
 DataHub is a full-stack data request management system designed to streamline data request and analytics workflows. It facilitates data request submission by team leads and efficient management, review, and completion by data analysts. The system offers features such as request tracking with status management, commenting, email/password authentication, task management with PERT time estimation, and comprehensive analytics dashboards. Built with React, shadcn/ui, Express, and PostgreSQL, DataHub aims to provide a modern, responsive user experience, improve transparency in data operations, and deliver actionable insights.
 
-## Recent Changes (October 16, 2025)
+## Recent Changes (October 17, 2025)
 
-### Team Tasks UI Overhaul (Latest)
+### Subtask Due Date Feature (Latest)
+- **Independent Due Date Selection**: Added due date field to subtask creation form
+  - Subtasks now have their own independent due dates (not inherited from parent task)
+  - Optional date picker added to SubTaskForm between description and status fields
+  - Date properly saved to database via dueDate field in tasks table
+  - Test ID: `input-subtask-due-date` for automated testing
+
+### Team Tasks UI Overhaul
 - **Removed PERT Time Display**: Eliminated time clock (expected time) from all task displays since PERT calculation was removed
 - **Removed Order Numbers**: Removed order badges (#1, #2, etc.) for cleaner visual hierarchy
 - **Clickable Request Badge**: Made request task badge clickable to directly open linked request details
