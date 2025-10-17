@@ -1964,26 +1964,54 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </div>
                 )}
 
-                {/* Request Completed Button - For Analyst or Team Lead when assigned and in_progress */}
-                {(isAnalyst || (isTeamLead && isAssignedToMe)) && request.status === "in_progress" && (
-                  <Button
-                    onClick={() => completeRequestMutation.mutate()}
-                    disabled={completeRequestMutation.isPending}
-                    data-testid="button-mark-complete"
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {completeRequestMutation.isPending ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Completing...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Mark as Complete
-                      </>
-                    )}
-                  </Button>
+                {/* Manual Status Controls - For Data Lead and Analyst */}
+                {(isTeamLead || (isAnalyst && isAssignedToMe)) && request.status === "in_progress" && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <Label className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-2 block">
+                        Manual Status Control
+                      </Label>
+                      <Select 
+                        value={request.status} 
+                        onValueChange={(value) => {
+                          updateStatusMutation.mutate({ status: value });
+                        }}
+                        data-testid="select-manual-status"
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="blocked">Blocked</SelectItem>
+                          <SelectItem value="accepted">Revert to Accepted</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                        Change status to Blocked if you encounter issues, or revert to Accepted if needed
+                      </p>
+                    </div>
+                    
+                    {/* Request Completed Button */}
+                    <Button
+                      onClick={() => completeRequestMutation.mutate()}
+                      disabled={completeRequestMutation.isPending}
+                      data-testid="button-mark-complete"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {completeRequestMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Completing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Mark as Complete
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
