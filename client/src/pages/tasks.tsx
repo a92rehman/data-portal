@@ -1495,6 +1495,7 @@ function CreateTaskDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [status, setStatus] = useState("to_do");
 
   const createTaskMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -1505,6 +1506,7 @@ function CreateTaskDialog({
       setTitle("");
       setDescription("");
       setDueDate("");
+      setStatus("to_do");
       onSuccess();
     },
     onError: (error: Error) => {
@@ -1529,7 +1531,7 @@ function CreateTaskDialog({
     const taskData: any = {
       title: title.trim(),
       description: description.trim() || undefined,
-      status: "to_do",
+      status,
       dueDate: dueDate || undefined,
     };
 
@@ -1583,6 +1585,21 @@ function CreateTaskDialog({
               className="mt-1.5"
               data-testid="input-due-date"
             />
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="mt-1.5" data-testid="select-task-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="to_do">To Do</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground mt-1.5">
               Task will be automatically assigned to you. Data Lead can reassign it later if needed.
             </p>
