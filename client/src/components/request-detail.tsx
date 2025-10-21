@@ -2663,6 +2663,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               Cancel
             </Button>
             <Button
+              variant="default"
               onClick={() => {
                 handleAssignAnalyst();
                 setShowEditAssignedToDialog(false);
