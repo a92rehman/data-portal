@@ -1370,6 +1370,395 @@ export default function RequestWorkspace() {
                 </Collapsible>
               )}
 
+              {/* User Investigation Fields */}
+              {selectedType === "user_investigation" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(280, 100%, 97%) 0%, hsl(300, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                          User Investigation Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="investigationPurpose"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>What is the purpose of this investigation? <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Example: verify attendance data, check missing visit logs, confirm teacher's activity"
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-investigation-purpose"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
+                          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Please provide identification details:</p>
+                          
+                          <FormField
+                            control={form.control}
+                            name="userName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>User/Teacher Name <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Full name of the user"
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-user-name"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="userMobile"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Mobile Number <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="e.g., +92 300 1234567"
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-user-mobile"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                              control={form.control}
+                              name="userProfileId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Profile ID (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="Profile ID"
+                                      {...field}
+                                      value={field.value || ""}
+                                      data-testid="input-user-profile-id"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="userId"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>User ID (Optional)</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      placeholder="User ID"
+                                      {...field}
+                                      value={field.value || ""}
+                                      data-testid="input-user-id"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <FormField
+                            control={form.control}
+                            name="schoolEmisCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>School EMIS Code <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="School EMIS Code"
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-school-emis-code"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
+              {/* Training (Capacity Building) Fields */}
+              {selectedType === "training" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(160, 100%, 97%) 0%, hsl(180, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                          Training (Capacity Building) Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="trainingTopic"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>What skill or topic do you want to learn or strengthen? <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Example: Using dashboards, extracting data from BigQuery, interpreting engagement metrics"
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="input-training-topic"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="trainingHours"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>How many hours of basic training do you require? <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number"
+                                  step="0.5"
+                                  min="0.5"
+                                  placeholder="Example: 1 hour for using dashboards, 2 hours for running queries in BQ"
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                                  data-testid="input-training-hours"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
+              {/* Experimentation Fields */}
+              {selectedType === "experimentation" && (
+                <Collapsible open={section4Open} onOpenChange={setSection4Open}>
+                  <div className="rounded-lg border border-border" style={{background: 'linear-gradient(135deg, hsl(260, 100%, 97%) 0%, hsl(280, 100%, 98%) 100%)'}}>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        type="button"
+                        className="w-full px-5 py-3 flex items-center justify-between hover:opacity-80 transition-opacity"
+                      >
+                        <h3 className="font-semibold text-sm bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                          Experimentation Details
+                        </h3>
+                        {section4Open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="space-y-4 px-5 pb-5">
+                        <FormField
+                          control={form.control}
+                          name="experimentSubType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Type of Experimentation Support <span className="text-red-500">*</span></FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-experiment-subtype">
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type..." />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="design_new">Support in Designing a New Experiment</SelectItem>
+                                  <SelectItem value="review">Review the Experiment</SelectItem>
+                                  <SelectItem value="analysis">Support in Analysis</SelectItem>
+                                  <SelectItem value="implementation">Support in Implementation</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {form.watch("experimentSubType") === "design_new" && (
+                          <FormField
+                            control={form.control}
+                            name="experimentProblem"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Explain the problem you are trying to solve and its expected impact <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Describe the problem, hypothesis, and expected impact..."
+                                    rows={4}
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-experiment-problem"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+
+                        {form.watch("experimentSubType") === "review" && (
+                          <FormField
+                            control={form.control}
+                            name="experimentFileLink"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Attach the experiment file or link for review <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    placeholder="Paste link to Google Doc, Notion page, or file"
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-experiment-file-link"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+
+                        {form.watch("experimentSubType") === "analysis" && (
+                          <>
+                            <FormField
+                              control={form.control}
+                              name="experimentAnalysisType"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>What kind of analysis support do you require? <span className="text-red-500">*</span></FormLabel>
+                                  <FormControl>
+                                    <Textarea 
+                                      placeholder="Example: cleaning data, running comparisons, visualization, interpreting results"
+                                      rows={3}
+                                      {...field}
+                                      value={field.value || ""}
+                                      data-testid="input-experiment-analysis-type"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="experimentDatasetLink"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Attach the dataset and include a short note explaining the variables <span className="text-red-500">*</span></FormLabel>
+                                  <FormControl>
+                                    <Textarea 
+                                      placeholder="Paste link to dataset and explain the key variables..."
+                                      rows={3}
+                                      {...field}
+                                      value={field.value || ""}
+                                      data-testid="input-experiment-dataset-link"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </>
+                        )}
+
+                        {form.watch("experimentSubType") === "implementation" && (
+                          <FormField
+                            control={form.control}
+                            name="experimentImplementationType"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>What type of implementation support do you require and why? <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Example: help with randomization, monitoring rollout, data tracking setup, etc."
+                                    rows={4}
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-experiment-implementation-type"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+
+                        {form.watch("experimentSubType") === "other" && (
+                          <FormField
+                            control={form.control}
+                            name="experimentOtherDetails"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Explain your request briefly <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Describe what you need help with..."
+                                    rows={4}
+                                    {...field}
+                                    value={field.value || ""}
+                                    data-testid="input-experiment-other-details"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
+
               {/* Info Card */}
               <Card className="bg-muted">
                 <CardContent className="p-4">
