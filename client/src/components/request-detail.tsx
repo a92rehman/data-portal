@@ -784,6 +784,16 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   };
 
   const handleDeliver = () => {
+    // Validate that at least one task exists
+    if (!requestTasks || requestTasks.length === 0) {
+      toast({
+        title: "Cannot Deliver",
+        description: "Please create at least one task before delivering this request.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const data: any = { deliveryType };
     
     if (deliveryType === "link") {

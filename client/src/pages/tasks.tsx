@@ -476,7 +476,9 @@ function TaskCard({
                   <SelectItem value="to_do">To Do</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="blocked">Blocked</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="completed" disabled={!!(task.requestId && !task.parentTaskId)}>
+                    Completed {task.requestId && !task.parentTaskId && "(via delivery)"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -703,7 +705,9 @@ function TaskRow({
             <SelectItem value="to_do">To Do</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="blocked">Blocked</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="completed" disabled={!!(task.requestId && !task.parentTaskId)}>
+              Completed {task.requestId && !task.parentTaskId && "(via delivery)"}
+            </SelectItem>
           </SelectContent>
         </Select>
       </TableCell>
@@ -963,7 +967,9 @@ function TaskDetailDialog({
                   <SelectItem value="to_do">To Do</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="blocked">Blocked</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="completed" disabled={!!(task.requestId && !task.parentTaskId)}>
+                    Completed {task.requestId && !task.parentTaskId && "(via delivery)"}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

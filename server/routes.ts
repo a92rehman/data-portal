@@ -1457,6 +1457,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "File URL and file name are required when delivery type is attachment" });
       }
 
+      // Validate that at least one task exists for the request
+      const linkedTasks = await storage.getTasks({ requestId: req.params.id });
+      if (!linkedTasks || linkedTasks.length === 0) {
+        return res.status(400).json({ message: "Cannot deliver request without creating at least one task. Please create a task first." });
+      }
+
       const request = await storage.deliverRequest(
         req.params.id, 
         deliveryType, 
@@ -1470,14 +1476,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Request not found" });
       }
 
-      // Auto-complete all tasks linked to this request
+      // Auto-complete all tasks linked to this request (parent tasks and subtasks)
       try {
-        const linkedTasks = await storage.getTasks({ requestId: request.id });
-        for (const task of linkedTasks) {
+        // Get all tasks once for efficient lookup
+        const allTasks = await storage.getTasks({});
+        
+        // Helper function to recursively complete a task and all its descendants
+        const completeTaskAndDescendants = async (taskId: number) => {
+          const task = allTasks.find(t => t.id === taskId);
+          if (!task) return;
+          
+          // Complete this task
           if (task.status !== 'completed') {
             await storage.updateTaskStatus(task.id, 'completed');
             console.log(`[auto-complete] Task ${task.id} marked as completed for delivered request ${request.id}`);
           }
+          
+          // Find and recursively complete all direct child subtasks
+          const childSubtasks = allTasks.filter(t => t.parentTaskId === taskId);
+          for (const child of childSubtasks) {
+            await completeTaskAndDescendants(child.id);
+          }
+        };
+        
+        // Get all parent tasks linked to the request
+        const parentTasks = await storage.getTasks({ requestId: request.id });
+        
+        // Complete each parent task and all its descendants
+        for (const parentTask of parentTasks) {
+          await completeTaskAndDescendants(parentTask.id);
         }
       } catch (taskError) {
         console.error('[auto-complete] Failed to auto-complete linked tasks:', taskError);
@@ -2240,6 +2267,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!canUpdate) {
         return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Prevent completing parent tasks linked to requests manually
+      // They must be completed through request delivery
+      if (status === 'completed' && task.requestId && !task.parentTaskId) {
+        return res.status(400).json({ 
+          message: "Cannot complete request-linked tasks manually. Tasks will be automatically completed when the request is delivered." 
+        });
       }
 
       const updatedTask = await storage.updateTaskStatus(req.params.id, status);
