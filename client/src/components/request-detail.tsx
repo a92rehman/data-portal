@@ -1849,9 +1849,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         </div>
 
         {/* 6. Tasks Section - Full Width with Collapsible Groups */}
-        {(request.assignedToId || (user as any)?.role === 'team_lead' || (user as any)?.role === 'analyst') && (
-          <div className="px-6 py-4 border-t">
-            <Card>
+        <div className="px-6 py-4 border-t">
+          <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -2121,7 +2120,6 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </CardContent>
             </Card>
           </div>
-        )}
       </ScrollArea>
 
       {/* Create Task Dialog - Compact */}
