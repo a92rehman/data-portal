@@ -137,6 +137,27 @@ export default function DataRequestForm() {
   const [otherDescription, setOtherDescription] = useState('');
   const [experimentDescription, setExperimentDescription] = useState('');
   const [experimentDocLink, setExperimentDocLink] = useState('');
+  
+  // User Investigation fields
+  const [investigationPurpose, setInvestigationPurpose] = useState('');
+  const [userName, setUserName] = useState('');
+  const [userMobile, setUserMobile] = useState('');
+  const [userProfileId, setUserProfileId] = useState('');
+  const [userId, setUserId] = useState('');
+  const [schoolEmisCode, setSchoolEmisCode] = useState('');
+  
+  // Training fields
+  const [trainingTopic, setTrainingTopic] = useState('');
+  const [trainingHours, setTrainingHours] = useState('');
+  
+  // Experimentation fields
+  const [experimentSubType, setExperimentSubType] = useState('');
+  const [experimentProblem, setExperimentProblem] = useState('');
+  const [experimentFileLink, setExperimentFileLink] = useState('');
+  const [experimentAnalysisType, setExperimentAnalysisType] = useState('');
+  const [experimentDatasetLink, setExperimentDatasetLink] = useState('');
+  const [experimentImplementationType, setExperimentImplementationType] = useState('');
+  const [experimentOtherDetails, setExperimentOtherDetails] = useState('');
 
 
   useEffect(() => {
@@ -686,59 +707,108 @@ export default function DataRequestForm() {
             </div>
           </>
         );
-      case 'metricChange':
+      case 'userInvestigation':
         return (
           <>
             <div className="mb-3">
-              <label className="text-sm font-medium">Metric Name *</label>
-              <Input placeholder="Metric name (e.g., LP Engagement)" className="mt-1" value={metricName} onChange={(e) => setMetricName(e.target.value)} />
+              <label className="text-sm font-medium">What is the purpose of this investigation? *</label>
+              <Textarea placeholder="Example: verify attendance data, check missing visit logs, confirm teacher's activity" className="mt-1" rows={3} value={investigationPurpose} onChange={(e) => setInvestigationPurpose(e.target.value)} />
             </div>
-            <div className="mb-3">
-              <label className="text-sm font-medium">Current Definition *</label>
-              <Textarea placeholder="What is the current definition?" className="mt-1" value={currentDefinition} onChange={(e) => setCurrentDefinition(e.target.value)} />
+            <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Please provide identification details:</p>
+              <div>
+                <label className="text-sm font-medium">User/Teacher Name *</label>
+                <Input placeholder="Full name of the user" className="mt-1" value={userName} onChange={(e) => setUserName(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Mobile Number *</label>
+                <Input placeholder="e.g., +92 300 1234567" className="mt-1" value={userMobile} onChange={(e) => setUserMobile(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium">Profile ID (Optional)</label>
+                  <Input placeholder="Profile ID" className="mt-1" value={userProfileId} onChange={(e) => setUserProfileId(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">User ID (Optional)</label>
+                  <Input placeholder="User ID" className="mt-1" value={userId} onChange={(e) => setUserId(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium">School EMIS Code *</label>
+                <Input placeholder="School EMIS Code" className="mt-1" value={schoolEmisCode} onChange={(e) => setSchoolEmisCode(e.target.value)} />
+              </div>
             </div>
-            <div className="mb-3">
-              <label className="text-sm font-medium">New Definition *</label>
-              <Textarea placeholder="What should the new definition be?" className="mt-1" value={newDefinition} onChange={(e) => setNewDefinition(e.target.value)} />
-            </div>
-            {renderCommonDecisionField()}
           </>
         );
-      case 'pipelineChange':
+      case 'training':
         return (
           <>
             <div className="mb-3">
-              <label className="text-sm font-medium">Dataset/Table *</label>
-              <Textarea placeholder="Which dataset/table requires change?" className="mt-1" value={pipelineDataset} onChange={(e) => setPipelineDataset(e.target.value)} />
+              <label className="text-sm font-medium">What skill or topic do you want to learn or strengthen? *</label>
+              <Textarea placeholder="Example: Using dashboards, extracting data from BigQuery, interpreting engagement metrics" className="mt-1" rows={3} value={trainingTopic} onChange={(e) => setTrainingTopic(e.target.value)} />
             </div>
-            <div className="mb-3">
-              <label className="text-sm font-medium">Modification Details *</label>
-              <Textarea placeholder="Describe the modification (schema, logic, backfill)" className="mt-1" value={pipelineModification} onChange={(e) => setPipelineModification(e.target.value)} />
+            <div>
+              <label className="text-sm font-medium">How many hours of basic training do you require? *</label>
+              <Input type="number" step="0.5" min="0.5" placeholder="Example: 1 hour for using dashboards, 2 hours for running queries in BQ" className="mt-1" value={trainingHours} onChange={(e) => setTrainingHours(e.target.value)} />
             </div>
-          </>
-        );
-      case 'recurringReport':
-        return (
-          <>
-            <div className="mb-3">
-              <label className="text-sm font-medium">Report Metrics *</label>
-              <Textarea placeholder="What data or metrics should this report include?" className="mt-1" value={reportMetrics} onChange={(e) => setReportMetrics(e.target.value)} />
-            </div>
-            {renderCommonDecisionField()}
-            {renderFrequencyFields()}
           </>
         );
       case 'experimentation':
         return (
           <>
             <div className="mb-3">
-              <label className="text-sm font-medium">Review the Experiment *</label>
-              <Textarea placeholder="Describe the experiment you want reviewed" className="mt-1" value={experimentDescription} onChange={(e) => setExperimentDescription(e.target.value)} />
+              <label className="text-sm font-medium">Type of Experimentation Support *</label>
+              <select className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:border-gray-600" value={experimentSubType} onChange={(e) => setExperimentSubType(e.target.value)}>
+                <option value="">-- Select type --</option>
+                <option value="design_new">Support in Designing a New Experiment</option>
+                <option value="review">Review the Experiment</option>
+                <option value="analysis">Support in Analysis</option>
+                <option value="implementation">Support in Implementation</option>
+                <option value="other">Other</option>
+              </select>
             </div>
-            <div className="mb-3">
-              <label className="text-sm font-medium">Document/Link *</label>
-              <Input placeholder="Provide a link or reference to the experiment document" className="mt-1" value={experimentDocLink} onChange={(e) => setExperimentDocLink(e.target.value)} />
-            </div>
+            
+            {experimentSubType === 'design_new' && (
+              <div className="mb-3">
+                <label className="text-sm font-medium">Explain the problem you are trying to solve and its expected impact *</label>
+                <Textarea placeholder="Describe the problem, hypothesis, and expected impact..." className="mt-1" rows={4} value={experimentProblem} onChange={(e) => setExperimentProblem(e.target.value)} />
+              </div>
+            )}
+            
+            {experimentSubType === 'review' && (
+              <div className="mb-3">
+                <label className="text-sm font-medium">Attach the experiment file or link for review *</label>
+                <Input placeholder="Paste link to Google Doc, Notion page, or file" className="mt-1" value={experimentFileLink} onChange={(e) => setExperimentFileLink(e.target.value)} />
+              </div>
+            )}
+            
+            {experimentSubType === 'analysis' && (
+              <>
+                <div className="mb-3">
+                  <label className="text-sm font-medium">What kind of analysis support do you require? *</label>
+                  <Textarea placeholder="Example: cleaning data, running comparisons, visualization, interpreting results" className="mt-1" rows={3} value={experimentAnalysisType} onChange={(e) => setExperimentAnalysisType(e.target.value)} />
+                </div>
+                <div className="mb-3">
+                  <label className="text-sm font-medium">Attach the dataset and include a short note explaining the variables *</label>
+                  <Textarea placeholder="Paste link to dataset and explain the key variables..." className="mt-1" rows={3} value={experimentDatasetLink} onChange={(e) => setExperimentDatasetLink(e.target.value)} />
+                </div>
+              </>
+            )}
+            
+            {experimentSubType === 'implementation' && (
+              <div className="mb-3">
+                <label className="text-sm font-medium">What type of implementation support do you require and why? *</label>
+                <Textarea placeholder="Example: help with randomization, monitoring rollout, data tracking setup, etc." className="mt-1" rows={4} value={experimentImplementationType} onChange={(e) => setExperimentImplementationType(e.target.value)} />
+              </div>
+            )}
+            
+            {experimentSubType === 'other' && (
+              <div className="mb-3">
+                <label className="text-sm font-medium">Explain your request briefly *</label>
+                <Textarea placeholder="Describe what you need help with..." className="mt-1" rows={4} value={experimentOtherDetails} onChange={(e) => setExperimentOtherDetails(e.target.value)} />
+              </div>
+            )}
           </>
         );
       case 'other':
@@ -849,20 +919,18 @@ export default function DataRequestForm() {
               )}
               <div className="md:col-span-2">
                 <label className="text-sm font-medium">Request Type *</label>
-                <select className="w-full mt-1 border rounded-md p-2" value={requestType} onChange={(e) => setRequestType(e.target.value)}>
+                <select className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:border-gray-600" value={requestType} onChange={(e) => setRequestType(e.target.value)}>
                   <option value="">-- Choose Type --</option>
-                  <option value="newDashboard">New Dashboard/Report</option>
-                  <option value="modifyDashboard">Modification to Existing Dashboard/Report</option>
-                  <option value="adhoc">Ad-hoc Data Analysis</option>
-                  <option value="extraction">One-time Data Extraction (CSV/Excel)</option>
-                  <option value="bug">Data Bug / Data Quality Issue</option>
-                  <option value="bqaccess">BigQuery Access Request</option>
-                  <option value="tracking">Event Tracking / Instrumentation</option>
-                  <option value="metricChange">Metric Definition / Business Rule Change</option>
-                  <option value="pipelineChange">Data Pipeline / Table Change</option>
-                  <option value="recurringReport">Scheduled / Recurring Report</option>
-                  <option value="experimentation">Experimentation</option>
-                  <option value="other">Other</option>
+                  <option value="userInvestigation">👤 User Investigation - Verify user data, check activity logs</option>
+                  <option value="extraction">📊 One-time Data Request - Export data as CSV/Excel</option>
+                  <option value="bqaccess">🔐 BigQuery/Tool Access - Request database or tool access</option>
+                  <option value="bug">🐛 Data Bug/Data Quality Issue - Report data inconsistencies</option>
+                  <option value="adhoc">📈 Ad-hoc Analysis - Deep-dive analysis on specific question</option>
+                  <option value="modifyDashboard">✏️ Modification to Existing Dashboard - Update existing reports</option>
+                  <option value="newDashboard">📋 New Dashboard - Create new reports or visualizations</option>
+                  <option value="training">🎓 Training (Capacity Building) - Learn data tools and skills</option>
+                  <option value="experimentation">🔬 Experimentation - Design, review, or analyze experiments</option>
+                  <option value="other">📝 Other - Any other data-related request</option>
                 </select>
               </div>
               <div className="md:col-span-2">
