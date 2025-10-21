@@ -67,6 +67,121 @@ const formSchema = insertDataRequestSchema.extend({
       });
     }
   }
+
+  // User Investigation validation
+  if (data.type === "user_investigation") {
+    if (!data.investigationPurpose || data.investigationPurpose.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Investigation purpose is required",
+        path: ["investigationPurpose"],
+      });
+    }
+    if (!data.userName || data.userName.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "User/Teacher Name is required",
+        path: ["userName"],
+      });
+    }
+    if (!data.userMobile || data.userMobile.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Mobile Number is required",
+        path: ["userMobile"],
+      });
+    }
+    if (!data.schoolEmisCode || data.schoolEmisCode.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "School EMIS Code is required",
+        path: ["schoolEmisCode"],
+      });
+    }
+  }
+
+  // Training validation
+  if (data.type === "training") {
+    if (!data.trainingTopic || data.trainingTopic.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Training topic is required",
+        path: ["trainingTopic"],
+      });
+    }
+    if (!data.trainingHours || data.trainingHours <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Training hours must be greater than 0",
+        path: ["trainingHours"],
+      });
+    }
+  }
+
+  // Experimentation validation
+  if (data.type === "experimentation") {
+    if (!data.experimentSubType || data.experimentSubType.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Experimentation sub-type is required",
+        path: ["experimentSubType"],
+      });
+    }
+    
+    // Sub-type specific validation
+    if (data.experimentSubType === "design_new") {
+      if (!data.experimentProblem || data.experimentProblem.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Problem description is required",
+          path: ["experimentProblem"],
+        });
+      }
+    }
+    if (data.experimentSubType === "review") {
+      if (!data.experimentFileLink || data.experimentFileLink.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Experiment file/link is required",
+          path: ["experimentFileLink"],
+        });
+      }
+    }
+    if (data.experimentSubType === "analysis") {
+      if (!data.experimentAnalysisType || data.experimentAnalysisType.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Analysis type is required",
+          path: ["experimentAnalysisType"],
+        });
+      }
+      if (!data.experimentDatasetLink || data.experimentDatasetLink.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Dataset link is required",
+          path: ["experimentDatasetLink"],
+        });
+      }
+    }
+    if (data.experimentSubType === "implementation") {
+      if (!data.experimentImplementationType || data.experimentImplementationType.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Implementation type is required",
+          path: ["experimentImplementationType"],
+        });
+      }
+    }
+    if (data.experimentSubType === "other") {
+      if (!data.experimentOtherDetails || data.experimentOtherDetails.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Request details are required",
+          path: ["experimentOtherDetails"],
+        });
+      }
+    }
+  }
 });
 
 type FormData = z.infer<typeof formSchema>;
