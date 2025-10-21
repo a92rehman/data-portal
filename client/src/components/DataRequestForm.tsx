@@ -810,7 +810,7 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">What is the purpose of this investigation? *</label>
-              <Textarea placeholder="Example: verify attendance data, check missing visit logs, confirm the teacher's appearance and activity" className="mt-1" rows={3} value={investigationPurpose} onChange={(e) => setInvestigationPurpose(e.target.value)} />
+              <Textarea placeholder="Example: confirm the teacher's appearance and activity" className="mt-1" rows={3} value={investigationPurpose} onChange={(e) => setInvestigationPurpose(e.target.value)} />
             </div>
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Please provide identification details:</p>
