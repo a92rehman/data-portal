@@ -520,18 +520,67 @@ export default function RequestWorkspace() {
                             <SelectValue placeholder="Select type..." />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="new_dashboard">New Dashboard/Report</SelectItem>
-                          <SelectItem value="modify_dashboard">Modification to Existing Dashboard/Report</SelectItem>
-                          <SelectItem value="adhoc_analysis">Ad-hoc Data Analysis</SelectItem>
-                          <SelectItem value="data_extraction">One-time Data Extraction (CSV/Excel)</SelectItem>
-                          <SelectItem value="data_bug">Data Bug / Data Quality Issue</SelectItem>
-                          <SelectItem value="bq_access">BigQuery Access Request</SelectItem>
-                          <SelectItem value="tracking">Event Tracking Request</SelectItem>
-                          <SelectItem value="metric_change">Metric Definition Change</SelectItem>
-                          <SelectItem value="pipeline_change">Data Pipeline Change</SelectItem>
-                          <SelectItem value="recurring_report">Recurring Report Setup</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                        <SelectContent className="max-h-[400px]">
+                          <SelectItem value="user_investigation">
+                            <div className="flex flex-col">
+                              <span className="font-medium">User Investigation</span>
+                              <span className="text-xs text-muted-foreground">Verify user data, check activity logs</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="data_extraction">
+                            <div className="flex flex-col">
+                              <span className="font-medium">One-time Data Request</span>
+                              <span className="text-xs text-muted-foreground">Export data as CSV/Excel</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="bq_access">
+                            <div className="flex flex-col">
+                              <span className="font-medium">BigQuery/Tool Access</span>
+                              <span className="text-xs text-muted-foreground">Request database or tool access</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="data_bug">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Data Bug/Data Quality Issue</span>
+                              <span className="text-xs text-muted-foreground">Report data inconsistencies or errors</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="adhoc_analysis">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Ad-hoc Analysis</span>
+                              <span className="text-xs text-muted-foreground">Deep-dive analysis on specific question</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="modify_dashboard">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Modification to Existing Dashboard</span>
+                              <span className="text-xs text-muted-foreground">Update or enhance existing reports</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="new_dashboard">
+                            <div className="flex flex-col">
+                              <span className="font-medium">New Dashboard</span>
+                              <span className="text-xs text-muted-foreground">Create new reports or visualizations</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="training">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Training (Capacity Building)</span>
+                              <span className="text-xs text-muted-foreground">Learn data tools and analytics skills</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="experimentation">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Experimentation</span>
+                              <span className="text-xs text-muted-foreground">Design, review, or analyze experiments</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="other">
+                            <div className="flex flex-col">
+                              <span className="font-medium">Other</span>
+                              <span className="text-xs text-muted-foreground">Any other data-related request</span>
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       {!isNewRequest && (
