@@ -153,10 +153,15 @@ export default function DataRequestForm() {
   // Experimentation fields
   const [experimentSubType, setExperimentSubType] = useState('');
   const [experimentProblem, setExperimentProblem] = useState('');
+  const [experimentSuccessMetrics, setExperimentSuccessMetrics] = useState('');
+  const [experimentTimeline, setExperimentTimeline] = useState('');
   const [experimentFileLink, setExperimentFileLink] = useState('');
+  const [experimentReviewFocus, setExperimentReviewFocus] = useState('');
   const [experimentAnalysisType, setExperimentAnalysisType] = useState('');
   const [experimentDatasetLink, setExperimentDatasetLink] = useState('');
+  const [experimentHypothesis, setExperimentHypothesis] = useState('');
   const [experimentImplementationType, setExperimentImplementationType] = useState('');
+  const [experimentPlatform, setExperimentPlatform] = useState('');
   const [experimentOtherDetails, setExperimentOtherDetails] = useState('');
 
 
@@ -296,8 +301,10 @@ export default function DataRequestForm() {
     frequencyInteracted, experimentDescription, experimentDocLink,
     investigationPurpose, userName, userMobile, schoolEmisCode,
     trainingTopic, trainingHours,
-    experimentSubType, experimentProblem, experimentFileLink, experimentAnalysisType,
-    experimentDatasetLink, experimentImplementationType, experimentOtherDetails
+    experimentSubType, experimentProblem, experimentSuccessMetrics, experimentTimeline,
+    experimentFileLink, experimentReviewFocus, experimentAnalysisType,
+    experimentDatasetLink, experimentHypothesis, experimentImplementationType,
+    experimentPlatform, experimentOtherDetails
   ]);
 
 
