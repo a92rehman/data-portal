@@ -84,6 +84,8 @@ export const requestTypeEnum = pgEnum("request_type", [
   "metric_change",
   "pipeline_change",
   "recurring_report",
+  "user_investigation",
+  "training",
   "experimentation",
   "other"
 ]);
@@ -197,6 +199,27 @@ export const dataRequests = pgTable("data_requests", {
   pipelineName: varchar("pipeline_name"),
   pipelineChangeType: varchar("pipeline_change_type"),
   pipelineDetails: text("pipeline_details"),
+  
+  // User Investigation fields
+  investigationPurpose: text("investigation_purpose"),
+  userName: varchar("user_name"),
+  userMobile: varchar("user_mobile"),
+  userProfileId: varchar("user_profile_id"),
+  userId: varchar("user_id"),
+  schoolEmisCode: varchar("school_emis_code"),
+  
+  // Training (Capacity Building) fields
+  trainingTopic: text("training_topic"),
+  trainingHours: real("training_hours"),
+  
+  // Experimentation fields
+  experimentSubType: varchar("experiment_sub_type"), // design_new, review, analysis, implementation, other
+  experimentProblem: text("experiment_problem"), // For design_new
+  experimentFileLink: text("experiment_file_link"), // For review
+  experimentAnalysisType: text("experiment_analysis_type"), // For analysis
+  experimentDatasetLink: text("experiment_dataset_link"), // For analysis
+  experimentImplementationType: text("experiment_implementation_type"), // For implementation
+  experimentOtherDetails: text("experiment_other_details"), // For other
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
