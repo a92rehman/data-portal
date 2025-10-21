@@ -1646,7 +1646,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json(request);
+      // Fetch and return the full request with details
+      const updatedRequest = await storage.getDataRequest(request.id);
+      if (!updatedRequest) {
+        return res.status(404).json({ message: "Request not found after delivery" });
+      }
+      res.json(updatedRequest);
     } catch (error) {
       console.error("Error marking request as delivered:", error);
       res.status(500).json({ message: "Failed to mark request as delivered" });
