@@ -263,8 +263,20 @@ export default function DataRequestForm() {
         // For recurringReport, check if frequency fields have been interacted with
         isSection2Complete = !!(reportMetrics && decisionAction && frequencyInteracted);
         break;
+      case 'userInvestigation':
+        isSection2Complete = !!(investigationPurpose && userName && userMobile && schoolEmisCode);
+        break;
+      case 'training':
+        isSection2Complete = !!(trainingTopic && trainingHours);
+        break;
       case 'experimentation':
-        isSection2Complete = !!(experimentDescription && experimentDocLink);
+        isSection2Complete = !!(experimentSubType && (
+          (experimentSubType === 'design_new' && experimentProblem) ||
+          (experimentSubType === 'review' && experimentFileLink) ||
+          (experimentSubType === 'analysis' && experimentAnalysisType && experimentDatasetLink) ||
+          (experimentSubType === 'implementation' && experimentImplementationType) ||
+          (experimentSubType === 'other' && experimentOtherDetails)
+        ));
         break;
       case 'other':
         isSection2Complete = !!otherDescription;
@@ -281,7 +293,11 @@ export default function DataRequestForm() {
     fileFormat, bugDescription, bugLocation, bqEmail, bqDatasets, bqPurpose,
     trackingFeature, trackingTrigger, metricName, currentDefinition, newDefinition,
     pipelineDataset, pipelineModification, reportMetrics, otherDescription, isManualEdit,
-    frequencyInteracted, experimentDescription, experimentDocLink
+    frequencyInteracted, experimentDescription, experimentDocLink,
+    investigationPurpose, userName, userMobile, schoolEmisCode,
+    trainingTopic, trainingHours,
+    experimentSubType, experimentProblem, experimentFileLink, experimentAnalysisType,
+    experimentDatasetLink, experimentImplementationType, experimentOtherDetails
   ]);
 
 
@@ -298,6 +314,8 @@ export default function DataRequestForm() {
       'metricChange': 'metric_change',
       'pipelineChange': 'pipeline_change',
       'recurringReport': 'recurring_report',
+      'userInvestigation': 'user_investigation',
+      'training': 'training',
       'experimentation': 'experimentation',
       'other': 'other'
     };
@@ -387,9 +405,24 @@ export default function DataRequestForm() {
         if (!decisionAction) missingFields.push("decision/action");
         if (frequency && (!duration || !unit)) missingFields.push("frequency duration and unit");
         break;
+      case 'userInvestigation':
+        if (!investigationPurpose) missingFields.push("investigation purpose");
+        if (!userName) missingFields.push("user/teacher name");
+        if (!userMobile) missingFields.push("mobile number");
+        if (!schoolEmisCode) missingFields.push("school EMIS code");
+        break;
+      case 'training':
+        if (!trainingTopic) missingFields.push("training topic");
+        if (!trainingHours) missingFields.push("training hours");
+        break;
       case 'experimentation':
-        if (!experimentDescription) missingFields.push("experiment description");
-        if (!experimentDocLink) missingFields.push("document/link");
+        if (!experimentSubType) missingFields.push("experimentation type");
+        if (experimentSubType === 'design_new' && !experimentProblem) missingFields.push("problem description");
+        if (experimentSubType === 'review' && !experimentFileLink) missingFields.push("experiment file/link");
+        if (experimentSubType === 'analysis' && !experimentAnalysisType) missingFields.push("analysis type");
+        if (experimentSubType === 'analysis' && !experimentDatasetLink) missingFields.push("dataset link");
+        if (experimentSubType === 'implementation' && !experimentImplementationType) missingFields.push("implementation type");
+        if (experimentSubType === 'other' && !experimentOtherDetails) missingFields.push("request details");
         break;
       case 'other':
         if (!otherDescription) missingFields.push("request description");
@@ -471,9 +504,47 @@ export default function DataRequestForm() {
           payload.primaryQuestion = reportMetrics;
           payload.decisionAction = decisionAction;
           break;
+        case 'userInvestigation':
+          payload.investigationPurpose = investigationPurpose;
+          payload.userName = userName;
+          payload.userMobile = userMobile;
+          payload.userProfileId = userProfileId || undefined;
+          payload.userId = userId || undefined;
+          payload.schoolEmisCode = schoolEmisCode;
+          break;
+        case 'training':
+          payload.trainingTopic = trainingTopic;
+          payload.trainingHours = trainingHours ? parseFloat(trainingHours) : undefined;
+          break;
         case 'experimentation':
-          payload.primaryQuestion = experimentDescription;
-          payload.businessProblem = experimentDocLink;
+          payload.experimentSubType = experimentSubType;
+          if (experimentSubType === 'design_new') {
+            payload.experimentDetails = JSON.stringify({
+              problem: experimentProblem,
+              successMetrics: experimentSuccessMetrics,
+              timeline: experimentTimeline
+            });
+          } else if (experimentSubType === 'review') {
+            payload.experimentDetails = JSON.stringify({
+              fileLink: experimentFileLink,
+              reviewFocus: experimentReviewFocus
+            });
+          } else if (experimentSubType === 'analysis') {
+            payload.experimentDetails = JSON.stringify({
+              analysisType: experimentAnalysisType,
+              datasetLink: experimentDatasetLink,
+              hypothesis: experimentHypothesis
+            });
+          } else if (experimentSubType === 'implementation') {
+            payload.experimentDetails = JSON.stringify({
+              implementationType: experimentImplementationType,
+              platform: experimentPlatform
+            });
+          } else if (experimentSubType === 'other') {
+            payload.experimentDetails = JSON.stringify({
+              details: experimentOtherDetails
+            });
+          }
           break;
         case 'other':
           payload.primaryQuestion = otherDescription;
@@ -531,6 +602,26 @@ export default function DataRequestForm() {
       setOtherDescription('');
       setExperimentDescription('');
       setExperimentDocLink('');
+      setInvestigationPurpose('');
+      setUserName('');
+      setUserMobile('');
+      setUserProfileId('');
+      setUserId('');
+      setSchoolEmisCode('');
+      setTrainingTopic('');
+      setTrainingHours('');
+      setExperimentSubType('');
+      setExperimentProblem('');
+      setExperimentSuccessMetrics('');
+      setExperimentTimeline('');
+      setExperimentFileLink('');
+      setExperimentReviewFocus('');
+      setExperimentAnalysisType('');
+      setExperimentDatasetLink('');
+      setExperimentHypothesis('');
+      setExperimentImplementationType('');
+      setExperimentPlatform('');
+      setExperimentOtherDetails('');
       
       // Reset section visibility, manual edit mode, and frequency interaction
       setSection1Open(true);
@@ -712,7 +803,7 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">What is the purpose of this investigation? *</label>
-              <Textarea placeholder="Example: verify attendance data, check missing visit logs, confirm teacher's activity" className="mt-1" rows={3} value={investigationPurpose} onChange={(e) => setInvestigationPurpose(e.target.value)} />
+              <Textarea placeholder="Example: verify attendance data, check missing visit logs, confirm the teacher's appearance and activity" className="mt-1" rows={3} value={investigationPurpose} onChange={(e) => setInvestigationPurpose(e.target.value)} />
             </div>
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Please provide identification details:</p>
