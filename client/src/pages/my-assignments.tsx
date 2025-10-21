@@ -440,9 +440,11 @@ export default function MyAssignments() {
             <RequestDetail
               request={selectedRequest}
               onClose={() => setSelectedRequest(null)}
-              onUpdate={() => {
+              onUpdate={(updatedRequest) => {
+                if (updatedRequest) {
+                  setSelectedRequest(updatedRequest);
+                }
                 refetch();
-                setSelectedRequest(null);
               }}
             />
           </DialogContent>

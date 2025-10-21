@@ -65,7 +65,7 @@ import { formatRequestType } from "@/lib/formatters";
 interface RequestDetailProps {
   request: DataRequestWithDetails;
   onClose: () => void;
-  onUpdate: () => void;
+  onUpdate: (updatedRequest?: DataRequestWithDetails) => void;
 }
 
 export default function RequestDetail({ request, onClose, onUpdate }: RequestDetailProps) {
@@ -735,7 +735,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
     }) => {
       return await apiRequest("PATCH", `/api/requests/${request.id}/delivered`, data);
     },
-    onSuccess: () => {
+    onSuccess: (updatedRequest) => {
       toast({
         title: "Success",
         description: "Request marked as delivered successfully",
@@ -746,7 +746,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       setDeliveryContent("");
       setDeliveryFileUrl("");
       setDeliveryFileName("");
-      onUpdate();
+      onUpdate(updatedRequest as DataRequestWithDetails);
     },
     onError: (error: Error) => {
       toast({

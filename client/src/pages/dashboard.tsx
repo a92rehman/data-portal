@@ -821,7 +821,10 @@ export default function Dashboard() {
             <RequestDetail 
               request={selectedRequest}
               onClose={() => setSelectedRequest(null)}
-              onUpdate={() => {
+              onUpdate={(updatedRequest) => {
+                if (updatedRequest) {
+                  setSelectedRequest(updatedRequest);
+                }
                 queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
                 queryClient.invalidateQueries({ queryKey: ["/api/analytics/stats"] });
               }}
