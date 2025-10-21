@@ -364,10 +364,22 @@ export class DatabaseStorage implements IStorage {
           createdAt: sql`assigned_user.created_at`,
           updatedAt: sql`assigned_user.updated_at`,
         },
+        reviewedBy: {
+          id: sql`reviewed_user.id`,
+          email: sql`reviewed_user.email`,
+          firstName: sql`reviewed_user.first_name`,
+          lastName: sql`reviewed_user.last_name`,
+          profileImageUrl: sql`reviewed_user.profile_image_url`,
+          role: sql`reviewed_user.role`,
+          department: sql`reviewed_user.department`,
+          createdAt: sql`reviewed_user.created_at`,
+          updatedAt: sql`reviewed_user.updated_at`,
+        },
       })
       .from(dataRequests)
       .innerJoin(users, eq(dataRequests.requestedById, users.id))
       .leftJoin(sql`users assigned_user`, sql`data_requests.assigned_to_id = assigned_user.id`)
+      .leftJoin(sql`users reviewed_user`, sql`data_requests.reviewed_by_id = reviewed_user.id`)
       .where(eq(dataRequests.id, id));
 
     if (result.length === 0) return undefined;
@@ -380,6 +392,7 @@ export class DatabaseStorage implements IStorage {
       ...requestData.request,
       requestedBy: requestData.requestedBy,
       assignedTo: requestData.assignedTo.id ? requestData.assignedTo : null,
+      reviewedBy: requestData.reviewedBy?.id ? requestData.reviewedBy : null,
       comments: requestComments,
       attachments: requestAttachments,
     } as DataRequestWithDetails;
@@ -410,10 +423,22 @@ export class DatabaseStorage implements IStorage {
           createdAt: sql`assigned_user.created_at`,
           updatedAt: sql`assigned_user.updated_at`,
         },
+        reviewedBy: {
+          id: sql`reviewed_user.id`,
+          email: sql`reviewed_user.email`,
+          firstName: sql`reviewed_user.first_name`,
+          lastName: sql`reviewed_user.last_name`,
+          profileImageUrl: sql`reviewed_user.profile_image_url`,
+          role: sql`reviewed_user.role`,
+          department: sql`reviewed_user.department`,
+          createdAt: sql`reviewed_user.created_at`,
+          updatedAt: sql`reviewed_user.updated_at`,
+        },
       })
       .from(dataRequests)
       .innerJoin(users, eq(dataRequests.requestedById, users.id))
       .leftJoin(sql`users assigned_user`, sql`data_requests.assigned_to_id = assigned_user.id`)
+      .leftJoin(sql`users reviewed_user`, sql`data_requests.reviewed_by_id = reviewed_user.id`)
       .orderBy(desc(dataRequests.createdAt));
 
     if (filters) {
@@ -449,6 +474,7 @@ export class DatabaseStorage implements IStorage {
           ...result.request,
           requestedBy: result.requestedBy,
           assignedTo: result.assignedTo.id ? result.assignedTo : null,
+          reviewedBy: result.reviewedBy?.id ? result.reviewedBy : null,
           comments: requestComments,
           attachments: requestAttachments,
         } as DataRequestWithDetails;
