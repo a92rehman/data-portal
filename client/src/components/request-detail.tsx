@@ -2663,7 +2663,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               Cancel
             </Button>
             <Button
-              variant="default"
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-300 disabled:text-white"
               onClick={() => {
                 handleAssignAnalyst();
                 setShowEditAssignedToDialog(false);
