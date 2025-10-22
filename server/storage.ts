@@ -105,6 +105,7 @@ export interface IStorage {
     overdue: number;
     lateCompletions: number;
     atRisk: number;
+    rejected: number;
   }>;
   getDepartmentStats(): Promise<{ department: string; count: number }[]>;
   getTypeStats(): Promise<{ type: string; count: number }[]>;
@@ -631,6 +632,7 @@ export class DatabaseStorage implements IStorage {
     overdue: number;
     lateCompletions: number;
     atRisk: number;
+    rejected: number;
   }> {
     // Build base filter based on role
     const filters = [];
@@ -744,6 +746,15 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(dataRequests.requestedById, users.id))
       .where(atRiskFilter);
 
+    // Rejected: Requests with rejected status
+    const rejectedFilter = baseFilter
+      ? and(baseFilter, eq(dataRequests.status, 'rejected'))
+      : eq(dataRequests.status, 'rejected');
+    const [rejectedResult] = await db.select({ count: count() })
+      .from(dataRequests)
+      .innerJoin(users, eq(dataRequests.requestedById, users.id))
+      .where(rejectedFilter);
+
     return {
       totalRequests: totalResult.count,
       inProgress: inProgressResult.count,
@@ -752,6 +763,7 @@ export class DatabaseStorage implements IStorage {
       overdue: overdueResult.count,
       lateCompletions: lateCompletionsResult.count,
       atRisk: atRiskResult.count,
+      rejected: rejectedResult.count,
     };
   }
 
