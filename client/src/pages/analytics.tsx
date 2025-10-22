@@ -69,8 +69,32 @@ export default function Analytics() {
     inProgress: number;
     completed: number;
     avgCompletionDays: number;
+    overdue: number;
+    lateCompletions: number;
+    atRisk: number;
   }>({
     queryKey: ["/api/analytics/stats"],
+    enabled: isAuthenticated,
+  });
+
+  // New Request Analytics Queries
+  const { data: acceptanceRate } = useQuery<{ acceptanceRate: number }>({
+    queryKey: ["/api/analytics/requests/acceptance-rate"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: blockedRequestsData } = useQuery<{ blockedRequests: number }>({
+    queryKey: ["/api/analytics/requests/blocked"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: timeToAssignment } = useQuery<{ avgTimeToAssignment: number }>({
+    queryKey: ["/api/analytics/requests/time-to-assignment"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: completionByPriority = [] } = useQuery<Array<{ priority: string; completed: number; total: number }>>({
+    queryKey: ["/api/analytics/requests/completion-by-priority"],
     enabled: isAuthenticated,
   });
 
@@ -84,6 +108,22 @@ export default function Analytics() {
     avgExpectedTime: number;
   }>({
     queryKey: ["/api/analytics/tasks/stats"],
+    enabled: isAuthenticated,
+  });
+
+  // New Task Analytics Queries
+  const { data: overdueTasksData } = useQuery<{ overdueTasks: number }>({
+    queryKey: ["/api/analytics/tasks/overdue"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: avgTaskDuration } = useQuery<{ avgTaskDuration: number }>({
+    queryKey: ["/api/analytics/tasks/avg-duration"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: completionVelocity } = useQuery<{ completionVelocity: number }>({
+    queryKey: ["/api/analytics/tasks/completion-velocity"],
     enabled: isAuthenticated,
   });
 
@@ -325,6 +365,91 @@ export default function Analytics() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Additional Request Metrics */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+            <Card className="gradient-card border-2 border-green-200 dark:border-green-800">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                  </div>
+                  Acceptance Rate
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-4">
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="stat-acceptance-rate">
+                    {acceptanceRate?.acceptanceRate || 0}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Requests accepted</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="gradient-card border-2 border-red-200 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600">
+                    <AlertCircle className="w-4 h-4 text-white" />
+                  </div>
+                  Blocked Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-4">
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400" data-testid="stat-blocked-requests">
+                    {blockedRequestsData?.blockedRequests || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Currently blocked</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="gradient-card border-2 border-blue-200 dark:border-blue-800">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600">
+                    <Clock className="w-4 h-4 text-white" />
+                  </div>
+                  Time to Assignment
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-4">
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400" data-testid="stat-time-to-assignment">
+                    {timeToAssignment?.avgTimeToAssignment || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Days on average</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="gradient-card border-2 border-purple-200 dark:border-purple-800">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-purple-500 to-purple-600">
+                    <TrendingUp className="w-4 h-4 text-white" />
+                  </div>
+                  Completion by Priority
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {completionByPriority.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">No data</p>
+                  ) : (
+                    completionByPriority.map((stat: any) => (
+                      <div key={stat.priority} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{stat.priority}</span>
+                        <span className="font-medium">{stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0}%</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
             </TabsContent>
 
             <TabsContent value="tasks" className="mt-6">
@@ -366,6 +491,60 @@ export default function Analytics() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {taskStats?.totalTasks ? Math.round((taskStats.completed / taskStats.totalTasks) * 100) : 0}% completion rate
                     </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="gradient-card border-2 border-red-200 dark:border-red-800">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">Overdue Tasks</CardTitle>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600">
+                      <AlertCircle className="w-4 h-4 text-white" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400" data-testid="stat-overdue-tasks">{overdueTasksData?.overdueTasks || 0}</div>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">Past deadline</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Additional Task Metrics */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <Card className="gradient-card border-2 border-blue-200 dark:border-blue-800">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600">
+                        <Clock className="w-4 h-4 text-white" />
+                      </div>
+                      Average Task Duration
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-4">
+                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400" data-testid="stat-avg-task-duration">
+                        {avgTaskDuration?.avgTaskDuration || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Days on average</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="gradient-card border-2 border-green-200 dark:border-green-800">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-green-500 to-green-600">
+                        <TrendingUp className="w-4 h-4 text-white" />
+                      </div>
+                      Completion Velocity
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-4">
+                      <div className="text-3xl font-bold text-green-600 dark:text-green-400" data-testid="stat-completion-velocity">
+                        {completionVelocity?.completionVelocity || 0}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">Tasks per week</p>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
