@@ -2631,6 +2631,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               Cancel
             </Button>
             <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-300 disabled:text-white"
               onClick={() => {
                 updatePriorityDeadlineMutation.mutate({
                   priority: editedPriority,
@@ -2682,6 +2683,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               Cancel
             </Button>
             <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-300 disabled:text-white"
               onClick={() => {
                 updatePriorityDeadlineMutation.mutate({
                   priority: editedPriority,
@@ -2750,6 +2752,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               Cancel
             </Button>
             <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-300 disabled:text-white"
               onClick={() => {
                 updateRequestTypeMutation.mutate(editedRequestType);
                 setShowEditRequestTypeDialog(false);
