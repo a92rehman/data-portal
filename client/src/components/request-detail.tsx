@@ -1228,7 +1228,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Common fields for most request types */}
-                {(request.primaryQuestion || !['data_bug', 'bq_access', 'tracking', 'metric_change', 'pipeline_change'].includes(request.type)) && (
+                {(request.primaryQuestion || !['data_bug', 'bq_access', 'tracking', 'metric_change', 'pipeline_change', 'user_investigation', 'training', 'experimentation'].includes(request.type)) && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Primary Question</p>
                     <p className="text-sm" data-testid="text-primary-question">
@@ -1237,7 +1237,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                   </div>
                 )}
 
-                {(request.businessProblem || !['data_bug', 'bq_access', 'tracking', 'metric_change', 'pipeline_change'].includes(request.type)) && (
+                {(request.businessProblem || !['data_bug', 'bq_access', 'tracking', 'metric_change', 'pipeline_change', 'user_investigation', 'training', 'experimentation'].includes(request.type)) && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Business Problem or Goal</p>
                     <p className="text-sm" data-testid="text-business-problem">
@@ -1406,6 +1406,148 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Pipeline Details</p>
                     <p className="text-sm" data-testid="text-pipeline-details">
                       {request.pipelineDetails}
+                    </p>
+                  </div>
+                )}
+
+                {/* User Investigation fields */}
+                {(request as any).investigationPurpose && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Investigation Purpose</p>
+                    <p className="text-sm" data-testid="text-investigation-purpose">
+                      {(request as any).investigationPurpose}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).userName && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">User/Teacher Name</p>
+                    <p className="text-sm" data-testid="text-user-name">
+                      {(request as any).userName}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).userMobile && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Mobile Number</p>
+                    <p className="text-sm" data-testid="text-user-mobile">
+                      {(request as any).userMobile}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).userProfileId && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">User Profile ID</p>
+                    <p className="text-sm" data-testid="text-user-profile-id">
+                      {(request as any).userProfileId}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).userId && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">User ID</p>
+                    <p className="text-sm" data-testid="text-user-id">
+                      {(request as any).userId}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).schoolEmisCode && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">School EMIS Code</p>
+                    <p className="text-sm" data-testid="text-school-emis-code">
+                      {(request as any).schoolEmisCode}
+                    </p>
+                  </div>
+                )}
+
+                {/* Training fields */}
+                {(request as any).trainingTopic && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Training Topic</p>
+                    <p className="text-sm" data-testid="text-training-topic">
+                      {(request as any).trainingTopic}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).trainingHours && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Training Hours</p>
+                    <p className="text-sm" data-testid="text-training-hours">
+                      {(request as any).trainingHours} hours
+                    </p>
+                  </div>
+                )}
+
+                {/* Experimentation fields */}
+                {(request as any).experimentSubType && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Experiment Type</p>
+                    <p className="text-sm capitalize" data-testid="text-experiment-sub-type">
+                      {(request as any).experimentSubType.replace(/_/g, ' ')}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).experimentProblem && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Problem Statement</p>
+                    <p className="text-sm" data-testid="text-experiment-problem">
+                      {(request as any).experimentProblem}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).experimentFileLink && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Experiment File Link</p>
+                    <p className="text-sm" data-testid="text-experiment-file-link">
+                      <a href={(request as any).experimentFileLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {(request as any).experimentFileLink}
+                      </a>
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).experimentAnalysisType && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Analysis Type</p>
+                    <p className="text-sm" data-testid="text-experiment-analysis-type">
+                      {(request as any).experimentAnalysisType}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).experimentDatasetLink && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Dataset Link</p>
+                    <p className="text-sm" data-testid="text-experiment-dataset-link">
+                      <a href={(request as any).experimentDatasetLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {(request as any).experimentDatasetLink}
+                      </a>
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).experimentImplementationType && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Implementation Type</p>
+                    <p className="text-sm" data-testid="text-experiment-implementation-type">
+                      {(request as any).experimentImplementationType}
+                    </p>
+                  </div>
+                )}
+
+                {(request as any).experimentOtherDetails && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Other Details</p>
+                    <p className="text-sm" data-testid="text-experiment-other-details">
+                      {(request as any).experimentOtherDetails}
                     </p>
                   </div>
                 )}
