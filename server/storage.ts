@@ -730,15 +730,15 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(dataRequests.requestedById, users.id))
       .where(lateCompletionsFilter);
 
-    // At Risk: Requests with deadline within 3 days and not completed
+    // At Risk: Requests with deadline less than 1 day and not completed
     const atRiskFilter = baseFilter
       ? and(
           baseFilter,
-          sql`${dataRequests.dueDate} BETWEEN NOW() AND NOW() + INTERVAL '3 days'`,
+          sql`${dataRequests.dueDate} BETWEEN NOW() AND NOW() + INTERVAL '1 day'`,
           sql`${dataRequests.status} NOT IN ('completed')`
         )
       : and(
-          sql`${dataRequests.dueDate} BETWEEN NOW() AND NOW() + INTERVAL '3 days'`,
+          sql`${dataRequests.dueDate} BETWEEN NOW() AND NOW() + INTERVAL '1 day'`,
           sql`${dataRequests.status} NOT IN ('completed')`
         );
     const [atRiskResult] = await db.select({ count: count() })

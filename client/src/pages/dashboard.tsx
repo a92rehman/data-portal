@@ -184,20 +184,6 @@ export default function Dashboard() {
     }
   }, [searchString, location, setLocation]); // Re-run whenever search string changes
 
-  // Fetch stats
-  const { data: stats } = useQuery<{
-    totalRequests: number;
-    inProgress: number;
-    completed: number;
-    avgCompletionDays: number;
-    overdue: number;
-    lateCompletions: number;
-    atRisk: number;
-    rejected: number;
-  }>({
-    queryKey: ["/api/analytics/stats"],
-    enabled: isAuthenticated,
-  });
 
   // Delete request mutation
   const deleteRequestMutation = useMutation({
@@ -211,7 +197,6 @@ export default function Dashboard() {
         description: "Request deleted successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/analytics/stats"] });
       setSelectedRequest(null);
       setRequestToDelete(null);
     },
@@ -293,6 +278,22 @@ export default function Dashboard() {
     (request.primaryQuestion?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
     (request.businessProblem?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
+
+  // Calculate dynamic stats from filteredRequests (so they match the visible table)
+  const dynamicStats = {
+    totalRequests: filteredRequests.length,
+    inProgress: filteredRequests.filter(r => r.status === 'in_progress').length,
+    completed: filteredRequests.filter(r => r.status === 'completed').length,
+    atRisk: filteredRequests.filter(r => {
+      if (!r.dueDate || r.status === 'completed') return false;
+      const now = new Date();
+      const dueDate = new Date(r.dueDate);
+      const diffMs = dueDate.getTime() - now.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      return diffHours >= 0 && diffHours < 24; // Less than 1 day
+    }).length,
+    rejected: filteredRequests.filter(r => r.status === 'rejected').length,
+  };
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -439,82 +440,69 @@ export default function Dashboard() {
         <main className="md:ml-64 p-6">
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4">Dashboard Overview</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-4">
+                <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md mb-2" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-                      <Inbox className="w-5 h-5 text-white" />
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md mb-3" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                      <Inbox className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Total Requests</p>
-                    <p className="text-2xl font-bold text-foreground">{stats?.totalRequests || 0}</p>
-                    <p className="text-xs mt-1 text-muted-foreground">All time</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Total Requests</p>
+                    <p className="text-3xl font-bold text-foreground">{dynamicStats.totalRequests}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">Filtered</p>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-4">
+                <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md mb-2" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
-                      <Clock className="w-5 h-5 text-white" />
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md mb-3" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
+                      <Clock className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">In Progress</p>
-                    <p className="text-2xl font-bold text-foreground">{stats?.inProgress || 0}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">In Progress</p>
+                    <p className="text-3xl font-bold text-foreground">{dynamicStats.inProgress}</p>
                     <p className="text-xs mt-1 text-muted-foreground">Active</p>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-4">
+                <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md mb-2" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
-                      <CheckCircle className="w-5 h-5 text-white" />
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md mb-3" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
+                      <CheckCircle className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Completed</p>
-                    <p className="text-2xl font-bold text-foreground">{stats?.completed || 0}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Completed</p>
+                    <p className="text-3xl font-bold text-foreground">{dynamicStats.completed}</p>
                     <p className="text-xs mt-1 text-green-600 dark:text-green-400">
-                      {stats?.totalRequests ? Math.round((stats.completed / stats.totalRequests) * 100) : 0}%
+                      {dynamicStats.totalRequests ? Math.round((dynamicStats.completed / dynamicStats.totalRequests) * 100) : 0}%
                     </p>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-4">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-red-500 to-red-600 mb-2">
-                      <AlertTriangle className="w-5 h-5 text-white" />
-                    </div>
-                    <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Overdue</p>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats?.overdue || 0}</p>
-                    <p className="text-xs mt-1 text-red-600 dark:text-red-400">Past deadline</p>
-                  </div>
-                </CardContent>
-              </Card>
-
               <Card className="border-2 border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-4">
+                <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-orange-500 to-orange-600 mb-2">
-                      <CircleAlert className="w-5 h-5 text-white" />
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-orange-500 to-orange-600 mb-3">
+                      <CircleAlert className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-xs font-medium text-orange-700 dark:text-orange-300 mb-1">At Risk</p>
-                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats?.atRisk || 0}</p>
-                    <p className="text-xs mt-1 text-orange-600 dark:text-orange-400">Due in 3 days</p>
+                    <p className="text-sm font-medium text-orange-700 dark:text-orange-300 mb-1">At Risk</p>
+                    <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{dynamicStats.atRisk}</p>
+                    <p className="text-xs mt-1 text-orange-600 dark:text-orange-400">Due &lt; 1 day</p>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-2 border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-4">
+                <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-yellow-500 to-yellow-600 mb-2">
-                      <MinusCircle className="w-5 h-5 text-white" />
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-yellow-500 to-yellow-600 mb-3">
+                      <MinusCircle className="w-6 h-6 text-white" />
                     </div>
-                    <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Rejected</p>
-                    <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats?.rejected || 0}</p>
+                    <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">Rejected</p>
+                    <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{dynamicStats.rejected}</p>
                     <p className="text-xs mt-1 text-yellow-600 dark:text-yellow-400">Declined</p>
                   </div>
                 </CardContent>
@@ -853,7 +841,6 @@ export default function Dashboard() {
                   setSelectedRequest(updatedRequest);
                 }
                 queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
-                queryClient.invalidateQueries({ queryKey: ["/api/analytics/stats"] });
               }}
             />
           )}
