@@ -27,7 +27,7 @@ import {
   type TaskWithDetails,
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, or, count, sql, isNotNull } from "drizzle-orm";
+import { eq, desc, asc, and, or, count, sql, isNotNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
@@ -1216,7 +1216,7 @@ export class DatabaseStorage implements IStorage {
     const query = db
       .select()
       .from(tasks)
-      .orderBy(desc(tasks.createdAt));
+      .orderBy(sql`${tasks.dueDate} ASC NULLS LAST`);
 
     const taskList = conditions.length > 0 
       ? await query.where(and(...conditions))
@@ -1301,7 +1301,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(tasks)
       .where(eq(tasks.parentTaskId, parentTaskId))
-      .orderBy(desc(tasks.createdAt));
+      .orderBy(sql`${tasks.dueDate} ASC NULLS LAST`);
 
     const subTasksWithDetails = await Promise.all(
       subTasks.map(async (task) => {
