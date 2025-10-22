@@ -138,11 +138,21 @@ export default function Tasks() {
     }
   });
 
-  // Sort parent tasks by creation date (newest first)
-  const sortedParentTasks = [...parentTasks].sort((a, b) => {
-    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return bTime - aTime;
+  // Sort function for tasks by due date
+  const sortByDueDate = (a: TaskWithDetails, b: TaskWithDetails) => {
+    if (!a.dueDate && !b.dueDate) return 0;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  };
+
+  // Sort parent tasks by due date (earliest first, null dates last)
+  const sortedParentTasks = [...parentTasks].sort(sortByDueDate);
+  
+  // Sort subtasks by due date and create a sorted map
+  const sortedSubTasksMap = new Map<string, TaskWithDetails[]>();
+  subTasksMap.forEach((subTasks, parentId) => {
+    sortedSubTasksMap.set(parentId, [...subTasks].sort(sortByDueDate));
   });
   
   // Check if task is new (created in last 24 hours)
@@ -158,8 +168,8 @@ export default function Tasks() {
   const sortedTasks: TaskWithDetails[] = [];
   sortedParentTasks.forEach(parent => {
     sortedTasks.push(parent);
-    const subTasks = subTasksMap.get(parent.id) || [];
-    sortedTasks.push(...subTasks);
+    const sortedSubTasks = sortedSubTasksMap.get(parent.id) || [];
+    sortedTasks.push(...sortedSubTasks);
   });
 
   const updateTaskStatusMutation = useMutation({
@@ -282,7 +292,7 @@ export default function Tasks() {
                   key={task.id}
                   task={task}
                   isNew={isNewTask(task.createdAt)}
-                  subTasks={subTasksMap.get(task.id) || []}
+                  subTasks={sortedSubTasksMap.get(task.id) || []}
                   onSelectTask={setSelectedTask}
                   onSelectRequest={setSelectedRequest}
                   updateStatusMutation={updateTaskStatusMutation}
