@@ -1488,8 +1488,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 {(request as any).experimentSubType && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-1.5">Experiment Type</p>
-                    <p className="text-sm capitalize" data-testid="text-experiment-sub-type">
-                      {(request as any).experimentSubType.replace(/_/g, ' ')}
+                    <p className="text-sm" data-testid="text-experiment-sub-type">
+                      {(request as any).experimentSubType === 'design_new' && 'Support in Designing a New Experiment'}
+                      {(request as any).experimentSubType === 'review' && 'Review an Existing Experiment'}
+                      {(request as any).experimentSubType === 'analysis' && 'Analyze Experiment Results'}
+                      {(request as any).experimentSubType === 'implementation' && 'Help with Experiment Implementation'}
+                      {(request as any).experimentSubType === 'other' && 'Other Experimentation Support'}
                     </p>
                   </div>
                 )}

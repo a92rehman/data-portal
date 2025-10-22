@@ -526,31 +526,16 @@ export default function DataRequestForm() {
         case 'experimentation':
           payload.experimentSubType = experimentSubType;
           if (experimentSubType === 'design_new') {
-            payload.experimentDetails = JSON.stringify({
-              problem: experimentProblem,
-              successMetrics: experimentSuccessMetrics,
-              timeline: experimentTimeline
-            });
+            payload.experimentProblem = experimentProblem;
           } else if (experimentSubType === 'review') {
-            payload.experimentDetails = JSON.stringify({
-              fileLink: experimentFileLink,
-              reviewFocus: experimentReviewFocus
-            });
+            payload.experimentFileLink = experimentFileLink;
           } else if (experimentSubType === 'analysis') {
-            payload.experimentDetails = JSON.stringify({
-              analysisType: experimentAnalysisType,
-              datasetLink: experimentDatasetLink,
-              hypothesis: experimentHypothesis
-            });
+            payload.experimentAnalysisType = experimentAnalysisType;
+            payload.experimentDatasetLink = experimentDatasetLink;
           } else if (experimentSubType === 'implementation') {
-            payload.experimentDetails = JSON.stringify({
-              implementationType: experimentImplementationType,
-              platform: experimentPlatform
-            });
+            payload.experimentImplementationType = experimentImplementationType;
           } else if (experimentSubType === 'other') {
-            payload.experimentDetails = JSON.stringify({
-              details: experimentOtherDetails
-            });
+            payload.experimentOtherDetails = experimentOtherDetails;
           }
           break;
         case 'other':
