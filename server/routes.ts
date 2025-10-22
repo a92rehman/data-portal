@@ -1482,7 +1482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const allTasks = await storage.getTasks({});
         
         // Helper function to recursively complete a task and all its descendants
-        const completeTaskAndDescendants = async (taskId: number) => {
+        const completeTaskAndDescendants = async (taskId: string) => {
           const task = allTasks.find(t => t.id === taskId);
           if (!task) return;
           
@@ -2506,6 +2506,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/analytics/acceptance-rate', isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await storage.getAcceptanceRate();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching acceptance rate:", error);
+      res.status(500).json({ message: "Failed to fetch acceptance rate" });
+    }
+  });
+
+  app.get('/api/analytics/blocked-requests', isAuthenticated, async (req: any, res) => {
+    try {
+      const count = await storage.getBlockedRequestsCount();
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching blocked requests count:", error);
+      res.status(500).json({ message: "Failed to fetch blocked requests count" });
+    }
+  });
+
+  app.get('/api/analytics/time-to-assignment', isAuthenticated, async (req: any, res) => {
+    try {
+      const days = await storage.getTimeToAssignment();
+      res.json({ days });
+    } catch (error) {
+      console.error("Error fetching time to assignment:", error);
+      res.status(500).json({ message: "Failed to fetch time to assignment" });
+    }
+  });
+
+  app.get('/api/analytics/completion-by-priority', isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await storage.getCompletionByPriority();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching completion by priority:", error);
+      res.status(500).json({ message: "Failed to fetch completion by priority" });
+    }
+  });
+
   // Task Analytics Routes
   app.get('/api/analytics/tasks/stats', isAuthenticated, async (req: any, res) => {
     try {
@@ -2589,6 +2629,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching team workload:", error);
       res.status(500).json({ message: "Failed to fetch team workload" });
+    }
+  });
+
+  app.get('/api/analytics/tasks/overdue', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead' && user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied." });
+      }
+
+      const count = await storage.getOverdueTasksCount();
+      res.json({ count });
+    } catch (error) {
+      console.error("Error fetching overdue tasks count:", error);
+      res.status(500).json({ message: "Failed to fetch overdue tasks count" });
+    }
+  });
+
+  app.get('/api/analytics/tasks/avg-duration', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead' && user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied." });
+      }
+
+      const days = await storage.getAvgTaskDuration();
+      res.json({ days });
+    } catch (error) {
+      console.error("Error fetching average task duration:", error);
+      res.status(500).json({ message: "Failed to fetch average task duration" });
+    }
+  });
+
+  app.get('/api/analytics/tasks/velocity', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'team_lead' && user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied." });
+      }
+
+      const velocity = await storage.getCompletionVelocity();
+      res.json(velocity);
+    } catch (error) {
+      console.error("Error fetching completion velocity:", error);
+      res.status(500).json({ message: "Failed to fetch completion velocity" });
     }
   });
 

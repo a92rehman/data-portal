@@ -102,10 +102,22 @@ export interface IStorage {
     inProgress: number;
     completed: number;
     avgCompletionDays: number;
+    overdue: number;
+    lateCompletions: number;
+    atRisk: number;
   }>;
   getDepartmentStats(): Promise<{ department: string; count: number }[]>;
   getTypeStats(): Promise<{ type: string; count: number }[]>;
   getPriorityStats(): Promise<{ priority: string; count: number }[]>;
+  getAcceptanceRate(): Promise<{ accepted: number; rejected: number; total: number; acceptanceRate: number }>;
+  getBlockedRequestsCount(): Promise<number>;
+  getTimeToAssignment(): Promise<number>;
+  getCompletionByPriority(): Promise<{
+    priority: string;
+    total: number;
+    completed: number;
+    completionRate: number;
+  }[]>;
   
   // Task Analytics operations
   getTaskStats(): Promise<{
@@ -119,6 +131,9 @@ export interface IStorage {
   getTasksByStatus(): Promise<{ status: string; count: number }[]>;
   getTasksByAssignee(): Promise<{ assignee: string; firstName: string; lastName: string; count: number }[]>;
   getTasksRequestLinked(): Promise<{ linked: string; count: number }[]>;
+  getOverdueTasksCount(): Promise<number>;
+  getAvgTaskDuration(): Promise<number>;
+  getCompletionVelocity(): Promise<{ tasksPerWeek: number; recentCompletions: number }>;
   
   // Auth logging operations
   logAuthEvent(userId: string, eventType: 'signup' | 'signin' | 'signout' | 'password_reset_requested' | 'password_reset_completed', ipAddress?: string, userAgent?: string): Promise<AuthLog>;
@@ -613,6 +628,9 @@ export class DatabaseStorage implements IStorage {
     inProgress: number;
     completed: number;
     avgCompletionDays: number;
+    overdue: number;
+    lateCompletions: number;
+    atRisk: number;
   }> {
     // Build base filter based on role
     const filters = [];
@@ -652,19 +670,88 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(users, eq(dataRequests.requestedById, users.id))
       .where(completedFilter);
     
-    const [avgResult] = await db
+    // Calculate actual average completion days (from created to delivered)
+    const avgCompletionQuery = await db
       .select({ 
-        avg: sql<number>`AVG(${dataRequests.estimatedCompletionDays})` 
+        createdAt: dataRequests.createdAt,
+        deliveredAt: dataRequests.deliveredAt,
       })
       .from(dataRequests)
       .innerJoin(users, eq(dataRequests.requestedById, users.id))
-      .where(completedFilter);
+      .where(
+        baseFilter
+          ? and(baseFilter, eq(dataRequests.status, 'completed'), sql`${dataRequests.deliveredAt} IS NOT NULL`)
+          : and(eq(dataRequests.status, 'completed'), sql`${dataRequests.deliveredAt} IS NOT NULL`)
+      );
+
+    let avgCompletionDays = 0;
+    if (avgCompletionQuery.length > 0) {
+      const totalDays = avgCompletionQuery.reduce((sum, req) => {
+        if (req.createdAt && req.deliveredAt) {
+          const days = Math.floor((req.deliveredAt.getTime() - req.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          return sum + days;
+        }
+        return sum;
+      }, 0);
+      avgCompletionDays = Math.round(totalDays / avgCompletionQuery.length);
+    }
+
+    // Overdue: Requests past deadline and not completed
+    const overdueFilter = baseFilter
+      ? and(
+          baseFilter,
+          sql`${dataRequests.dueDate} < NOW()`,
+          sql`${dataRequests.status} NOT IN ('completed')`
+        )
+      : and(
+          sql`${dataRequests.dueDate} < NOW()`,
+          sql`${dataRequests.status} NOT IN ('completed')`
+        );
+    const [overdueResult] = await db.select({ count: count() })
+      .from(dataRequests)
+      .innerJoin(users, eq(dataRequests.requestedById, users.id))
+      .where(overdueFilter);
+
+    // Late Completions: Requests completed after deadline
+    const lateCompletionsFilter = baseFilter
+      ? and(
+          baseFilter,
+          eq(dataRequests.status, 'completed'),
+          sql`${dataRequests.deliveredAt} > ${dataRequests.dueDate}`
+        )
+      : and(
+          eq(dataRequests.status, 'completed'),
+          sql`${dataRequests.deliveredAt} > ${dataRequests.dueDate}`
+        );
+    const [lateCompletionsResult] = await db.select({ count: count() })
+      .from(dataRequests)
+      .innerJoin(users, eq(dataRequests.requestedById, users.id))
+      .where(lateCompletionsFilter);
+
+    // At Risk: Requests with deadline within 3 days and not completed
+    const atRiskFilter = baseFilter
+      ? and(
+          baseFilter,
+          sql`${dataRequests.dueDate} BETWEEN NOW() AND NOW() + INTERVAL '3 days'`,
+          sql`${dataRequests.status} NOT IN ('completed')`
+        )
+      : and(
+          sql`${dataRequests.dueDate} BETWEEN NOW() AND NOW() + INTERVAL '3 days'`,
+          sql`${dataRequests.status} NOT IN ('completed')`
+        );
+    const [atRiskResult] = await db.select({ count: count() })
+      .from(dataRequests)
+      .innerJoin(users, eq(dataRequests.requestedById, users.id))
+      .where(atRiskFilter);
 
     return {
       totalRequests: totalResult.count,
       inProgress: inProgressResult.count,
       completed: completedResult.count,
-      avgCompletionDays: Math.round(avgResult.avg || 0),
+      avgCompletionDays,
+      overdue: overdueResult.count,
+      lateCompletions: lateCompletionsResult.count,
+      atRisk: atRiskResult.count,
     };
   }
 
@@ -702,6 +789,121 @@ export class DatabaseStorage implements IStorage {
       .groupBy(dataRequests.priority);
 
     return results.map(r => ({ priority: r.priority, count: r.count }));
+  }
+
+  async getAcceptanceRate(): Promise<{ accepted: number; rejected: number; total: number; acceptanceRate: number }> {
+    // Count requests that have been reviewed (either accepted or rejected)
+    const reviewedRequests = await db
+      .select({
+        status: dataRequests.status,
+        reviewedAt: dataRequests.reviewedAt,
+        rejectionReason: dataRequests.rejectionReason,
+      })
+      .from(dataRequests)
+      .where(sql`${dataRequests.reviewedAt} IS NOT NULL`);
+
+    const accepted = reviewedRequests.filter(r => 
+      r.status !== 'rejected' && r.rejectionReason === null
+    ).length;
+    
+    const rejected = reviewedRequests.filter(r => 
+      r.rejectionReason !== null
+    ).length;
+
+    const total = reviewedRequests.length;
+    const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) : 0;
+
+    return {
+      accepted,
+      rejected,
+      total,
+      acceptanceRate,
+    };
+  }
+
+  async getBlockedRequestsCount(): Promise<number> {
+    // Count requests with unresolved blockers
+    const [result] = await db
+      .select({ count: count() })
+      .from(dataRequests)
+      .innerJoin(blockers, eq(blockers.requestId, dataRequests.id))
+      .where(eq(blockers.resolved, 'false'));
+
+    return result.count;
+  }
+
+  async getTimeToAssignment(): Promise<number> {
+    // Calculate average time from submission to assignment
+    const assignedRequests = await db
+      .select({
+        createdAt: dataRequests.createdAt,
+        reviewedAt: dataRequests.reviewedAt,
+      })
+      .from(dataRequests)
+      .where(
+        and(
+          sql`${dataRequests.assignedToId} IS NOT NULL`,
+          sql`${dataRequests.reviewedAt} IS NOT NULL`
+        )
+      );
+
+    if (assignedRequests.length === 0) return 0;
+
+    const totalDays = assignedRequests.reduce((sum, req) => {
+      if (req.createdAt && req.reviewedAt) {
+        const days = Math.floor((req.reviewedAt.getTime() - req.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        return sum + days;
+      }
+      return sum;
+    }, 0);
+
+    return Math.round(totalDays / assignedRequests.length);
+  }
+
+  async getCompletionByPriority(): Promise<{
+    priority: string;
+    total: number;
+    completed: number;
+    completionRate: number;
+  }[]> {
+    const priorities = ['p0_critical', 'p1_high', 'p2_medium', 'p3_low'];
+    const priorityLabels: Record<string, string> = {
+      'p0_critical': 'P0-Critical',
+      'p1_high': 'P1-High',
+      'p2_medium': 'P2-Medium',
+      'p3_low': 'P3-Low'
+    };
+    const results = [];
+
+    for (const priority of priorities) {
+      const [totalResult] = await db
+        .select({ count: count() })
+        .from(dataRequests)
+        .where(sql`${dataRequests.priority} = ${priority}`);
+
+      const [completedResult] = await db
+        .select({ count: count() })
+        .from(dataRequests)
+        .where(
+          and(
+            sql`${dataRequests.priority} = ${priority}`,
+            eq(dataRequests.status, 'completed')
+          )
+        );
+
+      const total = totalResult.count;
+      const completed = completedResult.count;
+      const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+      results.push({
+        priority: priorityLabels[priority],
+        total,
+        completed,
+        completionRate,
+      });
+    }
+
+    return results;
   }
 
   // Task Analytics Methods
@@ -830,6 +1032,77 @@ export class DatabaseStorage implements IStorage {
     );
 
     return workload.sort((a, b) => b.totalTasks - a.totalTasks);
+  }
+
+  async getOverdueTasksCount(): Promise<number> {
+    // Count tasks past due date and not completed
+    const [result] = await db
+      .select({ count: count() })
+      .from(tasks)
+      .where(
+        and(
+          sql`${tasks.dueDate} < NOW()`,
+          sql`${tasks.status} != 'completed'`,
+          isNotNull(tasks.dueDate)
+        )
+      );
+
+    return result.count;
+  }
+
+  async getAvgTaskDuration(): Promise<number> {
+    // Calculate average time from creation to completion
+    const completedTasks = await db
+      .select({
+        createdAt: tasks.createdAt,
+        completedAt: tasks.completedAt,
+      })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.status, 'completed'),
+          isNotNull(tasks.completedAt)
+        )
+      );
+
+    if (completedTasks.length === 0) return 0;
+
+    const totalDays = completedTasks.reduce((sum, task) => {
+      if (task.createdAt && task.completedAt) {
+        const days = Math.floor((task.completedAt.getTime() - task.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        return sum + days;
+      }
+      return sum;
+    }, 0);
+
+    return Math.round(totalDays / completedTasks.length);
+  }
+
+  async getCompletionVelocity(): Promise<{ tasksPerWeek: number; recentCompletions: number }> {
+    // Get tasks completed in the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentCompletedTasks = await db
+      .select({
+        completedAt: tasks.completedAt,
+      })
+      .from(tasks)
+      .where(
+        and(
+          eq(tasks.status, 'completed'),
+          sql`${tasks.completedAt} >= ${thirtyDaysAgo}`,
+          isNotNull(tasks.completedAt)
+        )
+      );
+
+    const recentCompletions = recentCompletedTasks.length;
+    const tasksPerWeek = Math.round((recentCompletions / 30) * 7);
+
+    return {
+      tasksPerWeek,
+      recentCompletions,
+    };
   }
 
   async deleteDataRequest(id: string): Promise<void> {

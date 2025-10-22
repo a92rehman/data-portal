@@ -190,6 +190,9 @@ export default function Dashboard() {
     inProgress: number;
     completed: number;
     avgCompletionDays: number;
+    overdue: number;
+    lateCompletions: number;
+    atRisk: number;
   }>({
     queryKey: ["/api/analytics/stats"],
     enabled: isAuthenticated,
@@ -435,8 +438,8 @@ export default function Dashboard() {
         <main className="md:ml-64 p-6">
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4">Dashboard Overview</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+            <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Requests</p>
@@ -452,7 +455,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">In Progress</p>
@@ -465,7 +468,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Completed</p>
@@ -480,7 +483,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Avg. Completion</p>
@@ -490,6 +493,45 @@ export default function Dashboard() {
                   </div>
                   <p className="text-3xl font-bold text-foreground">{stats?.avgCompletionDays || 0}</p>
                   <p className="text-xs text-muted-foreground mt-1">days</p>
+                </CardContent>
+              </Card>
+
+              <Card className="flex-shrink-0 w-[200px] border-2 border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-red-700 dark:text-red-300">Overdue</p>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-red-500 to-red-600">
+                      <AlertTriangle className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-red-600 dark:text-red-400">{stats?.overdue || 0}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">Past deadline</p>
+                </CardContent>
+              </Card>
+
+              <Card className="flex-shrink-0 w-[200px] border-2 border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Late Completions</p>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-yellow-500 to-yellow-600">
+                      <MinusCircle className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats?.lateCompletions || 0}</p>
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">Delivered late</p>
+                </CardContent>
+              </Card>
+
+              <Card className="flex-shrink-0 w-[200px] border-2 border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-orange-700 dark:text-orange-300">At Risk</p>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-orange-500 to-orange-600">
+                      <CircleAlert className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{stats?.atRisk || 0}</p>
+                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">Due in 3 days</p>
                 </CardContent>
               </Card>
             </div>
