@@ -72,6 +72,7 @@ export default function Analytics() {
     overdue: number;
     lateCompletions: number;
     atRisk: number;
+    rejected: number;
   }>({
     queryKey: ["/api/analytics/stats"],
     enabled: isAuthenticated,

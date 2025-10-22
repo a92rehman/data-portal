@@ -193,6 +193,7 @@ export default function Dashboard() {
     overdue: number;
     lateCompletions: number;
     atRisk: number;
+    rejected: number;
   }>({
     queryKey: ["/api/analytics/stats"],
     enabled: isAuthenticated,
@@ -438,100 +439,84 @@ export default function Dashboard() {
         <main className="md:ml-64 p-6">
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4">Dashboard Overview</h2>
-            <div className="flex overflow-x-auto gap-4 pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Requests</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md mb-2" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
                       <Inbox className="w-5 h-5 text-white" />
                     </div>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Total Requests</p>
+                    <p className="text-2xl font-bold text-foreground">{stats?.totalRequests || 0}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">All time</p>
                   </div>
-                  <p className="text-3xl font-bold text-foreground">{stats?.totalRequests || 0}</p>
-                  <p className="text-xs mt-1 font-medium text-green-600 dark:text-green-400">
-                    <span className="inline-block w-2 h-2 rounded-full mr-1" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}></span>
-                    All time
-                  </p>
                 </CardContent>
               </Card>
 
-              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">In Progress</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
+              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md mb-2" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
                       <Clock className="w-5 h-5 text-white" />
                     </div>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">In Progress</p>
+                    <p className="text-2xl font-bold text-foreground">{stats?.inProgress || 0}</p>
+                    <p className="text-xs mt-1 text-muted-foreground">Active</p>
                   </div>
-                  <p className="text-3xl font-bold text-foreground">{stats?.inProgress || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Active requests</p>
                 </CardContent>
               </Card>
 
-              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Completed</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
+              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md mb-2" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
                       <CheckCircle className="w-5 h-5 text-white" />
                     </div>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Completed</p>
+                    <p className="text-2xl font-bold text-foreground">{stats?.completed || 0}</p>
+                    <p className="text-xs mt-1 text-green-600 dark:text-green-400">
+                      {stats?.totalRequests ? Math.round((stats.completed / stats.totalRequests) * 100) : 0}%
+                    </p>
                   </div>
-                  <p className="text-3xl font-bold text-foreground">{stats?.completed || 0}</p>
-                  <p className="text-xs mt-1 font-medium text-green-600 dark:text-green-400">
-                    {stats?.totalRequests ? Math.round((stats.completed / stats.totalRequests) * 100) : 0}% completion rate
-                  </p>
                 </CardContent>
               </Card>
 
-              <Card className="flex-shrink-0 w-[200px] border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Avg. Completion</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
-                      <BarChart3 className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                  <p className="text-3xl font-bold text-foreground">{stats?.avgCompletionDays || 0}</p>
-                  <p className="text-xs text-muted-foreground mt-1">days</p>
-                </CardContent>
-              </Card>
-
-              <Card className="flex-shrink-0 w-[200px] border-2 border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-red-700 dark:text-red-300">Overdue</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-red-500 to-red-600">
+              <Card className="border-2 border-red-400 dark:border-red-600 bg-red-50 dark:bg-red-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-red-500 to-red-600 mb-2">
                       <AlertTriangle className="w-5 h-5 text-white" />
                     </div>
+                    <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Overdue</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats?.overdue || 0}</p>
+                    <p className="text-xs mt-1 text-red-600 dark:text-red-400">Past deadline</p>
                   </div>
-                  <p className="text-3xl font-bold text-red-600 dark:text-red-400">{stats?.overdue || 0}</p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">Past deadline</p>
                 </CardContent>
               </Card>
 
-              <Card className="flex-shrink-0 w-[200px] border-2 border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Late Completions</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-yellow-500 to-yellow-600">
-                      <MinusCircle className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                  <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">{stats?.lateCompletions || 0}</p>
-                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">Delivered late</p>
-                </CardContent>
-              </Card>
-
-              <Card className="flex-shrink-0 w-[200px] border-2 border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-orange-700 dark:text-orange-300">At Risk</p>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-orange-500 to-orange-600">
+              <Card className="border-2 border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-orange-500 to-orange-600 mb-2">
                       <CircleAlert className="w-5 h-5 text-white" />
                     </div>
+                    <p className="text-xs font-medium text-orange-700 dark:text-orange-300 mb-1">At Risk</p>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{stats?.atRisk || 0}</p>
+                    <p className="text-xs mt-1 text-orange-600 dark:text-orange-400">Due in 3 days</p>
                   </div>
-                  <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{stats?.atRisk || 0}</p>
-                  <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">Due in 3 days</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 border-yellow-400 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 shadow-lg hover:shadow-xl transition-all rounded-xl">
+                <CardContent className="p-4">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md bg-gradient-to-br from-yellow-500 to-yellow-600 mb-2">
+                      <MinusCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-1">Rejected</p>
+                    <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{stats?.rejected || 0}</p>
+                    <p className="text-xs mt-1 text-yellow-600 dark:text-yellow-400">Declined</p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
