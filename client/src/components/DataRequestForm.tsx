@@ -23,6 +23,52 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+// Helper component for character counter
+function CharacterCounter({ current, max }: { current: number; max: number }) {
+  const isNearLimit = current > max * 0.9;
+  const isOverLimit = current > max;
+  
+  return (
+    <p className={`text-xs mt-1 ${
+      isOverLimit ? 'text-red-600 dark:text-red-400 font-semibold' :
+      isNearLimit ? 'text-orange-600 dark:text-orange-400' :
+      'text-gray-500 dark:text-gray-400'
+    }`}>
+      {current}/{max} characters {isOverLimit && '(exceeds limit)'}
+    </p>
+  );
+}
+
+// Helper function to count words
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+}
+
+// Helper function to validate mobile number (11 digits starting with 0)
+function validateMobile(mobile: string): { isValid: boolean; error?: string } {
+  if (!mobile) return { isValid: true };
+  const cleaned = mobile.replace(/\s+/g, '');
+  if (!/^\d+$/.test(cleaned)) {
+    return { isValid: false, error: 'Mobile number must contain only digits' };
+  }
+  if (cleaned.length !== 11) {
+    return { isValid: false, error: 'Mobile number must be exactly 11 digits' };
+  }
+  if (!cleaned.startsWith('0')) {
+    return { isValid: false, error: 'Mobile number must start with 0 (e.g., 03001234567)' };
+  }
+  return { isValid: true };
+}
+
+// Helper function to validate numeric fields
+function validateNumeric(value: string, fieldName: string): { isValid: boolean; error?: string } {
+  if (!value) return { isValid: true };
+  if (!/^\d+$/.test(value)) {
+    return { isValid: false, error: `${fieldName} must contain only numbers` };
+  }
+  return { isValid: true };
+}
+
 function Section({ 
   title, 
   children, 
@@ -109,6 +155,12 @@ export default function DataRequestForm() {
   
   // Track if user has interacted with frequency fields
   const [frequencyInteracted, setFrequencyInteracted] = useState(false);
+
+  // Validation errors for User Investigation fields
+  const [mobileError, setMobileError] = useState<string>('');
+  const [profileIdError, setProfileIdError] = useState<string>('');
+  const [userIdError, setUserIdError] = useState<string>('');
+  const [emisCodeError, setEmisCodeError] = useState<string>('');
 
   // State for all type-specific fields
   const [businessQuestion, setBusinessQuestion] = useState('');
@@ -674,8 +726,14 @@ export default function DataRequestForm() {
         placeholder="Which action or decision will you take after receiving this dashboard or analysis?" 
         className="mt-1" 
         value={decisionAction}
-        onChange={(e) => setDecisionAction(e.target.value)}
+        onChange={(e) => {
+          if (e.target.value.length <= 1500) {
+            setDecisionAction(e.target.value);
+          }
+        }}
+        maxLength={1500}
       />
+      <CharacterCounter current={decisionAction.length} max={1500} />
     </div>
   );
 
@@ -686,15 +744,48 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">Business Question *</label>
-              <Textarea placeholder="What business question or goal will this dashboard address?" className="mt-1" value={businessQuestion} onChange={(e) => setBusinessQuestion(e.target.value)} />
+              <Textarea 
+                placeholder="What business question or goal will this dashboard address?" 
+                className="mt-1" 
+                value={businessQuestion} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setBusinessQuestion(e.target.value);
+                  }
+                }}
+                maxLength={1500}
+              />
+              <CharacterCounter current={businessQuestion.length} max={1500} />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Key Metrics *</label>
-              <Textarea placeholder="What key metrics or visuals do you want to track?" className="mt-1" value={keyMetrics} onChange={(e) => setKeyMetrics(e.target.value)} />
+              <Textarea 
+                placeholder="What key metrics or visuals do you want to track?" 
+                className="mt-1" 
+                value={keyMetrics} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setKeyMetrics(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={keyMetrics.length} max={750} />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Dashboard Audience *</label>
-              <Textarea placeholder="Who will be using this dashboard and how often?" className="mt-1" value={dashboardAudience} onChange={(e) => setDashboardAudience(e.target.value)} />
+              <Textarea 
+                placeholder="Who will be using this dashboard and how often?" 
+                className="mt-1" 
+                value={dashboardAudience} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setDashboardAudience(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={dashboardAudience.length} max={750} />
             </div>
             {renderCommonDecisionField()}
             {renderFrequencyFields()}
@@ -705,11 +796,33 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">Dashboard Modification *</label>
-              <Textarea placeholder="Which dashboard needs modification and why?" className="mt-1" value={dashboardModification} onChange={(e) => setDashboardModification(e.target.value)} />
+              <Textarea 
+                placeholder="Which dashboard needs modification and why?" 
+                className="mt-1" 
+                value={dashboardModification} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setDashboardModification(e.target.value);
+                  }
+                }}
+                maxLength={1500}
+              />
+              <CharacterCounter current={dashboardModification.length} max={1500} />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Exact Changes Required *</label>
-              <Textarea placeholder="What exact changes are required (filters, visuals, new metrics)?" className="mt-1" value={exactChanges} onChange={(e) => setExactChanges(e.target.value)} />
+              <Textarea 
+                placeholder="What exact changes are required (filters, visuals, new metrics)?" 
+                className="mt-1" 
+                value={exactChanges} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setExactChanges(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={exactChanges.length} max={750} />
             </div>
             {renderCommonDecisionField()}
           </>
@@ -719,11 +832,33 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">Hypothesis/Question *</label>
-              <Textarea placeholder="What is the main hypothesis or question this analysis should answer?" className="mt-1" value={hypothesis} onChange={(e) => setHypothesis(e.target.value)} />
+              <Textarea 
+                placeholder="What is the main hypothesis or question this analysis should answer?" 
+                className="mt-1" 
+                value={hypothesis} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setHypothesis(e.target.value);
+                  }
+                }}
+                maxLength={1500}
+              />
+              <CharacterCounter current={hypothesis.length} max={1500} />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Datasets/Dimensions *</label>
-              <Textarea placeholder="What datasets or dimensions should be included?" className="mt-1" value={datasets} onChange={(e) => setDatasets(e.target.value)} />
+              <Textarea 
+                placeholder="What datasets or dimensions should be included?" 
+                className="mt-1" 
+                value={datasets} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setDatasets(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={datasets.length} max={750} />
             </div>
             {renderCommonDecisionField()}
           </>
@@ -733,7 +868,18 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">Data Extraction Details *</label>
-              <Textarea placeholder="What specific data do you need extracted? (e.g., teacher list, school visits)" className="mt-1" value={dataExtraction} onChange={(e) => setDataExtraction(e.target.value)} />
+              <Textarea 
+                placeholder="What specific data do you need extracted? (e.g., teacher list, school visits)" 
+                className="mt-1" 
+                value={dataExtraction} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setDataExtraction(e.target.value);
+                  }
+                }}
+                maxLength={1500}
+              />
+              <CharacterCounter current={dataExtraction.length} max={1500} />
             </div>
             <div>
               <label className="text-sm font-medium">File Format *</label>
@@ -752,11 +898,33 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">Bug Description *</label>
-              <Textarea placeholder="Describe the issue or incorrect data you found" className="mt-1" value={bugDescription} onChange={(e) => setBugDescription(e.target.value)} />
+              <Textarea 
+                placeholder="Describe the issue or incorrect data you found" 
+                className="mt-1" 
+                value={bugDescription} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setBugDescription(e.target.value);
+                  }
+                }}
+                maxLength={1500}
+              />
+              <CharacterCounter current={bugDescription.length} max={1500} />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Bug Location *</label>
-              <Textarea placeholder="Where did you notice this issue? (Dashboard name or table)" className="mt-1" value={bugLocation} onChange={(e) => setBugLocation(e.target.value)} />
+              <Textarea 
+                placeholder="Where did you notice this issue? (Dashboard name or table)" 
+                className="mt-1" 
+                value={bugLocation} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setBugLocation(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={bugLocation.length} max={750} />
             </div>
           </>
         );
@@ -765,15 +933,37 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">BigQuery Email *</label>
-              <Input placeholder="BigQuery email to grant access" className="mt-1" value={bqEmail} onChange={(e) => setBqEmail(e.target.value)} />
+              <Input placeholder="BigQuery email to grant access" className="mt-1" value={bqEmail} onChange={(e) => setBqEmail(e.target.value)} data-testid="input-bq-email" />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Datasets/Tables *</label>
-              <Textarea placeholder="Which datasets/tables do you need access to?" className="mt-1" value={bqDatasets} onChange={(e) => setBqDatasets(e.target.value)} />
+              <Textarea 
+                placeholder="Which datasets/tables do you need access to?" 
+                className="mt-1" 
+                value={bqDatasets} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setBqDatasets(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={bqDatasets.length} max={750} />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Purpose of Access *</label>
-              <Textarea placeholder="Purpose of access (e.g., analysis, QA)" className="mt-1" value={bqPurpose} onChange={(e) => setBqPurpose(e.target.value)} />
+              <Textarea 
+                placeholder="Purpose of access (e.g., analysis, QA)" 
+                className="mt-1" 
+                value={bqPurpose} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setBqPurpose(e.target.value);
+                  }
+                }}
+                maxLength={1500}
+              />
+              <CharacterCounter current={bqPurpose.length} max={1500} />
             </div>
           </>
         );
@@ -782,11 +972,33 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">Feature/Event to Track *</label>
-              <Textarea placeholder="Which feature or event do you want to track?" className="mt-1" value={trackingFeature} onChange={(e) => setTrackingFeature(e.target.value)} />
+              <Textarea 
+                placeholder="Which feature or event do you want to track?" 
+                className="mt-1" 
+                value={trackingFeature} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setTrackingFeature(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={trackingFeature.length} max={750} />
             </div>
             <div className="mb-3">
               <label className="text-sm font-medium">Tracking Trigger *</label>
-              <Textarea placeholder="What should trigger the tracking event?" className="mt-1" value={trackingTrigger} onChange={(e) => setTrackingTrigger(e.target.value)} />
+              <Textarea 
+                placeholder="What should trigger the tracking event?" 
+                className="mt-1" 
+                value={trackingTrigger} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 750) {
+                    setTrackingTrigger(e.target.value);
+                  }
+                }}
+                maxLength={750}
+              />
+              <CharacterCounter current={trackingTrigger.length} max={750} />
             </div>
           </>
         );
@@ -795,31 +1007,87 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">What is the purpose of this investigation? *</label>
-              <Textarea placeholder="Example: confirm the teacher's appearance and activity" className="mt-1" rows={3} value={investigationPurpose} onChange={(e) => setInvestigationPurpose(e.target.value)} />
+              <Textarea 
+                placeholder="Example: confirm the teacher's appearance and activity" 
+                className="mt-1" 
+                rows={3} 
+                value={investigationPurpose} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setInvestigationPurpose(e.target.value);
+                  }
+                }} 
+                maxLength={1500}
+              />
+              <CharacterCounter current={investigationPurpose.length} max={1500} />
             </div>
             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg space-y-3">
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Please provide identification details:</p>
               <div>
                 <label className="text-sm font-medium">User/Teacher Name *</label>
-                <Input placeholder="Full name of the user" className="mt-1" value={userName} onChange={(e) => setUserName(e.target.value)} />
+                <Input placeholder="Full name of the user" className="mt-1" value={userName} onChange={(e) => setUserName(e.target.value)} data-testid="input-user-name" />
               </div>
               <div>
-                <label className="text-sm font-medium">Mobile Number *</label>
-                <Input placeholder="e.g., +92 300 1234567" className="mt-1" value={userMobile} onChange={(e) => setUserMobile(e.target.value)} />
+                <label className="text-sm font-medium">Mobile Number * <span className="text-xs text-gray-500">(Format: 03001234567)</span></label>
+                <Input 
+                  placeholder="03001234567" 
+                  className={`mt-1 ${mobileError ? 'border-red-500 focus:border-red-500' : ''}`}
+                  value={userMobile} 
+                  onChange={(e) => {
+                    setUserMobile(e.target.value);
+                    const validation = validateMobile(e.target.value);
+                    setMobileError(validation.error || '');
+                  }}
+                  data-testid="input-mobile-number"
+                />
+                {mobileError && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{mobileError}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium">Profile ID (Optional)</label>
-                  <Input placeholder="Profile ID" className="mt-1" value={userProfileId} onChange={(e) => setUserProfileId(e.target.value)} />
+                  <label className="text-sm font-medium">Profile ID (Optional) <span className="text-xs text-gray-500">(Numbers only)</span></label>
+                  <Input 
+                    placeholder="12345" 
+                    className={`mt-1 ${profileIdError ? 'border-red-500 focus:border-red-500' : ''}`}
+                    value={userProfileId} 
+                    onChange={(e) => {
+                      setUserProfileId(e.target.value);
+                      const validation = validateNumeric(e.target.value, 'Profile ID');
+                      setProfileIdError(validation.error || '');
+                    }}
+                    data-testid="input-profile-id"
+                  />
+                  {profileIdError && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{profileIdError}</p>}
                 </div>
                 <div>
-                  <label className="text-sm font-medium">User ID (Optional)</label>
-                  <Input placeholder="User ID" className="mt-1" value={userId} onChange={(e) => setUserId(e.target.value)} />
+                  <label className="text-sm font-medium">User ID (Optional) <span className="text-xs text-gray-500">(Numbers only)</span></label>
+                  <Input 
+                    placeholder="67890" 
+                    className={`mt-1 ${userIdError ? 'border-red-500 focus:border-red-500' : ''}`}
+                    value={userId} 
+                    onChange={(e) => {
+                      setUserId(e.target.value);
+                      const validation = validateNumeric(e.target.value, 'User ID');
+                      setUserIdError(validation.error || '');
+                    }}
+                    data-testid="input-user-id"
+                  />
+                  {userIdError && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{userIdError}</p>}
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium">School EMIS Code *</label>
-                <Input placeholder="School EMIS Code" className="mt-1" value={schoolEmisCode} onChange={(e) => setSchoolEmisCode(e.target.value)} />
+                <label className="text-sm font-medium">School EMIS Code * <span className="text-xs text-gray-500">(Numbers only)</span></label>
+                <Input 
+                  placeholder="123456" 
+                  className={`mt-1 ${emisCodeError ? 'border-red-500 focus:border-red-500' : ''}`}
+                  value={schoolEmisCode} 
+                  onChange={(e) => {
+                    setSchoolEmisCode(e.target.value);
+                    const validation = validateNumeric(e.target.value, 'EMIS Code');
+                    setEmisCodeError(validation.error || '');
+                  }}
+                  data-testid="input-emis-code"
+                />
+                {emisCodeError && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{emisCodeError}</p>}
               </div>
             </div>
           </>
@@ -829,11 +1097,23 @@ export default function DataRequestForm() {
           <>
             <div className="mb-3">
               <label className="text-sm font-medium">What skill or topic do you want to learn or strengthen? *</label>
-              <Textarea placeholder="Example: Using dashboards, extracting data from BigQuery, interpreting engagement metrics" className="mt-1" rows={3} value={trainingTopic} onChange={(e) => setTrainingTopic(e.target.value)} />
+              <Textarea 
+                placeholder="Example: Using dashboards, extracting data from BigQuery, interpreting engagement metrics" 
+                className="mt-1" 
+                rows={3} 
+                value={trainingTopic} 
+                onChange={(e) => {
+                  if (e.target.value.length <= 1500) {
+                    setTrainingTopic(e.target.value);
+                  }
+                }}
+                maxLength={1500}
+              />
+              <CharacterCounter current={trainingTopic.length} max={1500} />
             </div>
             <div>
               <label className="text-sm font-medium">How many hours of basic training do you require? *</label>
-              <Input type="number" step="0.5" min="0.5" placeholder="Example: 1 hour for using dashboards, 2 hours for running queries in BQ" className="mt-1" value={trainingHours} onChange={(e) => setTrainingHours(e.target.value)} />
+              <Input type="number" step="0.5" min="0.5" placeholder="Example: 1 hour for using dashboards, 2 hours for running queries in BQ" className="mt-1" value={trainingHours} onChange={(e) => setTrainingHours(e.target.value)} data-testid="input-training-hours" />
             </div>
           </>
         );
@@ -855,7 +1135,19 @@ export default function DataRequestForm() {
             {experimentSubType === 'design_new' && (
               <div className="mb-3">
                 <label className="text-sm font-medium">Explain the problem you are trying to solve and its expected impact *</label>
-                <Textarea placeholder="Describe the problem, hypothesis, and expected impact..." className="mt-1" rows={4} value={experimentProblem} onChange={(e) => setExperimentProblem(e.target.value)} />
+                <Textarea 
+                  placeholder="Describe the problem, hypothesis, and expected impact..." 
+                  className="mt-1" 
+                  rows={4} 
+                  value={experimentProblem} 
+                  onChange={(e) => {
+                    if (e.target.value.length <= 2500) {
+                      setExperimentProblem(e.target.value);
+                    }
+                  }}
+                  maxLength={2500}
+                />
+                <CharacterCounter current={experimentProblem.length} max={2500} />
               </div>
             )}
             
@@ -870,11 +1162,35 @@ export default function DataRequestForm() {
               <>
                 <div className="mb-3">
                   <label className="text-sm font-medium">What kind of analysis support do you require? *</label>
-                  <Textarea placeholder="Example: cleaning data, running comparisons, visualization, interpreting results" className="mt-1" rows={3} value={experimentAnalysisType} onChange={(e) => setExperimentAnalysisType(e.target.value)} />
+                  <Textarea 
+                    placeholder="Example: cleaning data, running comparisons, visualization, interpreting results" 
+                    className="mt-1" 
+                    rows={3} 
+                    value={experimentAnalysisType} 
+                    onChange={(e) => {
+                      if (e.target.value.length <= 1500) {
+                        setExperimentAnalysisType(e.target.value);
+                      }
+                    }}
+                    maxLength={1500}
+                  />
+                  <CharacterCounter current={experimentAnalysisType.length} max={1500} />
                 </div>
                 <div className="mb-3">
                   <label className="text-sm font-medium">Attach the dataset and include a short note explaining the variables *</label>
-                  <Textarea placeholder="Paste link to dataset and explain the key variables..." className="mt-1" rows={3} value={experimentDatasetLink} onChange={(e) => setExperimentDatasetLink(e.target.value)} />
+                  <Textarea 
+                    placeholder="Paste link to dataset and explain the key variables..." 
+                    className="mt-1" 
+                    rows={3} 
+                    value={experimentDatasetLink} 
+                    onChange={(e) => {
+                      if (e.target.value.length <= 1500) {
+                        setExperimentDatasetLink(e.target.value);
+                      }
+                    }}
+                    maxLength={1500}
+                  />
+                  <CharacterCounter current={experimentDatasetLink.length} max={1500} />
                 </div>
               </>
             )}
@@ -882,14 +1198,38 @@ export default function DataRequestForm() {
             {experimentSubType === 'implementation' && (
               <div className="mb-3">
                 <label className="text-sm font-medium">What type of implementation support do you require and why? *</label>
-                <Textarea placeholder="Example: help with randomization, monitoring rollout, data tracking setup, etc." className="mt-1" rows={4} value={experimentImplementationType} onChange={(e) => setExperimentImplementationType(e.target.value)} />
+                <Textarea 
+                  placeholder="Example: help with randomization, monitoring rollout, data tracking setup, etc." 
+                  className="mt-1" 
+                  rows={4} 
+                  value={experimentImplementationType} 
+                  onChange={(e) => {
+                    if (e.target.value.length <= 2500) {
+                      setExperimentImplementationType(e.target.value);
+                    }
+                  }}
+                  maxLength={2500}
+                />
+                <CharacterCounter current={experimentImplementationType.length} max={2500} />
               </div>
             )}
             
             {experimentSubType === 'other' && (
               <div className="mb-3">
                 <label className="text-sm font-medium">Explain your request briefly *</label>
-                <Textarea placeholder="Describe what you need help with..." className="mt-1" rows={4} value={experimentOtherDetails} onChange={(e) => setExperimentOtherDetails(e.target.value)} />
+                <Textarea 
+                  placeholder="Describe what you need help with..." 
+                  className="mt-1" 
+                  rows={4} 
+                  value={experimentOtherDetails} 
+                  onChange={(e) => {
+                    if (e.target.value.length <= 2500) {
+                      setExperimentOtherDetails(e.target.value);
+                    }
+                  }}
+                  maxLength={2500}
+                />
+                <CharacterCounter current={experimentOtherDetails.length} max={2500} />
               </div>
             )}
           </>
@@ -898,7 +1238,18 @@ export default function DataRequestForm() {
         return (
           <div className="mb-3">
             <label className="text-sm font-medium">Request Description *</label>
-            <Textarea placeholder="Describe your request in detail" className="mt-1" value={otherDescription} onChange={(e) => setOtherDescription(e.target.value)} />
+            <Textarea 
+              placeholder="Describe your request in detail" 
+              className="mt-1" 
+              value={otherDescription} 
+              onChange={(e) => {
+                if (e.target.value.length <= 2500) {
+                  setOtherDescription(e.target.value);
+                }
+              }}
+              maxLength={2500}
+            />
+            <CharacterCounter current={otherDescription.length} max={2500} />
           </div>
         );
       default:
