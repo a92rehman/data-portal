@@ -15,18 +15,24 @@ export function formatPriority(priority: string): string {
 
 export function formatRequestType(type: string): string {
   switch (type) {
-    case "new_dashboard":
-      return "New Dashboard/Report";
-    case "modify_dashboard":
-      return "Modify Dashboard/Report";
+    case "user_investigation":
+      return "User Investigation";
+    case "data_extraction":
+      return "One-time Data Request";
+    case "bq_access":
+      return "BigQuery/Tool Access";
+    case "data_bug":
+      return "Data Bug/Data Quality Issue";
     case "adhoc_analysis":
       return "Ad-hoc Analysis";
-    case "data_extraction":
-      return "Data Extraction";
-    case "data_bug":
-      return "Data Bug";
-    case "bq_access":
-      return "BigQuery Access";
+    case "modify_dashboard":
+      return "Modification to Existing Dashboard";
+    case "new_dashboard":
+      return "New Dashboard";
+    case "training":
+      return "Training (Capacity Building)";
+    case "experimentation":
+      return "Experimentation";
     case "tracking":
       return "Event Tracking";
     case "metric_change":
@@ -35,8 +41,6 @@ export function formatRequestType(type: string): string {
       return "Pipeline Change";
     case "recurring_report":
       return "Recurring Report";
-    case "experimentation":
-      return "Experimentation";
     case "other":
       return "Other";
     default:
