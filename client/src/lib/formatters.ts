@@ -16,23 +16,23 @@ export function formatPriority(priority: string): string {
 export function formatRequestType(type: string): string {
   switch (type) {
     case "user_investigation":
-      return "User Investigation";
+      return "👤 User Investigation";
     case "data_extraction":
-      return "One-time Data Request";
+      return "📊 One-time Data Request";
     case "bq_access":
-      return "BigQuery/Tool Access";
+      return "🔐 BigQuery/Tool Access";
     case "data_bug":
-      return "Data Bug/Data Quality Issue";
+      return "🐛 Data Bug/Data Quality Issue";
     case "adhoc_analysis":
-      return "Ad-hoc Analysis";
+      return "📈 Ad-hoc Analysis";
     case "modify_dashboard":
-      return "Modification to Existing Dashboard";
+      return "✏️ Modification to Existing Dashboard";
     case "new_dashboard":
-      return "New Dashboard";
+      return "📋 New Dashboard";
     case "training":
-      return "Training (Capacity Building)";
+      return "🎓 Training (Capacity Building)";
     case "experimentation":
-      return "Experimentation";
+      return "🔬 Experimentation";
     case "tracking":
       return "Event Tracking";
     case "metric_change":
@@ -42,7 +42,7 @@ export function formatRequestType(type: string): string {
     case "recurring_report":
       return "Recurring Report";
     case "other":
-      return "Other";
+      return "📝 Other";
     default:
       return type.charAt(0).toUpperCase() + type.slice(1);
   }

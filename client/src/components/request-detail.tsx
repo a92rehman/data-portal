@@ -2720,20 +2720,16 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="user_investigation">User Investigation</SelectItem>
-                <SelectItem value="data_extraction">One-time Data Request</SelectItem>
-                <SelectItem value="bq_access">BigQuery/Tool Access</SelectItem>
-                <SelectItem value="data_bug">Data Bug/Data Quality Issue</SelectItem>
-                <SelectItem value="adhoc_analysis">Ad-hoc Analysis</SelectItem>
-                <SelectItem value="modify_dashboard">Modification to Existing Dashboard</SelectItem>
-                <SelectItem value="new_dashboard">New Dashboard</SelectItem>
-                <SelectItem value="training">Training (Capacity Building)</SelectItem>
-                <SelectItem value="experimentation">Experimentation</SelectItem>
-                <SelectItem value="tracking">Event Tracking</SelectItem>
-                <SelectItem value="metric_change">Metric Change</SelectItem>
-                <SelectItem value="pipeline_change">Pipeline Change</SelectItem>
-                <SelectItem value="recurring_report">Recurring Report</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="user_investigation">👤 User Investigation - Verify user data, check activity logs</SelectItem>
+                <SelectItem value="data_extraction">📊 One-time Data Request - Export data as CSV/Excel</SelectItem>
+                <SelectItem value="bq_access">🔐 BigQuery/Tool Access - Request database or tool access</SelectItem>
+                <SelectItem value="data_bug">🐛 Data Bug/Data Quality Issue - Report data inconsistencies</SelectItem>
+                <SelectItem value="adhoc_analysis">📈 Ad-hoc Analysis - Deep-dive analysis on specific question</SelectItem>
+                <SelectItem value="modify_dashboard">✏️ Modification to Existing Dashboard - Update existing reports</SelectItem>
+                <SelectItem value="new_dashboard">📋 New Dashboard - Create new reports or visualizations</SelectItem>
+                <SelectItem value="training">🎓 Training (Capacity Building) - Learn data tools and skills</SelectItem>
+                <SelectItem value="experimentation">🔬 Experimentation - Design, review, or analyze experiments</SelectItem>
+                <SelectItem value="other">📝 Other - Any other data-related request</SelectItem>
               </SelectContent>
             </Select>
             {request.type !== editedRequestType && (
