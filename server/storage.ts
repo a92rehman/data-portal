@@ -1004,6 +1004,13 @@ export class DatabaseStorage implements IStorage {
     inProgress: number;
     blocked: number;
     completed: number;
+    // Add time-based metrics
+    totalExpectedHours: number;
+    totalExpectedDays: number;
+    weeklyCapacity: number;
+    currentUtilization: number;
+    availableDays: number;
+    capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
   }>> {
     // Get all analysts
     const analysts = await db
@@ -1023,12 +1030,43 @@ export class DatabaseStorage implements IStorage {
           .where(eq(tasks.assignedToId, analyst.id))
           .groupBy(tasks.status);
 
+        // Get time-based metrics for active tasks
+        const activeTasks = await db
+          .select({
+            expectedTime: tasks.expectedTime,
+          })
+          .from(tasks)
+          .where(
+            and(
+              eq(tasks.assignedToId, analyst.id),
+              inArray(tasks.status, ['to_do', 'in_progress', 'blocked'])
+            )
+          );
+
         const statusMap = statusCounts.reduce((acc, item) => {
           acc[item.status] = item.count;
           return acc;
         }, {} as Record<string, number>);
 
         const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
+        
+        // Calculate time-based workload using 6-hour days
+        const totalExpectedHours = activeTasks.reduce((sum, task) => 
+          sum + (task.expectedTime || 0), 0);
+        
+        // Convert to days using 6-hour standard
+        const totalExpectedDays = Math.ceil(totalExpectedHours / 6);
+        
+        // Weekly capacity: 5 working days per week
+        const weeklyCapacity = 5;
+        const currentUtilization = (totalExpectedDays / weeklyCapacity) * 100;
+        const availableDays = Math.max(0, weeklyCapacity - totalExpectedDays);
+
+        // Smart capacity assessment based on days
+        const capacityLevel = totalExpectedDays === 0 ? 'available' :
+                             currentUtilization <= 20 ? 'light' :
+                             currentUtilization <= 60 ? 'moderate' :
+                             currentUtilization <= 80 ? 'heavy' : 'overloaded';
 
         return {
           analystId: analyst.id,
@@ -1039,11 +1077,18 @@ export class DatabaseStorage implements IStorage {
           inProgress: statusMap['in_progress'] || 0,
           blocked: statusMap['blocked'] || 0,
           completed: statusMap['completed'] || 0,
+          // Time-based metrics
+          totalExpectedHours,
+          totalExpectedDays,
+          weeklyCapacity,
+          currentUtilization,
+          availableDays,
+          capacityLevel,
         };
       })
     );
 
-    return workload.sort((a, b) => b.totalTasks - a.totalTasks);
+    return workload.sort((a, b) => b.totalExpectedDays - a.totalExpectedDays);
   }
 
   async getOverdueTasksCount(): Promise<number> {

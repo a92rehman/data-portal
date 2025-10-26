@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChartLine, Sparkles, TrendingUp, Users, Shield, Zap, ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
+import AnimatedLogo from "@/components/AnimatedLogo";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
@@ -18,8 +19,8 @@ export default function Landing() {
 
       <div className="w-full max-w-6xl relative z-10 space-y-8 lg:space-y-12">
         <div className="text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 shadow-2xl" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-            <ChartLine className="w-10 h-10 text-white" />
+          <div className="flex justify-center mb-4">
+            <AnimatedLogo size="xl" />
           </div>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent leading-tight">
             Taleemabad DataHub
@@ -37,7 +38,7 @@ export default function Landing() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
           <Button 
             size="lg"
-            className="w-full sm:w-auto text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all px-8 py-6"
+            className="w-full sm:w-auto text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all px-8 py-6 hover-scale animate-slide-up"
             style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}
             onClick={() => setLocation("/auth")}
             data-testid="button-signin"
@@ -48,7 +49,8 @@ export default function Landing() {
           <Button 
             size="lg"
             variant="outline"
-            className="w-full sm:w-auto text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-purple-300 hover:border-purple-500 dark:border-purple-600 dark:hover:border-purple-400 px-8 py-6"
+            className="w-full sm:w-auto text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all border-2 border-purple-300 hover:border-purple-500 dark:border-purple-600 dark:hover:border-purple-400 px-8 py-6 hover-scale animate-slide-up"
+            style={{animationDelay: '0.1s'}}
             onClick={() => {
               localStorage.setItem("signup_mode", "true");
               setLocation("/auth");
@@ -61,10 +63,10 @@ export default function Landing() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6 max-w-5xl mx-auto">
-          <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+          <Card className="border-2 border-purple-200 dark:border-purple-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm hover-lift animate-fade-in">
             <CardContent className="p-6">
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center animate-float" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -75,10 +77,10 @@ export default function Landing() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+          <Card className="border-2 border-blue-200 dark:border-blue-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm hover-lift animate-fade-in" style={{animationDelay: '0.1s'}}>
             <CardContent className="p-6">
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center animate-float" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)', animationDelay: '0.5s'}}>
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -89,10 +91,10 @@ export default function Landing() {
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-pink-200 dark:border-pink-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sm:col-span-2 lg:col-span-1">
+          <Card className="border-2 border-pink-200 dark:border-pink-800 shadow-xl hover:shadow-2xl transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sm:col-span-2 lg:col-span-1 hover-lift animate-fade-in" style={{animationDelay: '0.2s'}}>
             <CardContent className="p-6">
               <div className="space-y-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(330, 80%, 60%) 0%, hsl(340, 82%, 65%) 100%)'}}>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center animate-float" style={{background: 'linear-gradient(135deg, hsl(330, 80%, 60%) 0%, hsl(340, 82%, 65%) 100%)', animationDelay: '1s'}}>
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>

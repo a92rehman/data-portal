@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ChartLine, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
+import AnimatedLogo from "@/components/AnimatedLogo";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -123,8 +124,8 @@ export default function Auth() {
 
       <Card className="w-full max-w-md relative z-10 shadow-2xl border-2 border-gray-200 bg-white/90 backdrop-blur-sm">
         <CardHeader className="text-center pb-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 mx-auto shadow-2xl" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-            <ChartLine className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-4">
+            <AnimatedLogo size="lg" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
             Taleemabad DataHub

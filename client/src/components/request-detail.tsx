@@ -28,6 +28,8 @@ import {
   Settings, 
   Clock,
   CircleAlert,
+  Target,
+  Info,
   MinusCircle,
   InfoIcon,
   UserPlus,
@@ -87,9 +89,61 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskAssignedTo, setNewTaskAssignedTo] = useState("unassigned");
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskStatus, setNewTaskStatus] = useState("to_do");
+  const [timeEstimation, setTimeEstimation] = useState({
+    baseHours: null as number | null,
+    complexity: 'medium' as 'simple' | 'medium' | 'complex',
+    confidence: 'medium' as 'high' | 'medium' | 'low'
+  });
   
   const { sendTyping, typingUsers } = useWebSocket((user as User)?.id);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // PERT calculation function
+  const calculatePertValues = () => {
+    if (!timeEstimation.baseHours) {
+      return { optimistic: 0, mostLikely: 0, pessimistic: 0 };
+    }
+    
+    const base = timeEstimation.baseHours;
+    
+    // Complexity multipliers - Only affects range, NOT base time
+    const complexityMultipliers = {
+      simple: { mostLikely: 1.0, range: 0.2 },    // Tight range (±20%)
+      medium: { mostLikely: 1.0, range: 0.5 },    // Medium range (±50%)
+      complex: { mostLikely: 1.0, range: 0.8 }    // Wide range (±80%)
+    };
+    
+    // Confidence multipliers - Affects pessimistic dramatically
+    const confidenceMultipliers = {
+      high: 1.0,    // Pessimistic = mostLikely + range
+      medium: 2.0,  // Pessimistic = mostLikely + 2×range
+      low: 3.5      // Pessimistic = mostLikely + 3.5×range
+    };
+    
+    const complexity = complexityMultipliers[timeEstimation.complexity];
+    const confidence = confidenceMultipliers[timeEstimation.confidence];
+    
+    const mostLikely = base * complexity.mostLikely;
+    const range = base * complexity.range;
+    
+    return {
+      optimistic: Math.max(0.1, mostLikely - range),
+      mostLikely: mostLikely,
+      pessimistic: mostLikely + (range * confidence)
+    };
+  };
+  
+  const pertValues = calculatePertValues();
+  const expectedTime = (pertValues.optimistic + 4 * pertValues.mostLikely + pertValues.pessimistic) / 6;
+  const HOURS_PER_DAY = 6;
+  const hoursToDays = (hours: number): number => {
+    return Math.ceil(hours / HOURS_PER_DAY);
+  };
+  const expectedDays = hoursToDays(expectedTime);
+  const displayExpectedTime = expectedTime >= 6
+    ? `${Math.round(expectedTime / 6 * 2) / 2} day${Math.round(expectedTime / 6 * 2) / 2 > 1 ? 's' : ''}`
+    : `${expectedTime.toFixed(1)}h`;
   
   // Handler to navigate to tasks page with specific task
   const handleTaskClick = (taskId: string) => {
@@ -2291,52 +2345,182 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           }
         }}
       >
-        <DialogContent className="max-w-lg" data-testid="dialog-create-task">
+        <DialogContent className="max-w-2xl" data-testid="dialog-create-task">
           <DialogHeader>
             <DialogTitle className="text-lg flex items-center gap-2">
-              <ListChecks className="w-4 h-4 text-primary" />
+              <Clock className="w-4 h-4 text-primary" />
               Create New Task
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Track work for this request
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            <div>
-              <Label className="text-sm font-medium">Task Title *</Label>
-              <Input
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="Task title..."
-                className="mt-1.5"
-                data-testid="input-task-title"
-              />
-            </div>
+          
+          <div className="space-y-6 py-4">
+            {/* Basic Task Info */}
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Task Title *</Label>
+                <Input
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="Task title..."
+                  className="mt-1"
+                  data-testid="input-task-title"
+                />
+              </div>
 
-            <div>
-              <Label className="text-sm font-medium">Description</Label>
-              <Textarea
-                value={newTaskDescription}
-                onChange={(e) => setNewTaskDescription(e.target.value)}
-                placeholder="Add details..."
-                className="mt-1.5 min-h-[80px] resize-none"
-                data-testid="textarea-task-description"
-              />
+              <div>
+                <Label className="text-sm font-medium">Description</Label>
+                <Textarea
+                  value={newTaskDescription}
+                  onChange={(e) => setNewTaskDescription(e.target.value)}
+                  placeholder="Add details..."
+                  className="mt-1 min-h-[80px] resize-none"
+                  data-testid="textarea-task-description"
+                />
+              </div>
             </div>
-
+            
+            {/* Time Estimation Section */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-primary" />
+                <h3 className="font-medium">Time Estimation</h3>
+                <Badge variant="outline" className="text-xs">
+                  {displayExpectedTime}
+                </Badge>
+              </div>
+              
+              {/* Complexity, Confidence, and Custom Input Row */}
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                {/* Complexity Dropdown */}
+                <div>
+                  <Label className="text-sm font-medium">Complexity</Label>
+                  <Select 
+                    value={timeEstimation.complexity} 
+                    onValueChange={(value) => setTimeEstimation(prev => ({ ...prev, complexity: value as any }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="simple">Simple</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="complex">Complex</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Confidence Dropdown */}
+                <div>
+                  <Label className="text-sm font-medium">Confidence</Label>
+                  <Select 
+                    value={timeEstimation.confidence} 
+                    onValueChange={(value) => setTimeEstimation(prev => ({ ...prev, confidence: value as any }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Custom Hours Input */}
+                <div>
+                  <Label className="text-sm font-medium">Hours</Label>
+                  <Input
+                    type="number"
+                    placeholder="Enter hours..."
+                    value={timeEstimation.baseHours || ''}
+                    onChange={(e) => setTimeEstimation(prev => ({ 
+                      ...prev, 
+                      baseHours: e.target.value ? parseFloat(e.target.value) : null 
+                    }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              
+              {/* Compact PERT Breakdown Display */}
+              {timeEstimation.baseHours && (
+                <div className="p-2.5 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <Target className="w-4 h-4 text-primary" />
+                      <h4 className="font-medium">PERT Analysis</h4>
+                    </div>
+                    <Badge className="text-sm bg-purple-600 text-white px-3 py-1">
+                      Expected: {displayExpectedTime}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="flex items-center justify-between p-1.5 bg-green-50 dark:bg-green-950/20 rounded">
+                      <div className="text-green-600 font-medium text-sm">Optimistic</div>
+                      <div className="text-base font-bold">{pertValues.optimistic.toFixed(1)}h</div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-1.5 bg-blue-50 dark:bg-blue-950/20 rounded">
+                      <div className="text-blue-600 font-medium text-sm">Most Likely</div>
+                      <div className="text-base font-bold">{pertValues.mostLikely.toFixed(1)}h</div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-1.5 bg-orange-50 dark:bg-orange-950/20 rounded">
+                      <div className="text-orange-600 font-medium text-sm">Pessimistic</div>
+                      <div className="text-base font-bold">{pertValues.pessimistic.toFixed(1)}h</div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-1.5 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-3 h-3" />
+                      <span>Based on {timeEstimation.complexity} complexity and {timeEstimation.confidence} confidence</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Due Date and Status - Two Column Layout */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  Due Date
+                </Label>
+                <Input
+                  type="date"
+                  value={newTaskDueDate}
+                  onChange={(e) => setNewTaskDueDate(e.target.value)}
+                  className="mt-1"
+                  data-testid="input-due-date"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Status</Label>
+                <Select value={newTaskStatus} onValueChange={setNewTaskStatus}>
+                  <SelectTrigger className="mt-1" data-testid="select-task-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="to_do">To Do</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="blocked">Blocked</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Assignment Info */}
             <div>
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" />
-                Due Date
-              </Label>
-              <Input
-                type="date"
-                value={newTaskDueDate}
-                onChange={(e) => setNewTaskDueDate(e.target.value)}
-                className="mt-1.5"
-                data-testid="input-due-date"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
+              <p className="text-xs text-muted-foreground">
                 Task will be automatically assigned to you. Data Lead can reassign it later if needed.
               </p>
             </div>
@@ -2349,6 +2533,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 setNewTaskTitle("");
                 setNewTaskDescription("");
                 setNewTaskDueDate("");
+                setTimeEstimation({ baseHours: null, complexity: 'medium', confidence: 'medium' });
               }}
               data-testid="button-cancel-create-task"
             >
@@ -2359,9 +2544,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 const taskData: any = {
                   title: newTaskTitle.trim(),
                   description: newTaskDescription.trim() || undefined,
-                  status: "to_do",
+                  status: newTaskStatus,
                   requestId: request.id,
                   dueDate: newTaskDueDate || undefined,
+                  optimisticTime: pertValues.optimistic,
+                  mostLikelyTime: pertValues.mostLikely,
+                  pessimisticTime: pertValues.pessimistic,
                 };
 
                 createTaskMutation.mutate(taskData);

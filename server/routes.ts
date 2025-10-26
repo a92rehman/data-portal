@@ -2047,6 +2047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const taskSchema = z.object({
         title: z.string().min(1),
         description: z.string().optional(),
+        status: z.enum(['to_do', 'in_progress', 'blocked', 'completed']).optional(),
         optimisticTime: z.number().nonnegative().optional(),
         mostLikelyTime: z.number().nonnegative().optional(),
         pessimisticTime: z.number().nonnegative().optional(),
@@ -2058,13 +2059,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const taskData = taskSchema.parse(req.body);
       
+      // Debug: Log the received status
+      console.log('Creating task with status:', taskData.status);
+      
       // Transform dueDate string to Date if provided
       // Auto-assign to creator if no assignee specified
       const transformedData = {
         ...taskData,
         assignedToId: taskData.assignedToId || req.user.id, // Auto-assign to creator
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : undefined,
+        // Ensure status is preserved if provided
+        status: taskData.status || 'to_do',
       };
+      
+      // Debug: Log the final status being saved
+      console.log('Saving task with status:', transformedData.status);
       
       // Create task
       const task = await storage.createTask(transformedData, req.user.id);

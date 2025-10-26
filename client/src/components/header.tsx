@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Search, ChartLine, X, Check, ArrowLeft, Moon, Sun, Settings, LogOut, Menu } from "lucide-react";
+import AnimatedLogo from "./AnimatedLogo";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -163,13 +164,7 @@ export default function Header({ user }: HeaderProps) {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
-            <ChartLine className="w-7 h-7 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">Taleemabad DataHub</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Request Management System</p>
-          </div>
+          <AnimatedLogo size="md" showText={true} />
         </div>
 
         <div className="flex items-center gap-4">
