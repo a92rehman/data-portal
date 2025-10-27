@@ -1012,34 +1012,81 @@ export class DatabaseStorage implements IStorage {
     availableDays: number;
     capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
   }>> {
-    // Get all analysts
-    const analysts = await db
+    // Helper function: Calculate urgency factor based on due date
+    const calculateUrgencyFactor = (dueDate: Date | null): number => {
+      if (!dueDate) return 0.8; // No due date = lowest priority
+      
+      const now = new Date();
+      const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysUntilDue < 0) return 1.5;      // Overdue
+      if (daysUntilDue <= 2) return 1.3;     // Due within 2 days
+      if (daysUntilDue <= 7) return 1.1;     // Due within 1 week
+      if (daysUntilDue <= 14) return 1.0;    // Due within 2 weeks
+      return 0.9;                             // Due beyond 2 weeks
+    };
+
+    // Helper function: Get priority weight
+    const getPriorityWeight = (priority: string | null): number => {
+      switch (priority) {
+        case 'critical': return 1.3;
+        case 'high': return 1.15;
+        case 'medium': return 1.0;
+        case 'low': return 0.85;
+        default: return 1.0;
+      }
+    };
+
+    // Helper function: Get status factor
+    const getStatusFactor = (status: string): number => {
+      switch (status) {
+        case 'to_do': return 1.0;
+        case 'in_progress': return 1.2;  // Higher priority for in-progress work
+        case 'blocked': return 0.3;       // Reduced weight for blocked tasks
+        case 'completed': return 0;       // Exclude completed tasks
+        default: return 1.0;
+      }
+    };
+
+    // Constants for workload calculation
+    const HOURS_PER_DAY = 6;
+    const PRODUCTIVITY_FACTOR = 0.75; // Account for meetings, admin, context switching
+    const DAYS_PER_WEEK = 5;
+    const EFFECTIVE_WEEKLY_CAPACITY = DAYS_PER_WEEK * HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 22.5 hours
+
+    // Get all analysts AND team leads
+    const teamMembers = await db
       .select()
       .from(users)
-      .where(eq(users.role, 'analyst'));
+      .where(or(eq(users.role, 'analyst'), eq(users.role, 'team_lead')));
 
     const workload = await Promise.all(
-      analysts.map(async (analyst) => {
-        // Get task counts by status for this analyst
+      teamMembers.map(async (member) => {
+        // Get task counts by status
         const statusCounts = await db
           .select({
             status: tasks.status,
             count: count(),
           })
           .from(tasks)
-          .where(eq(tasks.assignedToId, analyst.id))
+          .where(eq(tasks.assignedToId, member.id))
           .groupBy(tasks.status);
 
-        // Get time-based metrics for active tasks
+        // Get detailed task data with request priority for active tasks
         const activeTasks = await db
           .select({
             expectedTime: tasks.expectedTime,
+            dueDate: tasks.dueDate,
+            status: tasks.status,
+            requestId: tasks.requestId,
+            requestPriority: dataRequests.priority,
           })
           .from(tasks)
+          .leftJoin(dataRequests, eq(tasks.requestId, dataRequests.id))
           .where(
             and(
-              eq(tasks.assignedToId, analyst.id),
-              inArray(tasks.status, ['to_do', 'in_progress', 'blocked'])
+              eq(tasks.assignedToId, member.id),
+              sql`${tasks.status} IN ('to_do', 'in_progress', 'blocked')`
             )
           );
 
@@ -1050,39 +1097,51 @@ export class DatabaseStorage implements IStorage {
 
         const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
         
-        // Calculate time-based workload using 6-hour days
+        // Calculate weighted workload
+        const totalWeightedHours = activeTasks.reduce((sum, task) => {
+          const baseHours = task.expectedTime || 0;
+          const priorityWeight = getPriorityWeight(task.requestPriority);
+          const urgencyFactor = calculateUrgencyFactor(task.dueDate);
+          const statusFactor = getStatusFactor(task.status);
+          
+          return sum + (baseHours * priorityWeight * urgencyFactor * statusFactor);
+        }, 0);
+        
+        // Calculate unweighted hours for reference
         const totalExpectedHours = activeTasks.reduce((sum, task) => 
           sum + (task.expectedTime || 0), 0);
         
-        // Convert to days using 6-hour standard
-        const totalExpectedDays = Math.ceil(totalExpectedHours / 6);
+        // Convert weighted hours to days
+        const totalExpectedDays = totalWeightedHours / HOURS_PER_DAY;
         
-        // Weekly capacity: 5 working days per week
-        const weeklyCapacity = 5;
-        const currentUtilization = (totalExpectedDays / weeklyCapacity) * 100;
-        const availableDays = Math.max(0, weeklyCapacity - totalExpectedDays);
+        // Calculate utilization based on effective weekly capacity
+        const currentUtilization = (totalWeightedHours / EFFECTIVE_WEEKLY_CAPACITY) * 100;
+        const availableHours = Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - totalWeightedHours);
+        const availableDays = availableHours / HOURS_PER_DAY;
 
-        // Smart capacity assessment based on days
-        const capacityLevel = totalExpectedDays === 0 ? 'available' :
-                             currentUtilization <= 20 ? 'light' :
-                             currentUtilization <= 60 ? 'moderate' :
-                             currentUtilization <= 80 ? 'heavy' : 'overloaded';
+        // Enhanced capacity assessment
+        const capacityLevel = 
+          totalWeightedHours === 0 ? 'available' :
+          currentUtilization <= 20 ? 'available' :
+          currentUtilization <= 50 ? 'light' :
+          currentUtilization <= 75 ? 'moderate' :
+          currentUtilization <= 95 ? 'heavy' : 'overloaded';
 
         return {
-          analystId: analyst.id,
-          firstName: analyst.firstName || '',
-          lastName: analyst.lastName || '',
+          analystId: member.id,
+          firstName: member.firstName || '',
+          lastName: member.lastName || '',
           totalTasks,
           toDo: statusMap['to_do'] || 0,
           inProgress: statusMap['in_progress'] || 0,
           blocked: statusMap['blocked'] || 0,
           completed: statusMap['completed'] || 0,
-          // Time-based metrics
-          totalExpectedHours,
-          totalExpectedDays,
-          weeklyCapacity,
-          currentUtilization,
-          availableDays,
+          // Time-based metrics (now weighted)
+          totalExpectedHours: Math.round(totalWeightedHours * 10) / 10, // Round to 1 decimal
+          totalExpectedDays: Math.round(totalExpectedDays * 10) / 10,
+          weeklyCapacity: DAYS_PER_WEEK,
+          currentUtilization: Math.round(currentUtilization * 10) / 10,
+          availableDays: Math.round(availableDays * 10) / 10,
           capacityLevel,
         };
       })
