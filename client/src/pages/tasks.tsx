@@ -17,9 +17,51 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink, Edit2, Check, X, Clock, Target, Info } from "lucide-react";
+import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink, Edit2, Check, X, Clock, Target, Info, ChevronDown, ChevronRight, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskWithDetails, User, DataRequestWithDetails } from "@shared/schema";
+
+// Time conversion constants - aligned with analytics
+const HOURS_PER_DAY = 6;
+const PRODUCTIVITY_FACTOR = 0.75;
+const EFFECTIVE_HOURS_PER_DAY = HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 4.5 hours
+
+// Task health calculation helper
+const getTaskHealth = (task: TaskWithDetails): {
+  status: 'overdue' | 'at-risk' | 'blocked' | 'on-track' | 'no-date';
+  message?: string;
+  daysOverdue?: number;
+  daysUntilDue?: number;
+} => {
+  if (!task.dueDate) return { status: 'no-date' };
+  
+  const now = new Date();
+  const due = new Date(task.dueDate);
+  const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (task.status === 'blocked') {
+    return { status: 'blocked', message: 'Task is blocked', daysUntilDue };
+  }
+  
+  if (daysUntilDue < 0 && task.status !== 'completed') {
+    const daysOverdue = Math.abs(daysUntilDue);
+    return { 
+      status: 'overdue', 
+      message: `Overdue by ${daysOverdue} day${daysOverdue > 1 ? 's' : ''}`,
+      daysOverdue 
+    };
+  }
+  
+  if (daysUntilDue <= 2 && task.status !== 'completed') {
+    return { 
+      status: 'at-risk', 
+      message: daysUntilDue === 0 ? 'Due today' : `Due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`,
+      daysUntilDue 
+    };
+  }
+  
+  return { status: 'on-track', daysUntilDue };
+};
 
 export default function Tasks() {
   const { user, isAuthenticated } = useAuth();
@@ -29,6 +71,7 @@ export default function Tasks() {
   const searchString = useSearch();
   const [filterStatus, setFilterStatus] = useState("");
   const [filterAssignee, setFilterAssignee] = useState("");
+  const [filterDueDate, setFilterDueDate] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
@@ -149,22 +192,55 @@ export default function Tasks() {
     }
   });
 
-  // Sort function for tasks - new tasks first, then by due date
+  // Enhanced sort function - NEW first, then by urgency
   const sortTasks = (a: TaskWithDetails, b: TaskWithDetails) => {
-    // Check if tasks are new (created in last 24 hours)
-    const now = new Date().getTime();
+    const now = Date.now();
     const dayInMs = 24 * 60 * 60 * 1000;
-    const aIsNew = a.createdAt && (now - new Date(a.createdAt).getTime()) < dayInMs;
-    const bIsNew = b.createdAt && (now - new Date(b.createdAt).getTime()) < dayInMs;
     
-    // New tasks always come first
+    // Get viewed status from localStorage
+    const viewedTasks = JSON.parse(localStorage.getItem('viewedTasks') || '{}');
+    const aIsViewed = viewedTasks[a.id] || false;
+    const bIsViewed = viewedTasks[b.id] || false;
+    
+    // Check if tasks are NEW (created < 24h AND not viewed)
+    const aIsNew = a.createdAt && (now - new Date(a.createdAt).getTime()) < dayInMs && !aIsViewed;
+    const bIsNew = b.createdAt && (now - new Date(b.createdAt).getTime()) < dayInMs && !bIsViewed;
+    
+    // 1. NEW TASKS AT TOP (newest first)
     if (aIsNew && !bIsNew) return -1;
     if (!aIsNew && bIsNew) return 1;
+    if (aIsNew && bIsNew) {
+      return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime();
+    }
     
-    // If both new or both old, sort by due date (earliest first)
-    if (!a.dueDate && !b.dueDate) return 0;
+    // 2. COMPLETED AT BOTTOM (recent first)
+    if (a.status === 'completed' && b.status !== 'completed') return 1;
+    if (a.status !== 'completed' && b.status === 'completed') return -1;
+    if (a.status === 'completed' && b.status === 'completed') {
+      return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    }
+    
+    // 3. BLOCKED BEFORE COMPLETED (by due date)
+    if (a.status === 'blocked' && b.status !== 'blocked') return 1;
+    if (a.status !== 'blocked' && b.status === 'blocked') return -1;
+    if (a.status === 'blocked' && b.status === 'blocked') {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    
+    // 4. ACTIVE TASKS (not NEW, not blocked, not completed)
+    // Sort by due date urgency (soonest first)
+    
+    if (!a.dueDate && !b.dueDate) {
+      // Both no due date - by creation (newest first)
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    }
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
+    
+    // Sort by due date (earliest first)
     return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
   };
 
@@ -177,18 +253,64 @@ export default function Tasks() {
     sortedSubTasksMap.set(parentId, [...subTasks].sort(sortTasks));
   });
   
-  // Check if task is new (created in last 24 hours)
-  const isNewTask = (createdAt: Date | string | null) => {
+  // Check if task is new (created in last 24 hours AND not viewed)
+  const isNewTask = (taskId: string, createdAt: Date | string | null) => {
     if (!createdAt) return false;
     const taskDate = new Date(createdAt);
     const now = new Date();
     const dayInMs = 24 * 60 * 60 * 1000;
-    return (now.getTime() - taskDate.getTime()) < dayInMs;
+    const isRecent = (now.getTime() - taskDate.getTime()) < dayInMs;
+    
+    if (!isRecent) return false;
+    
+    // Check if task has been viewed
+    const viewedTasks = JSON.parse(localStorage.getItem('viewedTasks') || '{}');
+    return !viewedTasks[taskId];
   };
+
+  // Apply due date filtering
+  const filterTasksByDueDate = (tasks: TaskWithDetails[]) => {
+    if (!filterDueDate || filterDueDate === 'all') return tasks;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(endOfWeek.getDate() + (7 - today.getDay()));
+    const endOfNextWeek = new Date(endOfWeek);
+    endOfNextWeek.setDate(endOfNextWeek.getDate() + 7);
+    
+    return tasks.filter(task => {
+      if (!task.dueDate && filterDueDate === 'no_date') return true;
+      if (!task.dueDate) return false;
+      
+      const dueDate = new Date(task.dueDate);
+      const dueDay = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+      
+      switch (filterDueDate) {
+        case 'overdue':
+          return dueDay < today && task.status !== 'completed';
+        case 'today':
+          return dueDay.getTime() === today.getTime();
+        case 'tomorrow':
+          return dueDay.getTime() === tomorrow.getTime();
+        case 'this_week':
+          return dueDay >= today && dueDay <= endOfWeek;
+        case 'next_week':
+          return dueDay > endOfWeek && dueDay <= endOfNextWeek;
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Apply due date filter to parent tasks
+  const filteredParentTasks = filterTasksByDueDate(sortedParentTasks);
 
   // Create flattened list with sub-tasks nested under parents
   const sortedTasks: TaskWithDetails[] = [];
-  sortedParentTasks.forEach(parent => {
+  filteredParentTasks.forEach(parent => {
     sortedTasks.push(parent);
     const sortedSubTasks = sortedSubTasksMap.get(parent.id) || [];
     sortedTasks.push(...sortedSubTasks);
@@ -264,7 +386,7 @@ export default function Tasks() {
           {/* Filters */}
           <Card className="mb-6 sticky top-[73px] z-20 bg-white dark:bg-gray-800">
             <CardContent className="p-4">
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <Select value={filterStatus || "all"} onValueChange={(value) => setFilterStatus(value === "all" ? "" : value)}>
                   <SelectTrigger className="w-[200px]" data-testid="select-status-filter">
                     <SelectValue placeholder="All Statuses" />
@@ -275,6 +397,21 @@ export default function Tasks() {
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="blocked">Blocked</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterDueDate || "all"} onValueChange={(value) => setFilterDueDate(value === "all" ? "" : value)}>
+                  <SelectTrigger className="w-[200px]" data-testid="select-due-date-filter">
+                    <SelectValue placeholder="All Due Dates" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Due Dates</SelectItem>
+                    <SelectItem value="overdue">🔴 Overdue</SelectItem>
+                    <SelectItem value="today">📅 Due Today</SelectItem>
+                    <SelectItem value="tomorrow">📅 Due Tomorrow</SelectItem>
+                    <SelectItem value="this_week">📅 Due This Week</SelectItem>
+                    <SelectItem value="next_week">📅 Due Next Week</SelectItem>
+                    <SelectItem value="no_date">❓ No Due Date</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -303,19 +440,25 @@ export default function Tasks() {
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
               <p className="text-muted-foreground">Loading tasks...</p>
             </div>
-          ) : sortedParentTasks.length === 0 ? (
+          ) : filteredParentTasks.length === 0 ? (
             <Card className="p-12 text-center">
               <p className="text-muted-foreground">No tasks found matching your criteria</p>
             </Card>
           ) : (
             <div className="space-y-3">
-              {sortedParentTasks.map((task) => (
+              {filteredParentTasks.map((task) => (
                 <TaskCard
                   key={task.id}
                   task={task}
-                  isNew={isNewTask(task.createdAt)}
+                  isNew={isNewTask(task.id, task.createdAt)}
                   subTasks={sortedSubTasksMap.get(task.id) || []}
-                  onSelectTask={setSelectedTask}
+                  onSelectTask={(task) => {
+                    // Mark task as viewed
+                    const viewedTasks = JSON.parse(localStorage.getItem('viewedTasks') || '{}');
+                    viewedTasks[task.id] = true;
+                    localStorage.setItem('viewedTasks', JSON.stringify(viewedTasks));
+                    setSelectedTask(task);
+                  }}
                   onSelectRequest={setSelectedRequest}
                   updateStatusMutation={updateTaskStatusMutation}
                   getStatusBadge={getStatusBadge}
@@ -389,6 +532,7 @@ function TaskCard({
   formatStatus: (status: string) => string;
 }) {
   const { isAuthenticated } = useAuth();
+  const [showSubtasks, setShowSubtasks] = useState(false); // Collapsible subtasks state
 
   // Fetch sub-task progress
   const { data: progress } = useQuery<{ total: number; completed: number }>({
@@ -402,6 +546,14 @@ function TaskCard({
     },
     enabled: isAuthenticated,
   });
+
+  // Calculate subtask summary
+  const subtaskSummary = {
+    total: subTasks.length,
+    completed: subTasks.filter(st => st.status === 'completed').length,
+    allocatedHours: subTasks.reduce((sum, st) => sum + (st.expectedTime || 0), 0),
+    remainingHours: (task.expectedTime || 0) - subTasks.reduce((sum, st) => sum + (st.expectedTime || 0), 0),
+  };
 
   const handleRequestClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -419,17 +571,47 @@ function TaskCard({
     }
   };
 
+  // Get task health status
+  const health = getTaskHealth(task);
+  
+  // Health status colors
+  const healthColors = {
+    'overdue': 'border-l-red-500 dark:border-l-red-600',
+    'at-risk': 'border-l-yellow-500 dark:border-l-yellow-600',
+    'blocked': 'border-l-gray-500 dark:border-l-gray-600',
+    'on-track': 'border-l-green-500 dark:border-l-green-600',
+    'no-date': 'border-l-gray-200 dark:border-l-gray-700',
+  };
+
   return (
     <Card 
-      className="border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-600 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl overflow-hidden"
+      className={`border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-600 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl overflow-hidden border-l-4 ${healthColors[health.status]}`}
       data-testid={`task-card-${task.id}`}
     >
       <CardContent className="p-5">
+        {/* Health Warning Banner */}
+        {(health.status === 'overdue' || health.status === 'at-risk' || health.status === 'blocked') && health.message && (
+          <div className={`flex items-center gap-2 p-2 rounded-lg mb-4 ${
+            health.status === 'overdue' ? 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300' :
+            health.status === 'at-risk' ? 'bg-yellow-50 dark:bg-yellow-950/20 text-yellow-700 dark:text-yellow-300' :
+            'bg-gray-50 dark:bg-gray-950/20 text-gray-700 dark:text-gray-300'
+          }`}>
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-xs font-semibold uppercase">{health.message}</span>
+          </div>
+        )}
+        
         {/* Main Task Row */}
         <div className="flex flex-col gap-4">
           {/* Top Section: Title and Badges */}
           <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 cursor-pointer" onClick={() => onSelectTask(task)}>
+            <div className="flex-1 cursor-pointer" onClick={() => {
+              // Mark as viewed when clicking title
+              const viewedTasks = JSON.parse(localStorage.getItem('viewedTasks') || '{}');
+              viewedTasks[task.id] = true;
+              localStorage.setItem('viewedTasks', JSON.stringify(viewedTasks));
+              onSelectTask(task);
+            }}>
               <h3 className="text-xl font-bold mb-2 hover:text-purple-600 dark:hover:text-purple-400 transition-colors line-clamp-2" data-testid={`task-title-${task.id}`}>
                 {task.title}
               </h3>
@@ -460,8 +642,8 @@ function TaskCard({
                 {task.expectedTime && (
                   <Badge variant="outline" className="text-xs font-medium flex items-center gap-1 bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700">
                     <Clock className="w-3 h-3" />
-                    {task.expectedTime >= 6 
-                      ? `${(task.expectedTime / 6).toFixed(1)}d`
+                    {task.expectedTime >= EFFECTIVE_HOURS_PER_DAY
+                      ? `${(task.expectedTime / EFFECTIVE_HOURS_PER_DAY).toFixed(1)}d`
                       : `${task.expectedTime.toFixed(1)}h`
                     }
                   </Badge>
@@ -478,7 +660,13 @@ function TaskCard({
             
             <Button
               size="sm"
-              onClick={() => onSelectTask(task)}
+              onClick={() => {
+                // Mark as viewed when clicking View button
+                const viewedTasks = JSON.parse(localStorage.getItem('viewedTasks') || '{}');
+                viewedTasks[task.id] = true;
+                localStorage.setItem('viewedTasks', JSON.stringify(viewedTasks));
+                onSelectTask(task);
+              }}
               className="h-9 px-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-md hover:shadow-lg transition-all rounded-lg font-medium"
               data-testid={`button-view-task-${task.id}`}
             >
@@ -548,8 +736,8 @@ function TaskCard({
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground font-medium">Expected</p>
                   <p className="text-sm font-semibold">
-                    {task.expectedTime >= 6 
-                      ? `${(task.expectedTime / 6).toFixed(1)} days`
+                    {task.expectedTime >= EFFECTIVE_HOURS_PER_DAY
+                      ? `${(task.expectedTime / EFFECTIVE_HOURS_PER_DAY).toFixed(1)} days`
                       : `${task.expectedTime.toFixed(1)} hours`
                     }
                   </p>
@@ -559,66 +747,110 @@ function TaskCard({
           </div>
         </div>
 
-        {/* Subtasks Section */}
+        {/* Subtasks Section - Collapsible */}
         {subTasks.length > 0 && (
           <div className="mt-4 pt-4 border-t-2 border-blue-300 dark:border-blue-700">
-            <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-1.5">
-              <CornerDownRight className="w-3.5 h-3.5" />
-              SUBTASKS ({subTasks.length})
-            </p>
-            <div className="space-y-2.5">
-              {subTasks.map((subTask) => (
-                <div 
-                  key={subTask.id}
-                  className="flex items-center gap-4 p-3 rounded-lg bg-gradient-to-br from-blue-50/60 to-indigo-50/60 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all"
-                  data-testid={`subtask-${subTask.id}`}
-                >
-                  <div className="flex-1 cursor-pointer" onClick={() => onSelectTask(subTask)}>
-                    <p className="text-sm font-semibold text-foreground mb-1">{subTask.title}</p>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <UserIcon className="w-3 h-3" />
-                        {subTask.assignedTo ? `${subTask.assignedTo.firstName} ${subTask.assignedTo.lastName}` : "Unassigned"}
+            {/* Subtask Header - Clickable to expand/collapse */}
+            <button
+              onClick={() => setShowSubtasks(!showSubtasks)}
+              className="w-full flex items-center justify-between p-2 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition-colors group"
+            >
+              <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                {showSubtasks ? (
+                  <ChevronDown className="w-4 h-4 transition-transform" />
+                ) : (
+                  <ChevronRight className="w-4 h-4 transition-transform" />
+                )}
+                <CornerDownRight className="w-3.5 h-3.5" />
+                <span>SUBTASKS ({subtaskSummary.total})</span>
+              </div>
+              
+              {/* Subtask Summary - shown when collapsed */}
+              {!showSubtasks && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Check className="w-3 h-3 text-green-600" />
+                    {subtaskSummary.completed} completed
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-amber-600" />
+                    {subtaskSummary.allocatedHours.toFixed(1)}h allocated
+                  </span>
+                  {subtaskSummary.remainingHours > 0 && (
+                    <>
+                      <span>•</span>
+                      <span className="text-green-600 font-medium">
+                        {subtaskSummary.remainingHours.toFixed(1)}h remaining
                       </span>
-                      {subTask.dueDate && (
-                        <span className="flex items-center gap-1">
-                          <CalendarIcon className="w-3 h-3" />
-                          {format(new Date(subTask.dueDate), "MMM d")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-32" onClick={(e) => e.stopPropagation()}>
-                    <Select 
-                      value={subTask.status} 
-                      onValueChange={(newStatus) => updateStatusMutation.mutate({ id: subTask.id, status: newStatus })}
-                    >
-                      <SelectTrigger 
-                        className={`w-full h-8 text-xs font-medium ${getStatusBadge(subTask.status)}`}
-                        data-testid={`select-status-${subTask.id}`}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="to_do">To Do</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="blocked">Blocked</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onSelectTask(subTask)}
-                    className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                    data-testid={`button-view-subtask-${subTask.id}`}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
+              )}
+            </button>
+
+            {/* Subtask List - shown when expanded */}
+            {showSubtasks && (
+              <div className="space-y-2.5 mt-3">
+                {subTasks.map((subTask) => (
+                  <div 
+                    key={subTask.id}
+                    className="flex items-center gap-4 p-3 rounded-lg bg-gradient-to-br from-blue-50/60 to-indigo-50/60 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all"
+                    data-testid={`subtask-${subTask.id}`}
+                  >
+                    <div className="flex-1 cursor-pointer" onClick={() => onSelectTask(subTask)}>
+                      <p className="text-sm font-semibold text-foreground mb-1">{subTask.title}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <UserIcon className="w-3 h-3" />
+                          {subTask.assignedTo ? `${subTask.assignedTo.firstName} ${subTask.assignedTo.lastName}` : "Unassigned"}
+                        </span>
+                        {subTask.expectedTime && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {subTask.expectedTime.toFixed(1)}h
+                          </span>
+                        )}
+                        {subTask.dueDate && (
+                          <span className="flex items-center gap-1">
+                            <CalendarIcon className="w-3 h-3" />
+                            {format(new Date(subTask.dueDate), "MMM d")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="w-32" onClick={(e) => e.stopPropagation()}>
+                      <Select 
+                        value={subTask.status} 
+                        onValueChange={(newStatus) => updateStatusMutation.mutate({ id: subTask.id, status: newStatus })}
+                      >
+                        <SelectTrigger 
+                          className={`w-full h-8 text-xs font-medium ${getStatusBadge(subTask.status)}`}
+                          data-testid={`select-status-${subTask.id}`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="to_do">To Do</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="blocked">Blocked</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onSelectTask(subTask)}
+                      className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+                      data-testid={`button-view-subtask-${subTask.id}`}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
@@ -791,8 +1023,8 @@ function TaskRow({
           <div className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-amber-600" />
             <span className="text-sm font-medium">
-              {task.expectedTime >= 6 
-                ? `${(task.expectedTime / 6).toFixed(1)}d`
+              {task.expectedTime >= EFFECTIVE_HOURS_PER_DAY
+                ? `${(task.expectedTime / EFFECTIVE_HOURS_PER_DAY).toFixed(1)}d`
                 : `${task.expectedTime.toFixed(1)}h`
               }
             </span>
@@ -1222,6 +1454,8 @@ function TaskDetailDialog({
               <div className="mb-4">
                 <SubTaskForm
                   parentTaskId={task.id}
+                  parentTask={task}
+                  subTasks={subTasks}
                   onSuccess={() => {
                     setShowSubTaskForm(false);
                     queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
@@ -1246,7 +1480,7 @@ function TaskDetailDialog({
                   <Card key={subTask.id} className="p-3 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20 border-l-4 border-blue-500 dark:border-blue-600 hover:shadow-md transition-shadow">
                     <div className="grid grid-cols-12 gap-3 items-center">
                       {/* Task Title Column */}
-                      <div className="col-span-3 flex items-center gap-2">
+                      <div className="col-span-2 flex items-center gap-2">
                         <CornerDownRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         <div className="min-w-0">
                           <h5 className="font-semibold text-sm truncate">{subTask.title}</h5>
@@ -1336,6 +1570,21 @@ function TaskDetailDialog({
                             <SelectItem value="completed">Completed</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      
+                      {/* Expected Time Column */}
+                      <div className="col-span-2 flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                        {subTask.expectedTime ? (
+                          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                            {subTask.expectedTime >= EFFECTIVE_HOURS_PER_DAY
+                              ? `${(subTask.expectedTime / EFFECTIVE_HOURS_PER_DAY).toFixed(1)}d`
+                              : `${subTask.expectedTime.toFixed(1)}h`
+                            }
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </div>
                       
                       {/* Due Date Column */}
@@ -1440,11 +1689,15 @@ function TaskDetailDialog({
 
 // Sub-task Form Component
 function SubTaskForm({ 
-  parentTaskId, 
+  parentTaskId,
+  parentTask,
+  subTasks,
   onSuccess, 
   onCancel 
 }: { 
-  parentTaskId: string; 
+  parentTaskId: string;
+  parentTask: TaskWithDetails;
+  subTasks: TaskWithDetails[];
   onSuccess: () => void; 
   onCancel: () => void;
 }) {
@@ -1455,10 +1708,25 @@ function SubTaskForm({
   const [dueDate, setDueDate] = useState("");
   const [assignedToId, setAssignedToId] = useState("self");
   const [status, setStatus] = useState("to_do");
+  
+  // Raw hours for sub-task (no PERT adjustments - parent already has PERT buffer)
+  const [hours, setHours] = useState<number | null>(null);
 
   const isTeamLead = (user as any)?.role === "team_lead";
   const isAnalyst = (user as any)?.role === "analyst";
   const canAssignSubtask = isTeamLead || isAnalyst;
+
+  // Calculate already allocated time from existing sub-tasks
+  const allocatedHours = subTasks.reduce((sum, st) => 
+    sum + (st.expectedTime || 0), 0
+  );
+  const parentTotalHours = parentTask.expectedTime || 0;
+  const availableHours = parentTotalHours - allocatedHours;
+  
+  // Display time in hours or days
+  const displayTime = hours && hours >= EFFECTIVE_HOURS_PER_DAY
+    ? `${(hours / EFFECTIVE_HOURS_PER_DAY).toFixed(1)} day${(hours / EFFECTIVE_HOURS_PER_DAY) > 1 ? 's' : ''}`
+    : hours ? `${hours.toFixed(1)}h` : '';
 
   // Fetch all analysts for assignment dropdown (both team leads and analysts can assign subtasks)
   const { data: analysts = [] } = useQuery<User[]>({
@@ -1493,12 +1761,26 @@ function SubTaskForm({
       return;
     }
 
+    // Validate that sub-task raw hours don't exceed available parent time (which is PERT-adjusted)
+    if (hours && hours > availableHours) {
+      toast({
+        title: "Error",
+        description: `Sub-task time (${hours.toFixed(1)}h) exceeds available parent task time (${availableHours.toFixed(1)}h remaining)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     createSubTaskMutation.mutate({
       title: title.trim(),
       description: description.trim() || undefined,
       status,
       parentTaskId,
       dueDate: dueDate || undefined,
+      // Store raw hours as all three PERT values (no PERT adjustment for sub-tasks)
+      optimisticTime: hours || 0,
+      mostLikelyTime: hours || 0,
+      pessimisticTime: hours || 0,
       // "self" means auto-assign to creator (don't send assignedToId)
       // otherwise send the selected assignedToId
       assignedToId: assignedToId === "self" ? undefined : assignedToId,
@@ -1539,6 +1821,68 @@ function SubTaskForm({
             data-testid="input-subtask-due-date"
           />
         </div>
+
+        {/* Parent Task Budget Display */}
+        <div className="border-t pt-3">
+          <div className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <h4 className="font-medium text-sm">Parent Task Budget</h4>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">Total:</span>
+                <span className="font-semibold ml-1">{parentTotalHours.toFixed(1)}h</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Allocated:</span>
+                <span className="font-semibold ml-1">{allocatedHours.toFixed(1)}h</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Available:</span>
+                <span className={`font-semibold ml-1 ${availableHours <= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  {availableHours.toFixed(1)}h
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Time Estimation Section - Raw Hours (No PERT for sub-tasks) */}
+        <div className="border-t pt-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-primary" />
+            <h4 className="font-medium text-sm">Time Estimation (Optional)</h4>
+            {hours && (
+              <Badge variant="outline" className="text-xs">
+                {displayTime}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <div>
+              <Label className="text-xs">Hours</Label>
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                placeholder="Enter hours (e.g., 2.5)"
+                value={hours || ''}
+                onChange={(e) => setHours(e.target.value ? parseFloat(e.target.value) : null)}
+                className="mt-1"
+              />
+            </div>
+            
+            <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-muted-foreground">
+                <Info className="w-3 h-3 inline mr-1" />
+                Enter raw hours for this sub-task. The parent task already includes time buffers.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-xs">Status</Label>
@@ -1622,11 +1966,13 @@ function CreateTaskDialog({
     confidence: 'medium' as 'high' | 'medium' | 'low'
   });
   
-  // Time conversion constants
+  // Time conversion constants - aligned with analytics
   const HOURS_PER_DAY = 6;
+  const PRODUCTIVITY_FACTOR = 0.75;
+  const EFFECTIVE_HOURS_PER_DAY = HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 4.5 hours
   
   const hoursToDays = (hours: number): number => {
-    return Math.ceil(hours / HOURS_PER_DAY);
+    return Math.ceil(hours / EFFECTIVE_HOURS_PER_DAY);
   };
   
   // PERT calculation with complexity and confidence multipliers
@@ -1667,9 +2013,9 @@ function CreateTaskDialog({
   const expectedTime = (pertValues.optimistic + 4 * pertValues.mostLikely + pertValues.pessimistic) / 6;
   const expectedDays = hoursToDays(expectedTime);
   
-  // Convert hours to days for display when >= 6 hours
-  const displayExpectedTime = expectedTime >= 6 
-    ? `${Math.round(expectedTime / 6 * 2) / 2} day${Math.round(expectedTime / 6 * 2) / 2 > 1 ? 's' : ''}`
+  // Convert hours to days for display when >= 4.5 hours (effective day)
+  const displayExpectedTime = expectedTime >= EFFECTIVE_HOURS_PER_DAY
+    ? `${Math.round(expectedTime / EFFECTIVE_HOURS_PER_DAY * 2) / 2} day${Math.round(expectedTime / EFFECTIVE_HOURS_PER_DAY * 2) / 2 > 1 ? 's' : ''}`
     : `${expectedTime.toFixed(1)}h`;
 
   const createTaskMutation = useMutation({
@@ -1699,6 +2045,24 @@ function CreateTaskDialog({
       toast({
         title: "Error",
         description: "Please enter a task title",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!timeEstimation.baseHours) {
+      toast({
+        title: "Error",
+        description: "Please enter time estimation (hours) for the task",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!dueDate) {
+      toast({
+        title: "Error",
+        description: "Please select a due date for the task",
         variant: "destructive",
       });
       return;
