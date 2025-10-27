@@ -645,20 +645,40 @@ export default function Analytics() {
                   <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center gap-2 mb-3">
                       <Calculator className="w-4 h-4 text-blue-600" />
-                      <h4 className="font-semibold text-blue-900 dark:text-blue-100">Workload Calculation Formula</h4>
+                      <h4 className="font-semibold text-blue-900 dark:text-blue-100">Workload Calculation</h4>
                     </div>
                     
                     <div className="space-y-3 text-sm">
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">Simple Formula:</p>
+                        <div className="font-mono text-xs text-blue-600 mb-3">
+                          Workload Hours = Σ (Expected Time)
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          <strong>Expected Time</strong> is calculated using <strong>PERT estimation</strong> during task creation, 
+                          which already accounts for <strong>complexity</strong> and <strong>confidence</strong> levels.
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white dark:bg-gray-800 p-3 rounded border">
+                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">PERT Time Estimation:</p>
+                        <div className="font-mono text-xs text-purple-600 mb-2">
+                          Expected Time = (Optimistic + 4×Most Likely + Pessimistic) / 6
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                          <div><strong>Complexity</strong> affects the range: simple (±20%), medium (±50%), complex (±80%)</div>
+                          <div><strong>Confidence</strong> affects pessimistic scenario: high (1x), medium (2x), low (3.5x)</div>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">Weighted Hours Formula:</p>
-                          <div className="bg-white dark:bg-gray-800 p-3 rounded border font-mono text-xs">
-                            <div className="text-blue-600">Weighted Hours = Base Time × Priority × Urgency × Status</div>
-                            <div className="text-gray-600 dark:text-gray-400 mt-1">
-                              <div>• Priority: Critical(1.3x), High(1.15x), Medium(1.0x), Low(0.85x)</div>
-                              <div>• Urgency: Overdue(1.5x), Due in 2 days(1.3x), Due in 1 week(1.1x)</div>
-                              <div>• Status: In Progress(1.2x), To Do(1.0x), Blocked(0.3x)</div>
-                            </div>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">Capacity:</p>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                            <div><strong>1 Productive Day</strong> = 4.5 hours</div>
+                            <div><strong>1 Productive Week</strong> = 22.5 hours (5 days)</div>
+                            <div><strong>Productivity Factor</strong> = 75%</div>
+                            <div className="text-xs mt-1 italic">Accounts for meetings, admin, and context switching</div>
                           </div>
                         </div>
                         
@@ -667,34 +687,26 @@ export default function Analytics() {
                           <div className="space-y-1 text-xs">
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                              <span>Available: 0-20% utilization</span>
+                              <span>Available: 0-20%</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                              <span>Light: 20-50% utilization</span>
+                              <span>Light: 20-50%</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                              <span>Moderate: 50-75% utilization</span>
+                              <span>Moderate: 50-75%</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                              <span>Heavy: 75-95% utilization</span>
+                              <span>Heavy: 75-95%</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                              <span>Overloaded: 95%+ utilization</span>
+                              <span>Overloaded: 95%+</span>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          <strong>Effective Weekly Capacity:</strong> 22.5 hours (5 days × 6 hours × 75% productivity factor)
-                          <br />
-                          <strong>Productivity Factor:</strong> Accounts for meetings, communication, and context switching
-                        </p>
                       </div>
                     </div>
                   </div>

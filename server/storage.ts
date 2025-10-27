@@ -1012,43 +1012,8 @@ export class DatabaseStorage implements IStorage {
     availableDays: number;
     capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
   }>> {
-    // Helper function: Calculate urgency factor based on due date
-    const calculateUrgencyFactor = (dueDate: Date | null): number => {
-      if (!dueDate) return 0.8; // No due date = lowest priority
-      
-      const now = new Date();
-      const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysUntilDue < 0) return 1.5;      // Overdue
-      if (daysUntilDue <= 2) return 1.3;     // Due within 2 days
-      if (daysUntilDue <= 7) return 1.1;     // Due within 1 week
-      if (daysUntilDue <= 14) return 1.0;    // Due within 2 weeks
-      return 0.9;                             // Due beyond 2 weeks
-    };
-
-    // Helper function: Get priority weight
-    const getPriorityWeight = (priority: string | null): number => {
-      switch (priority) {
-        case 'critical': return 1.3;
-        case 'high': return 1.15;
-        case 'medium': return 1.0;
-        case 'low': return 0.85;
-        default: return 1.0;
-      }
-    };
-
-    // Helper function: Get status factor
-    const getStatusFactor = (status: string): number => {
-      switch (status) {
-        case 'to_do': return 1.0;
-        case 'in_progress': return 1.2;  // Higher priority for in-progress work
-        case 'blocked': return 0.3;       // Reduced weight for blocked tasks
-        case 'completed': return 0;       // Exclude completed tasks
-        default: return 1.0;
-      }
-    };
-
     // Constants for workload calculation
+    // Note: expectedTime already includes PERT adjustments for complexity and confidence
     const HOURS_PER_DAY = 6;
     const PRODUCTIVITY_FACTOR = 0.75; // Account for meetings, admin, context switching
     const DAYS_PER_WEEK = 5;
@@ -1073,17 +1038,12 @@ export class DatabaseStorage implements IStorage {
           .where(eq(tasks.assignedToId, member.id))
           .groupBy(tasks.status);
 
-        // Get detailed task data with request priority for active tasks
+        // Get expected time for active tasks (expectedTime already includes PERT adjustments)
         const activeTasks = await db
           .select({
             expectedTime: tasks.expectedTime,
-            dueDate: tasks.dueDate,
-            status: tasks.status,
-            requestId: tasks.requestId,
-            requestPriority: dataRequests.priority,
           })
           .from(tasks)
-          .leftJoin(dataRequests, eq(tasks.requestId, dataRequests.id))
           .where(
             and(
               eq(tasks.assignedToId, member.id),
@@ -1098,31 +1058,21 @@ export class DatabaseStorage implements IStorage {
 
         const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
         
-        // Calculate weighted workload
-        const totalWeightedHours = activeTasks.reduce((sum, task) => {
-          const baseHours = task.expectedTime || 0;
-          const priorityWeight = getPriorityWeight(task.requestPriority);
-          const urgencyFactor = calculateUrgencyFactor(task.dueDate);
-          const statusFactor = getStatusFactor(task.status);
-          
-          return sum + (baseHours * priorityWeight * urgencyFactor * statusFactor);
-        }, 0);
-        
-        // Calculate unweighted hours for reference
+        // Calculate total workload from PERT estimates (no multipliers)
         const totalExpectedHours = activeTasks.reduce((sum, task) => 
           sum + (task.expectedTime || 0), 0);
         
-        // Convert weighted hours to days
-        const totalExpectedDays = totalWeightedHours / EFFECTIVE_HOURS_PER_DAY;
+        // Convert hours to productive days
+        const totalExpectedDays = totalExpectedHours / EFFECTIVE_HOURS_PER_DAY;
         
         // Calculate utilization based on effective weekly capacity
-        const currentUtilization = (totalWeightedHours / EFFECTIVE_WEEKLY_CAPACITY) * 100;
-        const availableHours = Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - totalWeightedHours);
+        const currentUtilization = (totalExpectedHours / EFFECTIVE_WEEKLY_CAPACITY) * 100;
+        const availableHours = Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - totalExpectedHours);
         const availableDays = availableHours / EFFECTIVE_HOURS_PER_DAY;
 
         // Enhanced capacity assessment
         const capacityLevel = 
-          totalWeightedHours === 0 ? 'available' :
+          totalExpectedHours === 0 ? 'available' :
           currentUtilization <= 20 ? 'available' :
           currentUtilization <= 50 ? 'light' :
           currentUtilization <= 75 ? 'moderate' :
@@ -1137,8 +1087,8 @@ export class DatabaseStorage implements IStorage {
           inProgress: statusMap['in_progress'] || 0,
           blocked: statusMap['blocked'] || 0,
           completed: statusMap['completed'] || 0,
-          // Time-based metrics (now weighted)
-          totalExpectedHours: Math.round(totalWeightedHours * 10) / 10, // Round to 1 decimal
+          // Time-based metrics (from PERT estimates)
+          totalExpectedHours: Math.round(totalExpectedHours * 10) / 10, // Round to 1 decimal
           totalExpectedDays: Math.round(totalExpectedDays * 10) / 10,
           weeklyCapacity: DAYS_PER_WEEK, // 5 productive days (22.5 hours)
           currentUtilization: Math.round(currentUtilization * 10) / 10,
