@@ -665,9 +665,21 @@ export default function Analytics() {
                         <div className="font-mono text-xs text-purple-600 mb-2">
                           Expected Time = (Optimistic + 4×Most Likely + Pessimistic) / 6
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                          <div><strong>Complexity</strong> affects the range: simple (±20%), medium (±50%), complex (±80%)</div>
-                          <div><strong>Confidence</strong> affects pessimistic scenario: high (1x), medium (2x), low (3.5x)</div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 space-y-2">
+                          <div>
+                            <strong>Formula:</strong>
+                            <div className="ml-2 mt-1 space-y-0.5">
+                              <div>• Optimistic = Base Estimate</div>
+                              <div>• Most Likely = Base + (Range × 0.5)</div>
+                              <div>• Pessimistic = Base + (Range × Confidence)</div>
+                            </div>
+                          </div>
+                          <div>
+                            <strong>Complexity</strong> sets the buffer range: simple (20%), medium (50%), complex (80%)
+                          </div>
+                          <div>
+                            <strong>Confidence</strong> multiplies pessimistic buffer: high (1x), medium (2x), low (3.5x)
+                          </div>
                         </div>
                       </div>
 

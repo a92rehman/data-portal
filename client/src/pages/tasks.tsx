@@ -1637,30 +1637,29 @@ function CreateTaskDialog({
     
     const base = timeEstimation.baseHours;
     
-    // Complexity multipliers - Only affects range, NOT base time
-    const complexityMultipliers = {
-      simple: { mostLikely: 1.0, range: 0.2 },    // Tight range (±20%)
-      medium: { mostLikely: 1.0, range: 0.5 },    // Medium range (±50%)
-      complex: { mostLikely: 1.0, range: 0.8 }    // Wide range (±80%)
+    // Complexity factors - Adds buffer time based on uncertainty
+    const complexityFactors = {
+      simple: 0.2,    // 20% buffer range
+      medium: 0.5,    // 50% buffer range
+      complex: 0.8    // 80% buffer range
     };
     
-    // Confidence multipliers - Affects pessimistic dramatically
+    // Confidence multipliers - Affects how much buffer to add to pessimistic
     const confidenceMultipliers = {
-      high: 1.0,    // Pessimistic = mostLikely + range
-      medium: 2.0,  // Pessimistic = mostLikely + 2×range
-      low: 3.5      // Pessimistic = mostLikely + 3.5×range
+      high: 1.0,    // Pessimistic = base + (range × 1)
+      medium: 2.0,  // Pessimistic = base + (range × 2)
+      low: 3.5      // Pessimistic = base + (range × 3.5)
     };
     
-    const complexity = complexityMultipliers[timeEstimation.complexity];
-    const confidence = confidenceMultipliers[timeEstimation.confidence];
+    const complexityFactor = complexityFactors[timeEstimation.complexity];
+    const confidenceMultiplier = confidenceMultipliers[timeEstimation.confidence];
     
-    const mostLikely = base * complexity.mostLikely;
-    const range = base * complexity.range;
+    const range = base * complexityFactor;
     
     return {
-      optimistic: Math.max(0.1, mostLikely - range),  // At least 0.1 hours
-      mostLikely: mostLikely,
-      pessimistic: mostLikely + (range * confidence)
+      optimistic: base,  // At least 0.1 hours
+      mostLikely: base + (range * 0.5),                   // Add half the range
+      pessimistic: base + (range * confidenceMultiplier)  // Add full adjusted range
     };
   };
   
