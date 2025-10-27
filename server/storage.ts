@@ -1053,7 +1053,7 @@ export class DatabaseStorage implements IStorage {
     const PRODUCTIVITY_FACTOR = 0.75; // Account for meetings, admin, context switching
     const DAYS_PER_WEEK = 5;
     const EFFECTIVE_WEEKLY_CAPACITY = DAYS_PER_WEEK * HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 22.5 hours
-    const EFFECTIVE_WEEKLY_CAPACITY_DAYS = EFFECTIVE_WEEKLY_CAPACITY / HOURS_PER_DAY; // 3.75 days
+    const EFFECTIVE_HOURS_PER_DAY = HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 4.5 hours (productive day)
 
     // Get all analysts AND team leads
     const teamMembers = await db
@@ -1113,12 +1113,12 @@ export class DatabaseStorage implements IStorage {
           sum + (task.expectedTime || 0), 0);
         
         // Convert weighted hours to days
-        const totalExpectedDays = totalWeightedHours / HOURS_PER_DAY;
+        const totalExpectedDays = totalWeightedHours / EFFECTIVE_HOURS_PER_DAY;
         
         // Calculate utilization based on effective weekly capacity
         const currentUtilization = (totalWeightedHours / EFFECTIVE_WEEKLY_CAPACITY) * 100;
         const availableHours = Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - totalWeightedHours);
-        const availableDays = availableHours / HOURS_PER_DAY;
+        const availableDays = availableHours / EFFECTIVE_HOURS_PER_DAY;
 
         // Enhanced capacity assessment
         const capacityLevel = 
@@ -1140,7 +1140,7 @@ export class DatabaseStorage implements IStorage {
           // Time-based metrics (now weighted)
           totalExpectedHours: Math.round(totalWeightedHours * 10) / 10, // Round to 1 decimal
           totalExpectedDays: Math.round(totalExpectedDays * 10) / 10,
-          weeklyCapacity: EFFECTIVE_WEEKLY_CAPACITY_DAYS, // 3.75 days (effective capacity)
+          weeklyCapacity: DAYS_PER_WEEK, // 5 productive days (22.5 hours)
           currentUtilization: Math.round(currentUtilization * 10) / 10,
           availableDays: Math.round(availableDays * 10) / 10,
           capacityLevel,
