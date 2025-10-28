@@ -2084,15 +2084,28 @@ function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl" data-testid="dialog-create-task">
-        <DialogHeader>
-          <DialogTitle className="text-lg flex items-center gap-2">
-            <Clock className="w-4 h-4 text-primary" />
-            Create New Task
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            Create a task with time estimation to help with workload planning
-          </DialogDescription>
+      <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden" data-testid="dialog-create-task">
+        <DialogHeader className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b pr-2">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <DialogTitle className="text-lg flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                Create New Task
+              </DialogTitle>
+              <DialogDescription className="text-sm">
+                Create a task with time estimation to help with workload planning
+              </DialogDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onClose}
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
         
         <div className="space-y-6 py-4">
@@ -2132,7 +2145,7 @@ function CreateTaskDialog({
             </div>
             
             {/* Complexity, Confidence, and Custom Input Row */}
-            <div className="grid grid-cols-3 gap-3 mb-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
               {/* Complexity Dropdown */}
               <div>
                 <Label className="text-sm font-medium">Complexity</Label>
@@ -2226,7 +2239,7 @@ function CreateTaskDialog({
           </div>
           
           {/* Due Date and Status - Two Column Layout */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 <CalendarIcon className="w-3.5 h-3.5" />
@@ -2265,7 +2278,7 @@ function CreateTaskDialog({
           </div>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="sticky bottom-0 bg-white dark:bg-gray-900 border-t mt-2 pt-3">
           <Button variant="outline" onClick={onClose} data-testid="button-cancel-task">
             Cancel
           </Button>
