@@ -1011,6 +1011,7 @@ export class DatabaseStorage implements IStorage {
     currentUtilization: number;
     availableDays: number;
     capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
+    plannedHoursThisWeek?: number;
   }>> {
     // Constants for workload calculation
     // Note: expectedTime already includes PERT adjustments for complexity and confidence
@@ -1027,6 +1028,16 @@ export class DatabaseStorage implements IStorage {
       .where(or(eq(users.role, 'analyst'), eq(users.role, 'team_lead')));
 
     // Helpers for business-day spreading
+    const startOfDay = (d: Date) => {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+    const endOfDay = (d: Date) => {
+      const date = new Date(d);
+      date.setHours(23, 59, 59, 999);
+      return date;
+    };
     const startOfWeek = (d: Date) => {
       const date = new Date(d);
       const day = date.getDay(); // 0=Sun..6=Sat
@@ -1107,23 +1118,25 @@ export class DatabaseStorage implements IStorage {
         for (const t of activeTasks) {
           const taskHours = t.expectedTime || 0;
           if (taskHours <= 0) continue;
-          const start = new Date(Math.max((t.createdAt ? t.createdAt.getTime() : now.getTime()), now.getTime()));
-          const end = t.dueDate ? new Date(t.dueDate) : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-          // if already past due or invalid range, count everything this week
-          let workingDays = businessDaysBetween(start, end);
-          if (workingDays <= 0) workingDays = 1;
-          const hoursPerBizDay = taskHours / workingDays;
 
-          // accumulate hours for business days within current week window
-          const iter = new Date(start);
-          while (iter <= end) {
-            if (isBusinessDay(iter)) {
-              if (iter >= thisWeekStart && iter <= thisWeekEnd) {
-                plannedHoursThisWeek += hoursPerBizDay;
-              }
-            }
-            iter.setDate(iter.getDate() + 1);
+          // Normalize and determine task window
+          const todayStart = startOfDay(now);
+          const taskStart = todayStart; // begin spreading from today for active tasks
+          const taskEnd = t.dueDate ? endOfDay(new Date(t.dueDate)) : endOfDay(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
+
+          // If invalid or past, fall back to counting as today
+          let totalBizDays = businessDaysBetween(taskStart, taskEnd);
+          if (totalBizDays <= 0) totalBizDays = 1;
+          const hoursPerBizDay = taskHours / totalBizDays;
+
+          // Overlap with current week
+          const winStart = thisWeekStart > taskStart ? thisWeekStart : taskStart;
+          const winEnd = thisWeekEnd < taskEnd ? thisWeekEnd : taskEnd;
+          let bizDaysThisWeek = 0;
+          if (winEnd >= winStart) {
+            bizDaysThisWeek = businessDaysBetween(winStart, winEnd);
           }
+          plannedHoursThisWeek += hoursPerBizDay * bizDaysThisWeek;
         }
         
         // Convert hours to productive days
@@ -1158,6 +1171,10 @@ export class DatabaseStorage implements IStorage {
           currentUtilization: Math.round(currentUtilization * 10) / 10,
           availableDays: Math.round(availableDays * 10) / 10,
           capacityLevel,
+          plannedHoursThisWeek: Math.round(plannedHoursThisWeek * 10) / 10,
+          // debug fields to verify server-side calculation windows
+          _debugWeekStart: thisWeekStart.toISOString(),
+          _debugWeekEnd: thisWeekEnd.toISOString(),
         };
       })
     );

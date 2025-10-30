@@ -143,7 +143,7 @@ export default function Analytics() {
     enabled: isAuthenticated,
   });
 
-  const { data: teamWorkload = [] } = useQuery<Array<{
+  type TeamWorkloadRow = {
     analystId: string;
     firstName: string;
     lastName: string;
@@ -152,10 +152,122 @@ export default function Analytics() {
     inProgress: number;
     blocked: number;
     completed: number;
-  }>>({
+    totalExpectedHours: number;
+    totalExpectedDays: number;
+    weeklyCapacity: number;
+    currentUtilization: number; // percent for this week
+    availableDays: number;
+    capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
+    plannedHoursThisWeek?: number; // hours planned this week
+  };
+
+  const { data: teamWorkload = [] } = useQuery<Array<TeamWorkloadRow>>({
     queryKey: ["/api/analytics/tasks/workload"],
+    queryFn: async () => {
+      const res = await fetch(`/api/analytics/tasks/workload?t=${Date.now()}` , { credentials: "include", cache: 'no-store' as RequestCache });
+      if (!res.ok) throw new Error("Failed to fetch workload");
+      return res.json();
+    },
+    refetchInterval: 30000,
     enabled: isAuthenticated,
   });
+
+  // Helpers for client-side fallback weekly planning (in case backend still returns legacy totals)
+  const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+  const startOfWeek = (d: Date) => { const x = startOfDay(d); const day = x.getDay(); const diff = (day === 0 ? -6 : 1) - day; x.setDate(x.getDate() + diff); return x; };
+  const endOfWeek = (d: Date) => { const s = startOfWeek(d); const e = new Date(s); e.setDate(e.getDate() + 6); e.setHours(23,59,59,999); return e; };
+  const isBusinessDay = (d: Date) => { const day = d.getDay(); return day !== 0 && day !== 6; };
+  const businessDaysBetween = (a: Date, b: Date) => { const s = startOfDay(a); const e = startOfDay(b); if (e < s) return 0; let c = 0; const cur = new Date(s); while (cur <= e) { if (isBusinessDay(cur)) c++; cur.setDate(cur.getDate() + 1); } return c; };
+
+  const today = new Date();
+  const weekStart = startOfWeek(today);
+  const weekEnd = endOfWeek(today);
+
+  const EFFECTIVE_HOURS_PER_DAY = 6 * 0.75; // 4.5
+  const EFFECTIVE_WEEKLY_CAPACITY = 5 * EFFECTIVE_HOURS_PER_DAY; // 22.5
+
+  type MinimalTask = { expectedTime?: number; dueDate?: string; createdAt?: string; status?: string; assignedToId?: string };
+
+  // Render row with server values; if server lacks weekly plan, compute fallback client-side
+  function AnalystRow({ analyst }: { analyst: TeamWorkloadRow }) {
+    const needsFallback = analyst.plannedHoursThisWeek == null || (!Number.isFinite(analyst.currentUtilization));
+    const { data: tasks = [] } = useQuery<Array<MinimalTask>>({
+      queryKey: ["/api/tasks", { assignedToId: analyst.analystId }],
+      queryFn: async () => {
+        const params = new URLSearchParams({ assignedToId: analyst.analystId });
+        const res = await fetch(`/api/tasks?${params.toString()}`, { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to fetch tasks');
+        return res.json();
+      },
+      enabled: needsFallback,
+      staleTime: 30_000,
+    });
+
+    let plannedHoursThisWeek = analyst.plannedHoursThisWeek ?? 0;
+    let weeklyUtilization = analyst.currentUtilization ?? 0;
+
+    if (needsFallback) {
+      // Compute planned hours for this week by spreading each active task evenly across business days
+      plannedHoursThisWeek = 0;
+      for (const t of tasks) {
+        const hours = Number(t.expectedTime || 0);
+        if (!hours) continue;
+        const start = startOfDay(today); // begin from today for active tasks
+        const end = t.dueDate ? new Date(t.dueDate) : new Date(today.getTime() + 7*24*60*60*1000);
+        let totalBiz = businessDaysBetween(start, end); if (totalBiz <= 0) totalBiz = 1;
+        const perDay = hours / totalBiz;
+        const winStart = weekStart > start ? weekStart : start;
+        const winEnd = weekEnd < end ? weekEnd : end;
+        if (winEnd >= winStart) {
+          const bizInWeek = businessDaysBetween(winStart, winEnd);
+          plannedHoursThisWeek += perDay * bizInWeek;
+        }
+      }
+      weeklyUtilization = (plannedHoursThisWeek / EFFECTIVE_WEEKLY_CAPACITY) * 100;
+    }
+
+    return (
+      <div key={analyst.analystId} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold">
+              {analyst.firstName.charAt(0)}{analyst.lastName.charAt(0)}
+            </div>
+            <div>
+              <h4 className="font-semibold text-foreground">{analyst.firstName} {analyst.lastName}</h4>
+              <p className="text-xs text-muted-foreground">
+                {analyst.totalExpectedDays} day{analyst.totalExpectedDays > 1 ? 's' : ''} workload ({analyst.totalExpectedHours.toFixed(1)}h)
+              </p>
+            </div>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${analyst.capacityLevel === 'available' ? 'text-green-600 bg-green-100 dark:bg-green-950' : analyst.capacityLevel === 'light' ? 'text-blue-600 bg-blue-100 dark:bg-blue-950' : analyst.capacityLevel === 'moderate' ? 'text-yellow-600 bg-yellow-100 dark:bg-yellow-950' : analyst.capacityLevel === 'heavy' ? 'text-orange-600 bg-orange-100 dark:bg-orange-950' : 'text-red-600 bg-red-100 dark:bg-red-950'}`}>
+            {analyst.capacityLevel.replace('_', ' ').toUpperCase()}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-3">
+          <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
+            <div className="text-lg font-bold text-blue-700 dark:text-blue-400">{weeklyUtilization.toFixed(0)}%</div>
+            <div className="text-xs text-muted-foreground">Day Utilization</div>
+          </div>
+          <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
+            <div className="text-lg font-bold text-green-700 dark:text-green-400">{((Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - plannedHoursThisWeek)) / EFFECTIVE_HOURS_PER_DAY).toFixed(1)}</div>
+            <div className="text-xs text-muted-foreground">Available Days</div>
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>Weekly Capacity (planned)</span>
+            <span>{plannedHoursThisWeek.toFixed(1)}h / 22.5h</span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-gradient-to-r from-green-500 to-red-500 h-2 rounded-full transition-all" style={{ width: `${Math.min(weeklyUtilization, 100)}%` }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const formatRequestType = (type: string) => {
     switch (type) {
@@ -728,86 +840,9 @@ export default function Analytics() {
                     <p className="text-sm text-muted-foreground text-center py-8">No analysts or tasks available</p>
                   ) : (
                     <div className="space-y-4">
-                      {teamWorkload.map((analyst) => {
-                        const dayUtilization = (analyst.totalExpectedDays / analyst.weeklyCapacity) * 100;
-                        
-                        return (
-                          <div key={analyst.analystId} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold">
-                                  {analyst.firstName.charAt(0)}{analyst.lastName.charAt(0)}
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-foreground">{analyst.firstName} {analyst.lastName}</h4>
-                                  <p className="text-xs text-muted-foreground">
-                                    {analyst.totalExpectedDays} day{analyst.totalExpectedDays > 1 ? 's' : ''} workload ({analyst.totalExpectedHours.toFixed(1)}h)
-                                  </p>
-                                </div>
-                              </div>
-                              <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                analyst.capacityLevel === 'available' ? 'text-green-600 bg-green-100 dark:bg-green-950' :
-                                analyst.capacityLevel === 'light' ? 'text-blue-600 bg-blue-100 dark:bg-blue-950' :
-                                analyst.capacityLevel === 'moderate' ? 'text-yellow-600 bg-yellow-100 dark:bg-yellow-950' :
-                                analyst.capacityLevel === 'heavy' ? 'text-orange-600 bg-orange-100 dark:bg-orange-950' :
-                                'text-red-600 bg-red-100 dark:bg-red-950'
-                              }`}>
-                                {analyst.capacityLevel.replace('_', ' ').toUpperCase()}
-                              </div>
-                            </div>
-
-                            {/* Day-based metrics */}
-                            <div className="grid grid-cols-2 gap-4 mb-3">
-                              <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
-                                <div className="text-lg font-bold text-blue-700 dark:text-blue-400">
-                                  {dayUtilization.toFixed(0)}%
-                                </div>
-                                <div className="text-xs text-muted-foreground">Day Utilization</div>
-                              </div>
-                              <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
-                                <div className="text-lg font-bold text-green-700 dark:text-green-400">
-                                  {analyst.availableDays.toFixed(1)}
-                                </div>
-                                <div className="text-xs text-muted-foreground">Available Days</div>
-                              </div>
-                            </div>
-
-                            {/* Progress bar for weekly capacity */}
-                            <div className="mb-3">
-                              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                                <span>Weekly Capacity (5 days)</span>
-                                <span>{analyst.totalExpectedDays}/5 days</span>
-                              </div>
-                              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                                <div 
-                                  className="bg-gradient-to-r from-green-500 to-red-500 h-2 rounded-full transition-all"
-                                  style={{ width: `${Math.min(dayUtilization, 100)}%` }}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Task breakdown */}
-                            <div className="grid grid-cols-4 gap-2 mt-3">
-                              <div className="text-center p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                                <div className="text-lg font-bold text-amber-700 dark:text-amber-400">{analyst.toDo}</div>
-                                <div className="text-xs text-muted-foreground">To Do</div>
-                              </div>
-                              <div className="text-center p-2 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
-                                <div className="text-lg font-bold text-blue-700 dark:text-blue-400">{analyst.inProgress}</div>
-                                <div className="text-xs text-muted-foreground">In Progress</div>
-                              </div>
-                              <div className="text-center p-2 rounded-md bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-                                <div className="text-lg font-bold text-red-700 dark:text-red-400">{analyst.blocked}</div>
-                                <div className="text-xs text-muted-foreground">Blocked</div>
-                              </div>
-                              <div className="text-center p-2 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                                <div className="text-lg font-bold text-green-700 dark:text-green-400">{analyst.completed}</div>
-                                <div className="text-xs text-muted-foreground">Completed</div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {teamWorkload.map((analyst) => (
+                        <AnalystRow key={analyst.analystId} analyst={analyst} />
+                      ))}
                     </div>
                   )}
                 </CardContent>

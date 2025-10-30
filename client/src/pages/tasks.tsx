@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
@@ -1079,6 +1079,8 @@ function TaskDetailDialog({
   const [dueDateValue, setDueDateValue] = useState(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
   const [editingTime, setEditingTime] = useState(false);
   const [editedHours, setEditedHours] = useState<number | ''>('');
+  const [displayExpectedHours, setDisplayExpectedHours] = useState<number>(Number(task.expectedTime || 0));
+  const justUpdatedHoursRef = useRef(false);
 
   const isTeamLead = (user as any)?.role === "team_lead";
   const isAnalyst = (user as any)?.role === "analyst";
@@ -1221,6 +1223,10 @@ function TaskDetailDialog({
   useEffect(() => {
     if (open && typeof task?.expectedTime === 'number') {
       setEditedHours(Number(task.expectedTime.toFixed(1)));
+      // Avoid momentary revert to old value right after a save
+      if (!justUpdatedHoursRef.current) {
+        setDisplayExpectedHours(Number(task.expectedTime));
+      }
     }
   }, [open, task?.id, task?.expectedTime]);
 
@@ -1231,8 +1237,19 @@ function TaskDetailDialog({
         expectedTime: Number(editedHours)
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidate lists and this specific task if queried elsewhere
       queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks', task.id] });
+      // Update the local dialog immediately for better UX
+      try {
+        const newHours = Number((editedHours as number).toFixed(1));
+        setDisplayExpectedHours(newHours);
+        justUpdatedHoursRef.current = true;
+        setTimeout(() => { justUpdatedHoursRef.current = false; }, 1500);
+        const fresh = { ...task, expectedTime: newHours } as TaskWithDetails;
+        onSelectTask?.(fresh);
+      } catch {}
       toast({ title: 'Success', description: 'Task time updated' });
       setEditingTime(false);
       onUpdate();
@@ -1317,12 +1334,14 @@ function TaskDetailDialog({
           <div className="grid grid-cols-5 gap-3">
             {/* Assigned To Card */}
             <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group overflow-visible">
-              <div className={`flex items-center gap-2 ${canReassign ? 'relative z-10' : ''}`}>
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                   <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-300" />
                 </div>
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
-                {canReassign ? (
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block">Assigned To</Label>
+              </div>
+              {canReassign ? (
+                <div className="mt-1.5">
                   <Select
                     value={task.assignedToId || "unassigned"}
                     onValueChange={(value) => {
@@ -1346,12 +1365,12 @@ function TaskDetailDialog({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
                 ) : (
-                  <p className="text-sm font-medium truncate pl-1">
+                <p className="text-sm font-medium truncate pl-1 mt-1.5">
                     {task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : "Unassigned"}
-                  </p>
-                )}
-              </div>
+                </p>
+              )}
             </Card>
 
             {/* Due Date Card */}
@@ -1428,8 +1447,8 @@ function TaskDetailDialog({
                   </Label>
                   {!editingTime ? (
                     <div className="mt-0.5 text-sm">
-                      <span className="font-bold">{((task.expectedTime ?? 0) / EFFECTIVE_HOURS_PER_DAY).toFixed(2)} days</span>
-                      {` (`}<span className="font-medium">{(task.expectedTime ?? 0).toFixed(1)} hours</span>{`)`}
+                      <span className="font-bold">{((displayExpectedHours ?? 0) / EFFECTIVE_HOURS_PER_DAY).toFixed(2)} days</span>
+                      {` (`}<span className="font-medium">{(displayExpectedHours ?? 0).toFixed(1)} hours</span>{`)`}
                     </div>
                   ) : (
                     <div className="mt-1.5 flex flex-col gap-2">

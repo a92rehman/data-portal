@@ -2634,7 +2634,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const workload = await storage.getTeamWorkload();
-      res.json(workload);
+      // Ensure responses are never cached so clients always get fresh weekly planning
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+      res.setHeader('ETag', `${Date.now()}`);
+      res.status(200).json(workload);
     } catch (error) {
       console.error("Error fetching team workload:", error);
       res.status(500).json({ message: "Failed to fetch team workload" });
