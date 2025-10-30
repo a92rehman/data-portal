@@ -1026,6 +1026,45 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(or(eq(users.role, 'analyst'), eq(users.role, 'team_lead')));
 
+    // Helpers for business-day spreading
+    const startOfWeek = (d: Date) => {
+      const date = new Date(d);
+      const day = date.getDay(); // 0=Sun..6=Sat
+      const diff = (day === 0 ? -6 : 1) - day; // back to Monday
+      date.setDate(date.getDate() + diff);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+    const endOfWeek = (d: Date) => {
+      const s = startOfWeek(d);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 6); // Sunday
+      e.setHours(23, 59, 59, 999);
+      return e;
+    };
+    const isBusinessDay = (d: Date) => {
+      const day = d.getDay();
+      return day !== 0 && day !== 6; // Mon-Fri only
+    };
+    const businessDaysBetween = (start: Date, end: Date) => {
+      const s = new Date(start);
+      const e = new Date(end);
+      s.setHours(0,0,0,0);
+      e.setHours(0,0,0,0);
+      if (e < s) return 0;
+      let count = 0;
+      const cur = new Date(s);
+      while (cur <= e) {
+        if (isBusinessDay(cur)) count++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      return count;
+    };
+
+    const now = new Date();
+    const thisWeekStart = startOfWeek(now);
+    const thisWeekEnd = endOfWeek(now);
+
     const workload = await Promise.all(
       teamMembers.map(async (member) => {
         // Get task counts by status
@@ -1042,6 +1081,8 @@ export class DatabaseStorage implements IStorage {
         const activeTasks = await db
           .select({
             expectedTime: tasks.expectedTime,
+            dueDate: tasks.dueDate,
+            createdAt: tasks.createdAt,
           })
           .from(tasks)
           .where(
@@ -1058,16 +1099,39 @@ export class DatabaseStorage implements IStorage {
 
         const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
         
-        // Calculate total workload from PERT estimates (no multipliers)
-        const totalExpectedHours = activeTasks.reduce((sum, task) => 
-          sum + (task.expectedTime || 0), 0);
+        // Calculate total workload (overall) from expectedTime
+        const totalExpectedHours = activeTasks.reduce((sum, task) => sum + (task.expectedTime || 0), 0);
+
+        // Spread each task's expectedTime across business days from start->due
+        let plannedHoursThisWeek = 0;
+        for (const t of activeTasks) {
+          const taskHours = t.expectedTime || 0;
+          if (taskHours <= 0) continue;
+          const start = new Date(Math.max((t.createdAt ? t.createdAt.getTime() : now.getTime()), now.getTime()));
+          const end = t.dueDate ? new Date(t.dueDate) : new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          // if already past due or invalid range, count everything this week
+          let workingDays = businessDaysBetween(start, end);
+          if (workingDays <= 0) workingDays = 1;
+          const hoursPerBizDay = taskHours / workingDays;
+
+          // accumulate hours for business days within current week window
+          const iter = new Date(start);
+          while (iter <= end) {
+            if (isBusinessDay(iter)) {
+              if (iter >= thisWeekStart && iter <= thisWeekEnd) {
+                plannedHoursThisWeek += hoursPerBizDay;
+              }
+            }
+            iter.setDate(iter.getDate() + 1);
+          }
+        }
         
         // Convert hours to productive days
         const totalExpectedDays = totalExpectedHours / EFFECTIVE_HOURS_PER_DAY;
         
-        // Calculate utilization based on effective weekly capacity
-        const currentUtilization = (totalExpectedHours / EFFECTIVE_WEEKLY_CAPACITY) * 100;
-        const availableHours = Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - totalExpectedHours);
+        // Calculate utilization based on planned hours for the current week only
+        const currentUtilization = (plannedHoursThisWeek / EFFECTIVE_WEEKLY_CAPACITY) * 100;
+        const availableHours = Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - plannedHoursThisWeek);
         const availableDays = availableHours / EFFECTIVE_HOURS_PER_DAY;
 
         // Enhanced capacity assessment
@@ -1088,7 +1152,7 @@ export class DatabaseStorage implements IStorage {
           blocked: statusMap['blocked'] || 0,
           completed: statusMap['completed'] || 0,
           // Time-based metrics (from PERT estimates)
-          totalExpectedHours: Math.round(totalExpectedHours * 10) / 10, // Round to 1 decimal
+          totalExpectedHours: Math.round(totalExpectedHours * 10) / 10, // overall info
           totalExpectedDays: Math.round(totalExpectedDays * 10) / 10,
           weeklyCapacity: DAYS_PER_WEEK, // 5 productive days (22.5 hours)
           currentUtilization: Math.round(currentUtilization * 10) / 10,
@@ -1098,7 +1162,7 @@ export class DatabaseStorage implements IStorage {
       })
     );
 
-    return workload.sort((a, b) => b.totalExpectedDays - a.totalExpectedDays);
+    return workload.sort((a, b) => b.currentUtilization - a.currentUtilization);
   }
 
   async getOverdueTasksCount(): Promise<number> {

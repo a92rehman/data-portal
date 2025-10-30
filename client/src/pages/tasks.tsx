@@ -1077,6 +1077,8 @@ function TaskDetailDialog({
   const [deletingSubTaskId, setDeletingSubTaskId] = useState<string | null>(null);
   const [editingDueDate, setEditingDueDate] = useState(false);
   const [dueDateValue, setDueDateValue] = useState(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
+  const [editingTime, setEditingTime] = useState(false);
+  const [editedHours, setEditedHours] = useState<number | ''>('');
 
   const isTeamLead = (user as any)?.role === "team_lead";
   const isAnalyst = (user as any)?.role === "analyst";
@@ -1216,9 +1218,33 @@ function TaskDetailDialog({
     return variants[status as keyof typeof variants] || variants.to_do;
   };
 
+  useEffect(() => {
+    if (open && typeof task?.expectedTime === 'number') {
+      setEditedHours(Number(task.expectedTime.toFixed(1)));
+    }
+  }, [open, task?.id, task?.expectedTime]);
+
+  const updateTimeMutation = useMutation({
+    mutationFn: async () => {
+      if (typeof editedHours !== 'number') return;
+      return await apiRequest('PATCH', `/api/tasks/${task.id}`, {
+        expectedTime: Number(editedHours)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      toast({ title: 'Success', description: 'Task time updated' });
+      setEditingTime(false);
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update time', variant: 'destructive' });
+    },
+  });
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" data-testid="dialog-task-detail">
+      <DialogContent className="w-[1200px] max-w-[98vw] max-h-[90vh] overflow-y-auto" data-testid="dialog-task-detail">
         <DialogHeader className="pb-4 border-b pr-12">
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-4">
@@ -1288,16 +1314,14 @@ function TaskDetailDialog({
 
         <div className="space-y-6 pt-4">
           {/* Task Information Grid - 4 columns in one row */}
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-5 gap-3">
             {/* Assigned To Card */}
-            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                    <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-300" />
-                  </div>
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
+            <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group overflow-visible">
+              <div className={`flex items-center gap-2 ${canReassign ? 'relative z-10' : ''}`}>
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <UserIcon className="w-4 h-4 text-blue-600 dark:text-blue-300" />
                 </div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assigned To</Label>
                 {canReassign ? (
                   <Select
                     value={task.assignedToId || "unassigned"}
@@ -1331,15 +1355,15 @@ function TaskDetailDialog({
             </Card>
 
             {/* Due Date Card */}
-            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group">
-              <div className="flex items-center gap-2">
+            <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group overflow-visible">
+              <div className={`flex items-center gap-2 ${editingDueDate ? 'min-h-[124px]' : ''}`}> 
                 <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
                   <CalendarIcon className="w-4 h-4 text-purple-600 dark:text-purple-300" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Due Date</Label>
                   {editingDueDate ? (
-                    <div className="flex items-center gap-1 mt-0.5">
+                    <div className="flex flex-col items-center justify-center gap-3 w-full pt-1">
                       <Input
                         type="date"
                         value={dueDateValue}
@@ -1347,28 +1371,30 @@ function TaskDetailDialog({
                         className="h-7 text-xs"
                         data-testid="input-edit-due-date"
                       />
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0"
-                        onClick={() => updateDueDateMutation.mutate(dueDateValue || null)}
-                        disabled={updateDueDateMutation.isPending}
-                        data-testid="button-save-due-date"
-                      >
-                        <Check className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0"
-                        onClick={() => {
-                          setEditingDueDate(false);
-                          setDueDateValue(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
-                        }}
-                        data-testid="button-cancel-due-date"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          onClick={() => updateDueDateMutation.mutate(dueDateValue || null)}
+                          disabled={updateDueDateMutation.isPending}
+                          data-testid="button-save-due-date"
+                        >
+                          <Check className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          onClick={() => {
+                            setEditingDueDate(false);
+                            setDueDateValue(task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : "");
+                          }}
+                          data-testid="button-cancel-due-date"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <p className="text-sm font-medium mt-0.5 truncate">
@@ -1390,8 +1416,77 @@ function TaskDetailDialog({
               </div>
             </Card>
 
+            {/* Time Estimation Card */}
+            <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group overflow-visible">
+              <div className={`flex items-center gap-2 ${editingTime ? 'min-h-[124px]' : ''}`}> 
+                <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
+                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Time Estimation
+                  </Label>
+                  {!editingTime ? (
+                    <div className="mt-0.5 text-sm">
+                      <span className="font-bold">{((task.expectedTime ?? 0) / EFFECTIVE_HOURS_PER_DAY).toFixed(2)} days</span>
+                      {` (`}<span className="font-medium">{(task.expectedTime ?? 0).toFixed(1)} hours</span>{`)`}
+                    </div>
+                  ) : (
+                    <div className="mt-1.5 flex flex-col gap-2">
+                      <div className="flex flex-col items-center justify-center gap-2 w-full pt-1">
+                        <Label className="text-xs w-28">Task Hours</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={editedHours}
+                          onChange={(e) => setEditedHours(e.target.value === '' ? '' : Number(e.target.value))}
+                          className="h-8 text-xs"
+                        />
+                        {typeof editedHours === 'number' && (
+                          <div className="text-xs">
+                            <span className="font-bold">{(editedHours / EFFECTIVE_HOURS_PER_DAY).toFixed(2)} days</span>
+                            {` (`}<span className="font-medium">{editedHours.toFixed(1)} hours</span>{`)`}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0"
+                            onClick={() => updateTimeMutation.mutate()}
+                            disabled={updateTimeMutation.isPending}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0"
+                            onClick={() => setEditingTime(false)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {!editingTime && isTeamLead && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setEditingTime(true)}
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            </Card>
+
             {/* Created By Card */}
-            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+            <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
                   <UserIcon className="w-4 h-4 text-green-600 dark:text-green-300" />
@@ -1406,7 +1501,7 @@ function TaskDetailDialog({
             </Card>
 
             {/* Created Date Card */}
-            <Card className="p-3 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+            <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
                   <CalendarIcon className="w-4 h-4 text-orange-600 dark:text-orange-300" />
