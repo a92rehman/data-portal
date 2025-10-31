@@ -8,7 +8,7 @@ import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, PieChart, TrendingUp, ListChecks, Clock, CheckCircle2, AlertCircle, ListTodo, Users, Calculator } from "lucide-react";
+import { BarChart3, PieChart, TrendingUp, ListChecks, Clock, CheckCircle2, AlertCircle, ListTodo, Users, Calculator, Info } from "lucide-react";
 
 export default function Analytics() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -159,6 +159,7 @@ export default function Analytics() {
     availableDays: number;
     capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
     plannedHoursThisWeek?: number; // hours planned this week
+    dueDate?: string; // Added for tooltip
   };
 
   const { data: teamWorkload = [] } = useQuery<Array<TeamWorkloadRow>>({
@@ -235,9 +236,18 @@ export default function Analytics() {
             </div>
             <div>
               <h4 className="font-semibold text-foreground">{analyst.firstName} {analyst.lastName}</h4>
-              <p className="text-xs text-muted-foreground">
-                {analyst.totalExpectedDays} day{analyst.totalExpectedDays > 1 ? 's' : ''} workload ({analyst.totalExpectedHours.toFixed(1)}h)
-              </p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  Planned this week: {plannedHoursThisWeek.toFixed(1)}h ({(plannedHoursThisWeek / EFFECTIVE_HOURS_PER_DAY).toFixed(2)}d)
+                </span>
+                <span
+                  className="ml-1 cursor-help"
+                  title={`Total workload: ${analyst.totalExpectedHours?.toFixed(1) ?? '--'}h (${analyst.totalExpectedDays?.toFixed(1) ?? '--'}d)` +
+                  `${analyst.dueDate ? `. Due: ${analyst.dueDate}` : ''}`}
+                >
+                  <Info className="inline w-3 h-3 text-blue-400" />
+                </span>
+              </div>
             </div>
           </div>
           <div className={`px-3 py-1 rounded-full text-xs font-semibold ${analyst.capacityLevel === 'available' ? 'text-green-600 bg-green-100 dark:bg-green-950' : analyst.capacityLevel === 'light' ? 'text-blue-600 bg-blue-100 dark:bg-blue-950' : analyst.capacityLevel === 'moderate' ? 'text-yellow-600 bg-yellow-100 dark:bg-yellow-950' : analyst.capacityLevel === 'heavy' ? 'text-orange-600 bg-orange-100 dark:bg-orange-950' : 'text-red-600 bg-red-100 dark:bg-red-950'}`}>
@@ -248,11 +258,11 @@ export default function Analytics() {
         <div className="grid grid-cols-2 gap-4 mb-3">
           <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded border border-blue-200 dark:border-blue-800">
             <div className="text-lg font-bold text-blue-700 dark:text-blue-400">{weeklyUtilization.toFixed(0)}%</div>
-            <div className="text-xs text-muted-foreground">Day Utilization</div>
+            <div className="text-xs text-muted-foreground">Weekly Utilization</div>
           </div>
           <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded border border-green-200 dark:border-green-800">
             <div className="text-lg font-bold text-green-700 dark:text-green-400">{((Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - plannedHoursThisWeek)) / EFFECTIVE_HOURS_PER_DAY).toFixed(1)}</div>
-            <div className="text-xs text-muted-foreground">Available Days</div>
+            <div className="text-xs text-muted-foreground">Available This Week (days)</div>
           </div>
         </div>
 
