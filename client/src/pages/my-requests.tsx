@@ -278,7 +278,7 @@ export default function MyRequests() {
             </p>
 
             {/* Filters */}
-            <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md sticky top-[73px] z-20">
+            <Card className="mb-4 border-2 border-border bg-card shadow-md sticky top-[73px] z-20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="relative">
@@ -370,7 +370,7 @@ export default function MyRequests() {
             </Card>
 
             {/* Requests Table */}
-            <Card className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+            <Card className="border-2 border-border bg-card shadow-md">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>

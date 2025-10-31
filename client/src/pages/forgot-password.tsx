@@ -148,11 +148,11 @@ export default function ForgotPassword() {
                 <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-lg font-semibold text-foreground">
                   Reset Link Sent!
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  If an account exists with the email <span className="font-medium text-gray-900 dark:text-white">{form.getValues("email")}</span>, you will receive a password reset link shortly.
+                  If an account exists with the email <span className="font-medium text-foreground">{form.getValues("email")}</span>, you will receive a password reset link shortly.
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-500 pt-2">
                   The link will expire in 1 hour for security reasons.

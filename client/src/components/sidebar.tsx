@@ -54,7 +54,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
   const navItems = getNavItems();
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-800 border-r-2 border-purple-200 dark:border-purple-700 fixed left-0 top-[73px] bottom-0 p-4 shadow-md overflow-y-auto z-30 hidden md:block">
+    <aside className="w-64 bg-background border-r-2 border-purple-200 dark:border-purple-700 fixed left-0 top-[73px] bottom-0 p-4 shadow-md overflow-y-auto z-30 hidden md:block">
       <nav className="space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -84,7 +84,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
               <Link href="/requests/new">
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-start gradient-button-secondary font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/40" 
+                  className="w-full justify-start gradient-button-secondary font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/40 text-foreground" 
                   data-testid="button-quick-new-request"
                 >
                   <Plus className="w-5 h-5 mr-3" />

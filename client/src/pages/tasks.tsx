@@ -384,7 +384,7 @@ export default function Tasks() {
           </div>
 
           {/* Filters */}
-          <Card className="mb-6 sticky top-[73px] z-20 bg-white dark:bg-gray-800">
+          <Card className="mb-6 sticky top-[73px] z-20 bg-card">
             <CardContent className="p-4">
               <div className="flex gap-3 flex-wrap">
                 <Select value={filterStatus || "all"} onValueChange={(value) => setFilterStatus(value === "all" ? "" : value)}>
@@ -585,7 +585,7 @@ function TaskCard({
 
   return (
     <Card 
-      className={`border-2 border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-600 bg-white dark:bg-gray-800 shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl overflow-hidden border-l-4 ${healthColors[health.status]}`}
+      className={`border-2 border-border hover:border-purple-400 dark:hover:border-purple-600 bg-card shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl overflow-hidden border-l-4 ${healthColors[health.status]}`}
       data-testid={`task-card-${task.id}`}
     >
       <CardContent className="p-5">
@@ -2199,7 +2199,7 @@ function CreateTaskDialog({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden" data-testid="dialog-create-task">
-        <DialogHeader className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b pr-2">
+        <DialogHeader className="sticky top-0 z-10 bg-background border-b pr-2">
           <div className="flex items-start justify-between gap-2">
             <div>
               <DialogTitle className="text-lg flex items-center gap-2">
@@ -2392,7 +2392,7 @@ function CreateTaskDialog({
           </div>
         </div>
         
-        <DialogFooter className="sticky bottom-0 bg-white dark:bg-gray-900 border-t mt-2 pt-3">
+        <DialogFooter className="sticky bottom-0 bg-background border-t mt-2 pt-3">
           <Button variant="outline" onClick={onClose} data-testid="button-cancel-task">
             Cancel
           </Button>

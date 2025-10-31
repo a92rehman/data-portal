@@ -70,7 +70,7 @@ export default function Landing() {
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Request & Track</h3>
+                  <h3 className="font-bold text-lg mb-2 text-foreground">Request & Track</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Submit data requests and monitor their progress in real-time</p>
                 </div>
               </div>
@@ -84,7 +84,7 @@ export default function Landing() {
                   <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Team Collaboration</h3>
+                  <h3 className="font-bold text-lg mb-2 text-foreground">Team Collaboration</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Work together through comments, assignments, and file sharing</p>
                 </div>
               </div>
@@ -98,7 +98,7 @@ export default function Landing() {
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">Instant Analytics</h3>
+                  <h3 className="font-bold text-lg mb-2 text-foreground">Instant Analytics</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300">Get insights into team performance and request metrics</p>
                 </div>
               </div>

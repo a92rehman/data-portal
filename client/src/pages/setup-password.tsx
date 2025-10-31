@@ -103,7 +103,7 @@ export default function SetupPassword() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-6">
               <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Welcome to the Team!</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-3">Welcome to the Team!</h2>
             <p className="text-gray-600 mb-2">Your password has been set successfully.</p>
             <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
           </CardContent>

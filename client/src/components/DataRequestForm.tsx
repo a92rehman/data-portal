@@ -87,7 +87,7 @@ function Section({
       isCompleted 
         ? 'border-green-300 bg-green-50/50 dark:bg-green-900/10 dark:border-green-700' 
         : isOpen
-        ? 'border-purple-300 bg-white dark:bg-gray-800 dark:border-purple-600'
+        ? 'border-purple-300 bg-card dark:border-purple-600'
         : 'border-gray-200 bg-gray-50 dark:bg-gray-800/50 dark:border-gray-700'
     }`}>
       <div 
@@ -688,7 +688,7 @@ export default function DataRequestForm() {
       <div>
         <label className="text-sm">Frequency *</label>
         <select 
-          className="w-full mt-1 border rounded-md p-2" 
+          className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" 
           value={frequency} 
           onChange={(e) => {
             setFrequency(e.target.value);
@@ -709,7 +709,7 @@ export default function DataRequestForm() {
       </div>
       <div>
         <label className="text-sm">Unit *</label>
-        <select className="w-full mt-1 border rounded-md p-2" value={unit} onChange={(e) => setUnit(e.target.value)}>
+        <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={unit} onChange={(e) => setUnit(e.target.value)}>
           <option value="">Unit</option>
           <option value="days">Days</option>
           <option value="weeks">Weeks</option>
@@ -883,7 +883,7 @@ export default function DataRequestForm() {
             </div>
             <div>
               <label className="text-sm font-medium">File Format *</label>
-              <select className="w-full mt-1 border rounded-md p-2" value={fileFormat} onChange={(e) => setFileFormat(e.target.value)}>
+              <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={fileFormat} onChange={(e) => setFileFormat(e.target.value)}>
                 <option value="">Select format</option>
                 <option value="CSV">CSV</option>
                 <option value="Excel">Excel</option>
@@ -1121,8 +1121,8 @@ export default function DataRequestForm() {
         return (
           <>
             <div className="mb-3">
-              <label className="text-sm font-medium">Type of Experimentation Support *</label>
-              <select className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:border-gray-600" value={experimentSubType} onChange={(e) => setExperimentSubType(e.target.value)}>
+                <label className="text-sm font-medium">Type of Experimentation Support *</label>
+              <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={experimentSubType} onChange={(e) => setExperimentSubType(e.target.value)}>
                 <option value="">-- Select type --</option>
                 <option value="design_new">Support in Designing a New Experiment</option>
                 <option value="review">Review the Experiment</option>
@@ -1331,7 +1331,7 @@ export default function DataRequestForm() {
               </div>
               <div>
                 <label className="text-sm font-medium">Department *</label>
-                <select className="w-full mt-1 border rounded-md p-2" value={department} onChange={(e) => setDepartment(e.target.value)}>
+                <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={department} onChange={(e) => setDepartment(e.target.value)}>
                   <option value="">-- Select department --</option>
                   {DEPARTMENTS.map((d) => (<option key={d} value={d}>{d}</option>))}
                 </select>
@@ -1339,7 +1339,7 @@ export default function DataRequestForm() {
               {department && TEAM_OPTIONS[department] && (
                 <div>
                   <label className="text-sm font-medium">Team</label>
-                  <select className="w-full mt-1 border rounded-md p-2" value={team} onChange={(e) => setTeam(e.target.value)}>
+                  <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={team} onChange={(e) => setTeam(e.target.value)}>
                     <option value="">-- Select team --</option>
                     {TEAM_OPTIONS[department].map((t) => (<option key={t} value={t}>{t}</option>))}
                   </select>
@@ -1353,7 +1353,7 @@ export default function DataRequestForm() {
               )}
               <div className="md:col-span-2">
                 <label className="text-sm font-medium">Request Type *</label>
-                <select className="w-full mt-1 border rounded-md p-2 dark:bg-gray-800 dark:border-gray-600" value={requestType} onChange={(e) => setRequestType(e.target.value)}>
+                <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={requestType} onChange={(e) => setRequestType(e.target.value)}>
                   <option value="">-- Choose Type --</option>
                   <option value="userInvestigation">👤 User Investigation - Verify user data, check activity logs</option>
                   <option value="extraction">📊 One-time Data Request - Export data as CSV/Excel</option>
@@ -1374,7 +1374,7 @@ export default function DataRequestForm() {
               <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium">Priority Level *</label>
-                  <select className="w-full mt-1 border rounded-md p-2" value={priority} onChange={(e) => setPriority(e.target.value)}>
+                  <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={priority} onChange={(e) => setPriority(e.target.value)}>
                     <option value="">Select priority...</option>
                     <option value="P0">P0 - Critical (Imminent business decision/launch)</option>
                     <option value="P1">P1 - High (Key business decisions)</option>
@@ -1384,7 +1384,7 @@ export default function DataRequestForm() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Impact *</label>
-                  <select className="w-full mt-1 border rounded-md p-2" value={impact} onChange={(e) => setImpact(e.target.value)}>
+                  <select className="w-full mt-1 border rounded-md p-2 bg-background text-foreground border-input placeholder:text-muted-foreground" value={impact} onChange={(e) => setImpact(e.target.value)}>
                     <option value="">Select impact...</option>
                     <option value="Program Implementation">Program Implementation</option>
                     <option value="Product Improvement">Product Improvement</option>

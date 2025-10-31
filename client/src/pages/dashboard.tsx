@@ -441,7 +441,7 @@ export default function Dashboard() {
           <div className="mb-6">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4">Dashboard Overview</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+              <Card className="border-2 border-border bg-card shadow-lg hover:shadow-xl transition-all rounded-xl">
                 <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
                     <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md mb-3" style={{background: 'linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(260, 84%, 70%) 100%)'}}>
@@ -454,7 +454,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+              <Card className="border-2 border-border bg-card shadow-lg hover:shadow-xl transition-all rounded-xl">
                 <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
                     <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md mb-3" style={{background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(48, 92%, 55%) 100%)'}}>
@@ -467,7 +467,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all rounded-xl">
+              <Card className="border-2 border-border bg-card shadow-lg hover:shadow-xl transition-all rounded-xl">
                 <CardContent className="p-5">
                   <div className="flex flex-col items-center text-center">
                     <div className="w-12 h-12 rounded-lg flex items-center justify-center shadow-md mb-3" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
@@ -511,7 +511,7 @@ export default function Dashboard() {
           </div>
 
           {/* Filters and Actions */}
-          <Card className="mb-4 border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md sticky top-[73px] z-20">
+          <Card className="mb-4 border-2 border-border bg-card shadow-md sticky top-[73px] z-20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -662,7 +662,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Requests Table */}
-          <Card className="border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-md">
+          <Card className="border-2 border-border bg-card shadow-md">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -849,7 +849,7 @@ export default function Dashboard() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!requestToDelete} onOpenChange={(open) => !open && setRequestToDelete(null)}>
-        <AlertDialogContent className="bg-white dark:bg-gray-800">
+        <AlertDialogContent className="bg-background text-foreground">
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
@@ -860,8 +860,8 @@ export default function Dashboard() {
             <AlertDialogDescription className="pt-4 text-base">
               Are you sure you want to delete this request? This action cannot be undone.
               {requestToDelete && (
-                <div className="mt-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4">
-                  <p className="font-semibold text-gray-900 dark:text-white">{requestToDelete.title}</p>
+                <div className="mt-4 rounded-lg border border-border bg-muted p-4">
+                  <p className="font-semibold text-foreground">{requestToDelete.title}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     Requested by: {requestToDelete.requestedBy?.firstName} {requestToDelete.requestedBy?.lastName}
                   </p>

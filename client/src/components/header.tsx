@@ -140,7 +140,7 @@ export default function Header({ user }: HeaderProps) {
     <>
       <MobileNav open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen} user={user} />
       
-      <header className="bg-white dark:bg-gray-800 border-b-2 border-purple-200 dark:border-purple-700 sticky top-0 z-40 shadow-md">
+      <header className="bg-background border-b-2 border-purple-200 dark:border-purple-700 sticky top-0 z-40 shadow-md">
         <div className="flex items-center justify-between px-6 py-4 pt-[12px] pb-[12px]">
           <div className="flex items-center gap-4">
             {/* Hamburger Menu - Mobile Only */}
@@ -256,7 +256,7 @@ export default function Header({ user }: HeaderProps) {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-sm">{priorityEmoji}</span>
-                                <p className={`text-sm font-medium ${notification.read === 'false' ? colors.text : 'text-gray-800 dark:text-gray-200'}`}>
+                                <p className={`text-sm font-medium ${notification.read === 'false' ? colors.text : 'text-foreground'}`}>
                                   {notification.title}
                                 </p>
                                 {isNew && notification.read === 'false' && (

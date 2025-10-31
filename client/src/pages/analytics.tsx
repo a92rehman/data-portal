@@ -228,7 +228,7 @@ export default function Analytics() {
     }
 
     return (
-      <div key={analyst.analystId} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+      <div key={analyst.analystId} className="border border-border rounded-lg p-4 bg-card text-card-foreground">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold">
@@ -361,7 +361,7 @@ export default function Analytics() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 70%, 65%) 100%)'}}>
                     <PieChart className="w-4 h-4 text-white" />
                   </div>
@@ -386,7 +386,7 @@ export default function Analytics() {
 
             <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
                     <BarChart3 className="w-4 h-4 text-white" />
                   </div>
@@ -411,7 +411,7 @@ export default function Analytics() {
 
             <Card className="gradient-card">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
                     <TrendingUp className="w-4 h-4 text-white" />
                   </div>
@@ -676,7 +676,7 @@ export default function Analytics() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <Card className="gradient-card">
                   <CardHeader>
-                    <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(280, 70%, 60%) 0%, hsl(300, 70%, 65%) 100%)'}}>
                         <ListTodo className="w-4 h-4 text-white" />
                       </div>
@@ -703,7 +703,7 @@ export default function Analytics() {
 
                 <Card className="gradient-card">
                   <CardHeader>
-                    <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(209, 89%, 53%) 100%)'}}>
                         <BarChart3 className="w-4 h-4 text-white" />
                       </div>
@@ -730,7 +730,7 @@ export default function Analytics() {
 
                 <Card className="gradient-card">
                   <CardHeader>
-                    <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, hsl(142, 71%, 45%) 0%, hsl(152, 71%, 50%) 100%)'}}>
                         <PieChart className="w-4 h-4 text-white" />
                       </div>
@@ -771,8 +771,8 @@ export default function Analytics() {
                     </div>
                     
                     <div className="space-y-3 text-sm">
-                      <div className="bg-white dark:bg-gray-800 p-3 rounded border">
-                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">Simple Formula:</p>
+                      <div className="bg-card text-card-foreground p-3 rounded border border-border">
+                        <p className="font-medium text-foreground mb-2">Simple Formula:</p>
                         <div className="font-mono text-xs text-blue-600 mb-3">
                           Workload Hours = Σ (Expected Time)
                         </div>
@@ -782,8 +782,8 @@ export default function Analytics() {
                         </p>
                       </div>
                       
-                      <div className="bg-white dark:bg-gray-800 p-3 rounded border">
-                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">PERT Time Estimation:</p>
+                      <div className="bg-card text-card-foreground p-3 rounded border border-border">
+                        <p className="font-medium text-foreground mb-2">PERT Time Estimation:</p>
                         <div className="font-mono text-xs text-purple-600 mb-2">
                           Expected Time = (Optimistic + 4×Most Likely + Pessimistic) / 6
                         </div>
@@ -807,7 +807,7 @@ export default function Analytics() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">Capacity:</p>
+                          <p className="font-medium text-foreground mb-2">Capacity:</p>
                           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                             <div><strong>1 Productive Day</strong> = 4.5 hours</div>
                             <div><strong>1 Productive Week</strong> = 22.5 hours (5 days)</div>
@@ -817,7 +817,7 @@ export default function Analytics() {
                         </div>
                         
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">Capacity Levels:</p>
+                          <p className="font-medium text-foreground mb-2">Capacity Levels:</p>
                           <div className="space-y-1 text-xs">
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-green-500"></div>

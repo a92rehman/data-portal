@@ -1060,7 +1060,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
         {/* Info Cards Grid - Moved to top for better visibility */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 px-6 py-4 mt-4 border-b bg-gradient-to-r from-indigo-50/50 via-purple-50/50 to-blue-50/50 dark:from-indigo-950/20 dark:via-purple-950/20 dark:to-blue-950/20">
           {/* 1. Requested By Card */}
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
+          <div className="bg-card text-card-foreground p-3 rounded-lg border border-purple-200 dark:border-purple-800/50 shadow-sm">
             <p className="text-xs text-purple-600 dark:text-purple-400 uppercase mb-1 flex items-center gap-1">
               <UserIcon className="w-3 h-3" />
               Requested By
