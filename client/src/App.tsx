@@ -27,6 +27,7 @@ import Settings from "@/pages/settings";
 import RequestWorkspace from "@/pages/request-workspace";
 import NewRequest from "@/pages/new-request";
 import Tasks from "@/pages/tasks";
+import MetricDefinitions from "@/pages/metric-definitions";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -44,6 +45,7 @@ function Router() {
         <Route path="/setup-password" component={SetupPassword} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/metric-definitions" component={MetricDefinitions} />
         <Route component={Landing} />
       </Switch>
     );
@@ -65,6 +67,7 @@ function Router() {
       <Route path="/analytics">{() => <Analytics />}</Route>
       <Route path="/profile-setup">{() => <ProfileSetup />}</Route>
       <Route path="/settings">{() => <Settings />}</Route>
+      <Route path="/metric-definitions" component={MetricDefinitions} />
       <Route>{() => <NotFound />}</Route>
     </Switch>
   );

@@ -302,6 +302,49 @@ export const tasks = pgTable("tasks", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Metric Types Table
+export const metricTypes = pgTable("metric_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  whatAreThey: text("what_are_they").notNull(),
+  focus: text("focus").notNull(),
+  whyTheyMatter: text("why_they_matter").notNull(),
+  keyQuestion: text("key_question").notNull(),
+  primaryAudience: text("primary_audience").notNull(),
+  orderIndex: integer("order_index").default(0),
+  createdById: varchar("created_by_id").references(() => users.id),
+  updatedById: varchar("updated_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Metrics Table
+export const metrics = pgTable("metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  metricTypeId: varchar("metric_type_id").notNull().references(() => metricTypes.id, { onDelete: 'cascade' }),
+  name: varchar("name").notNull(),
+  definition: text("definition").notNull(),
+  threshold: text("threshold"),
+  orderIndex: integer("order_index").default(0),
+  createdById: varchar("created_by_id").references(() => users.id),
+  updatedById: varchar("updated_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Metric Features Table (sub-features with individual thresholds)
+export const metricFeatures = pgTable("metric_features", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  metricId: varchar("metric_id").notNull().references(() => metrics.id, { onDelete: 'cascade' }),
+  name: varchar("name").notNull(),
+  threshold: text("threshold").notNull(),
+  orderIndex: integer("order_index").default(0),
+  createdById: varchar("created_by_id").references(() => users.id),
+  updatedById: varchar("updated_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   requestedDataRequests: many(dataRequests, { relationName: "requestedBy" }),
@@ -405,6 +448,25 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
   }),
 }));
 
+export const metricTypesRelations = relations(metricTypes, ({ many }) => ({
+  metrics: many(metrics),
+}));
+
+export const metricsRelations = relations(metrics, ({ one, many }) => ({
+  metricType: one(metricTypes, {
+    fields: [metrics.metricTypeId],
+    references: [metricTypes.id],
+  }),
+  features: many(metricFeatures),
+}));
+
+export const metricFeaturesRelations = relations(metricFeatures, ({ one }) => ({
+  metric: one(metrics, {
+    fields: [metricFeatures.metricId],
+    references: [metrics.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertDataRequestSchema = createInsertSchema(dataRequests).omit({ 
@@ -450,6 +512,35 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   dueDate: z.union([z.date(), z.string()]).transform((val) => val ? new Date(val) : null).optional()
 });
 
+export const insertMetricTypeSchema = createInsertSchema(metricTypes).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  createdById: true,
+  updatedById: true,
+  orderIndex: true
+});
+
+export const insertMetricSchema = createInsertSchema(metrics).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  createdById: true,
+  updatedById: true,
+  orderIndex: true
+}).extend({
+  threshold: z.string().optional(),
+});
+
+export const insertMetricFeatureSchema = createInsertSchema(metricFeatures).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  createdById: true,
+  updatedById: true,
+  orderIndex: true
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -482,4 +573,18 @@ export type TaskWithDetails = Task & {
   assignedTo: User | null;
   createdBy: User;
   request: DataRequest | null;
+};
+
+export type MetricType = typeof metricTypes.$inferSelect;
+export type InsertMetricType = z.infer<typeof insertMetricTypeSchema>;
+export type Metric = typeof metrics.$inferSelect;
+export type InsertMetric = z.infer<typeof insertMetricSchema>;
+export type MetricFeature = typeof metricFeatures.$inferSelect;
+export type InsertMetricFeature = z.infer<typeof insertMetricFeatureSchema>;
+
+// Extended type for API responses
+export type MetricTypeWithMetrics = MetricType & {
+  metrics: (Metric & {
+    features: MetricFeature[];
+  })[];
 };

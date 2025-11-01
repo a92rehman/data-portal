@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChartLine, Sparkles, TrendingUp, Users, Shield, Zap, ArrowRight } from "lucide-react";
+import { ChartLine, Sparkles, TrendingUp, Users, Shield, Zap, ArrowRight, BarChart3 } from "lucide-react";
 import { useLocation } from "wouter";
 import AnimatedLogo from "@/components/AnimatedLogo";
 
@@ -59,6 +59,17 @@ export default function Landing() {
           >
             Sign Up
             <Sparkles className="w-5 h-5 ml-2" />
+          </Button>
+        </div>
+
+        <div className="mt-4 text-center">
+          <Button 
+            variant="link"
+            className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
+            onClick={() => setLocation("/metric-definitions")}
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            View Metric Definitions
           </Button>
         </div>
 

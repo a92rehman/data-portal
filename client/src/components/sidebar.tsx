@@ -9,7 +9,8 @@ import {
   Plus,
   FileText,
   ListTodo,
-  ClipboardList
+  ClipboardList,
+  BookOpen
 } from "lucide-react";
 
 interface SidebarProps {
@@ -94,6 +95,23 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
             </div>
           </>
         )}
+
+        {/* Resources Section */}
+        <Separator className="my-4 bg-purple-200 dark:bg-purple-700" />
+        
+        <div className="pt-2">
+          <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
+            Resources
+          </p>
+          <Link 
+            href="/metric-definitions"
+            className={`sidebar-link ${location === "/metric-definitions" ? "gradient-button-primary text-white" : "text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"}`}
+            data-testid="nav-metric-definitions"
+          >
+            <BookOpen className="w-5 h-5" />
+            <span>Metric Definitions</span>
+          </Link>
+        </div>
 
       </nav>
     </aside>

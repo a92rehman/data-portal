@@ -2,8 +2,27 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const contentType = res.headers.get("content-type") || "";
+    let text = "";
+    
+    // Check if response is JSON or HTML
+    if (contentType.includes("application/json")) {
+      try {
+        const json = await res.json();
+        text = json.message || JSON.stringify(json);
+      } catch (e) {
+        text = await res.text();
+      }
+    } else {
+      text = await res.text();
+      // If it's HTML (like an error page), provide a better error message
+      if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+        text = `Server returned HTML error page (Status ${res.status}). The API route may not exist or the server needs to be restarted.`;
+      }
+    }
+    
+    const errorMessage = text || res.statusText;
+    throw new Error(`${res.status}: ${errorMessage}`);
   }
 }
 

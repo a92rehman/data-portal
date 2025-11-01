@@ -2794,6 +2794,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ========== PUBLIC METRIC DEFINITIONS ROUTES ==========
+  // Get all metric types with their metrics (PUBLIC - no auth required)
+  app.get('/api/metric-definitions', async (req: any, res) => {
+    try {
+      const types = await storage.getAllMetricTypes();
+      res.json(types);
+    } catch (error) {
+      console.error("Error fetching metric definitions:", error);
+      res.status(500).json({ message: "Failed to fetch metric definitions" });
+    }
+  });
+
+  // Get single metric type with metrics (PUBLIC)
+  app.get('/api/metric-definitions/:typeId', async (req: any, res) => {
+    try {
+      const type = await storage.getMetricType(req.params.typeId);
+      if (!type) {
+        return res.status(404).json({ message: "Metric type not found" });
+      }
+      res.json(type);
+    } catch (error) {
+      console.error("Error fetching metric type:", error);
+      res.status(500).json({ message: "Failed to fetch metric type" });
+    }
+  });
+
+  // ========== PROTECTED METRIC TYPE ROUTES (Team Leads only) ==========
+  app.post('/api/metric-types', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can create metric types" });
+      }
+      const type = await storage.createMetricType(req.body, req.user.id);
+      res.json(type);
+    } catch (error: any) {
+      console.error("Error creating metric type:", error);
+      res.status(500).json({ message: error.message || "Failed to create metric type" });
+    }
+  });
+
+  app.patch('/api/metric-types/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can update metric types" });
+      }
+      const type = await storage.updateMetricType(req.params.id, req.body, req.user.id);
+      if (!type) {
+        return res.status(404).json({ message: "Metric type not found" });
+      }
+      res.json(type);
+    } catch (error: any) {
+      console.error("Error updating metric type:", error);
+      res.status(500).json({ message: error.message || "Failed to update metric type" });
+    }
+  });
+
+  app.delete('/api/metric-types/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can delete metric types" });
+      }
+      await storage.deleteMetricType(req.params.id);
+      res.json({ message: "Metric type deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting metric type:", error);
+      res.status(500).json({ message: error.message || "Failed to delete metric type" });
+    }
+  });
+
+  // ========== PROTECTED METRIC ROUTES (Team Leads only) ==========
+  app.post('/api/metrics', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can create metrics" });
+      }
+      const metric = await storage.createMetric(req.body, req.user.id);
+      res.json(metric);
+    } catch (error: any) {
+      console.error("Error creating metric:", error);
+      res.status(500).json({ message: error.message || "Failed to create metric" });
+    }
+  });
+
+  // Metric Features routes - placed right after metrics routes
+  console.log("📝 [ROUTE REGISTRATION] Starting to register POST /api/metric-features route...");
+  
+  // First, test route without auth to verify routing works
+  app.post('/api/test-metric-features-route', async (req: any, res: any) => {
+    res.setHeader('Content-Type', 'application/json');
+    console.log("✅ [TEST ROUTE] POST /api/test-metric-features-route matched!");
+    res.json({ message: "Test route working", timestamp: new Date().toISOString() });
+  });
+  console.log("✅ [ROUTE REGISTRATION] Test route /api/test-metric-features-route registered");
+  
+  // Main route with auth
+  app.post('/api/metric-features', async (req: any, res: any) => {
+    // Explicitly set JSON headers first to prevent HTML response
+    res.setHeader('Content-Type', 'application/json');
+    
+    console.log("🚀 [ROUTE MATCH] POST /api/metric-features matched!");
+    console.log("🔍 [DEBUG] Request method:", req.method);
+    console.log("🔍 [DEBUG] Request path:", req.path);
+    console.log("🔍 [DEBUG] Request URL:", req.url);
+    console.log("🔍 [DEBUG] Request originalUrl:", req.originalUrl);
+    
+    // Check auth manually
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      console.log("❌ [AUTH] Not authenticated");
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    if (!req.user || !req.user.id) {
+      console.log("❌ [AUTH] No user in request");
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        console.log("❌ [AUTH] User is not team lead:", user?.role);
+        return res.status(403).json({ message: "Only Data Lead can create metric features" });
+      }
+      
+      console.log("✅ [AUTH] User authenticated, creating feature...");
+      console.log("🔍 [DEBUG] Request body:", JSON.stringify(req.body));
+      
+      const feature = await storage.createMetricFeature(req.body, req.user.id);
+      console.log("✅ [SUCCESS] Feature created:", feature.id);
+      return res.json(feature);
+    } catch (error: any) {
+      console.error("❌ [ERROR] Error creating metric feature:", error);
+      console.error("❌ [ERROR] Stack:", error.stack);
+      return res.status(500).json({ message: error.message || "Failed to create metric feature" });
+    }
+  });
+  console.log("✅ [ROUTE REGISTRATION] POST /api/metric-features route registered!");
+
+  app.patch('/api/metric-features/:id', async (req: any, res: any) => {
+    res.setHeader('Content-Type', 'application/json');
+    
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can update metric features" });
+      }
+      const feature = await storage.updateMetricFeature(req.params.id, req.body, req.user.id);
+      if (!feature) {
+        return res.status(404).json({ message: "Metric feature not found" });
+      }
+      return res.json(feature);
+    } catch (error: any) {
+      console.error("Error updating metric feature:", error);
+      return res.status(500).json({ message: error.message || "Failed to update metric feature" });
+    }
+  });
+
+  app.delete('/api/metric-features/:id', async (req: any, res: any) => {
+    res.setHeader('Content-Type', 'application/json');
+    
+    if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can delete metric features" });
+      }
+      await storage.deleteMetricFeature(req.params.id);
+      return res.json({ message: "Metric feature deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting metric feature:", error);
+      return res.status(500).json({ message: error.message || "Failed to delete metric feature" });
+    }
+  });
+
+  app.patch('/api/metrics/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can update metrics" });
+      }
+      const metric = await storage.updateMetric(req.params.id, req.body, req.user.id);
+      if (!metric) {
+        return res.status(404).json({ message: "Metric not found" });
+      }
+      res.json(metric);
+    } catch (error: any) {
+      console.error("Error updating metric:", error);
+      res.status(500).json({ message: error.message || "Failed to update metric" });
+    }
+  });
+
+  app.delete('/api/metrics/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user || user.role !== 'team_lead') {
+        return res.status(403).json({ message: "Only Data Lead can delete metrics" });
+      }
+      await storage.deleteMetric(req.params.id);
+      res.json({ message: "Metric deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting metric:", error);
+      res.status(500).json({ message: error.message || "Failed to delete metric" });
+    }
+  });
+
   const httpServer = createServer(app);
   setupWebSocketServer(httpServer);
   return httpServer;

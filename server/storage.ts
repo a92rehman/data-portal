@@ -7,6 +7,9 @@ import {
   authLogs,
   notifications,
   tasks,
+  metricTypes,
+  metrics,
+  metricFeatures,
   type User,
   type UpsertUser,
   type DataRequest,
@@ -25,6 +28,13 @@ import {
   type InsertTask,
   type DataRequestWithDetails,
   type TaskWithDetails,
+  type MetricType,
+  type InsertMetricType,
+  type Metric,
+  type InsertMetric,
+  type MetricFeature,
+  type InsertMetricFeature,
+  type MetricTypeWithMetrics,
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, asc, and, or, count, sql, isNotNull } from "drizzle-orm";
@@ -161,6 +171,24 @@ export interface IStorage {
   deleteTask(id: string): Promise<void>;
   calculatePertTime(optimistic: number, mostLikely: number, pessimistic: number): number;
   getUserWorkload(userId: string): Promise<{ tasks: TaskWithDetails[]; totalExpectedHours: number }>;
+  
+  // Metric Types operations
+  getAllMetricTypes(): Promise<MetricTypeWithMetrics[]>;
+  getMetricType(id: string): Promise<MetricTypeWithMetrics | undefined>;
+  createMetricType(type: InsertMetricType, userId: string): Promise<MetricType>;
+  updateMetricType(id: string, type: Partial<InsertMetricType>, userId: string): Promise<MetricType | undefined>;
+  deleteMetricType(id: string): Promise<void>;
+  
+  // Metrics operations
+  createMetric(metric: InsertMetric, userId: string): Promise<Metric>;
+  updateMetric(id: string, metric: Partial<InsertMetric>, userId: string): Promise<Metric | undefined>;
+  deleteMetric(id: string): Promise<void>;
+  
+  // Metric Features operations
+  getMetricFeatures(metricId: string): Promise<MetricFeature[]>;
+  createMetricFeature(feature: InsertMetricFeature, userId: string): Promise<MetricFeature>;
+  updateMetricFeature(id: string, feature: Partial<InsertMetricFeature>, userId: string): Promise<MetricFeature | undefined>;
+  deleteMetricFeature(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1756,6 +1784,160 @@ export class DatabaseStorage implements IStorage {
     const completed = subTasks.filter(t => t.status === 'completed').length;
 
     return { total, completed };
+  }
+
+  // Metric Types operations
+  async getAllMetricTypes(): Promise<MetricTypeWithMetrics[]> {
+    const types = await db.select()
+      .from(metricTypes)
+      .orderBy(asc(metricTypes.orderIndex), asc(metricTypes.name));
+    
+    const typesWithMetrics = await Promise.all(
+      types.map(async (type) => {
+        const metricsList = await db.select()
+          .from(metrics)
+          .where(eq(metrics.metricTypeId, type.id))
+          .orderBy(asc(metrics.orderIndex), asc(metrics.name));
+        
+        const metricsWithFeatures = await Promise.all(
+          metricsList.map(async (metric) => {
+            const features = await db.select()
+              .from(metricFeatures)
+              .where(eq(metricFeatures.metricId, metric.id))
+              .orderBy(asc(metricFeatures.orderIndex), asc(metricFeatures.name));
+            return { ...metric, features };
+          })
+        );
+        
+        return { ...type, metrics: metricsWithFeatures };
+      })
+    );
+    
+    return typesWithMetrics;
+  }
+
+  async getMetricType(id: string): Promise<MetricTypeWithMetrics | undefined> {
+    const [type] = await db.select().from(metricTypes).where(eq(metricTypes.id, id));
+    if (!type) return undefined;
+    
+    const metricsList = await db.select()
+      .from(metrics)
+      .where(eq(metrics.metricTypeId, id))
+      .orderBy(asc(metrics.orderIndex), asc(metrics.name));
+    
+    const metricsWithFeatures = await Promise.all(
+      metricsList.map(async (metric) => {
+        const features = await db.select()
+          .from(metricFeatures)
+          .where(eq(metricFeatures.metricId, metric.id))
+          .orderBy(asc(metricFeatures.orderIndex), asc(metricFeatures.name));
+        return { ...metric, features };
+      })
+    );
+    
+    return { ...type, metrics: metricsWithFeatures };
+  }
+
+  async createMetricType(type: InsertMetricType, userId: string): Promise<MetricType> {
+    const maxOrderResult = await db.select({ max: sql<number>`MAX(${metricTypes.orderIndex})` }).from(metricTypes);
+    const maxOrder = maxOrderResult[0]?.max ?? 0;
+    const nextOrder = maxOrder + 1;
+    
+    const [created] = await db.insert(metricTypes).values({
+      ...type,
+      orderIndex: nextOrder,
+      createdById: userId,
+      updatedById: userId,
+    }).returning();
+    return created;
+  }
+
+  async updateMetricType(id: string, type: Partial<InsertMetricType>, userId: string): Promise<MetricType | undefined> {
+    const [updated] = await db.update(metricTypes)
+      .set({
+        ...type,
+        updatedById: userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(metricTypes.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMetricType(id: string): Promise<void> {
+    await db.delete(metricTypes).where(eq(metricTypes.id, id));
+  }
+
+  async createMetric(metric: InsertMetric, userId: string): Promise<Metric> {
+    const maxOrderResult = await db.select({ max: sql<number>`MAX(${metrics.orderIndex})` })
+      .from(metrics)
+      .where(eq(metrics.metricTypeId, metric.metricTypeId));
+    const maxOrder = maxOrderResult[0]?.max ?? 0;
+    const nextOrder = maxOrder + 1;
+    
+    const [created] = await db.insert(metrics).values({
+      ...metric,
+      orderIndex: nextOrder,
+      createdById: userId,
+      updatedById: userId,
+    }).returning();
+    return created;
+  }
+
+  async updateMetric(id: string, metric: Partial<InsertMetric>, userId: string): Promise<Metric | undefined> {
+    const [updated] = await db.update(metrics)
+      .set({
+        ...metric,
+        updatedById: userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(metrics.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMetric(id: string): Promise<void> {
+    await db.delete(metrics).where(eq(metrics.id, id));
+  }
+
+  // Metric Features operations
+  async getMetricFeatures(metricId: string): Promise<MetricFeature[]> {
+    return await db.select()
+      .from(metricFeatures)
+      .where(eq(metricFeatures.metricId, metricId))
+      .orderBy(asc(metricFeatures.orderIndex), asc(metricFeatures.name));
+  }
+
+  async createMetricFeature(feature: InsertMetricFeature, userId: string): Promise<MetricFeature> {
+    const maxOrderResult = await db.select({ max: sql<number>`MAX(${metricFeatures.orderIndex})` })
+      .from(metricFeatures)
+      .where(eq(metricFeatures.metricId, feature.metricId));
+    const maxOrder = maxOrderResult[0]?.max ?? 0;
+    const nextOrder = maxOrder + 1;
+    
+    const [created] = await db.insert(metricFeatures).values({
+      ...feature,
+      orderIndex: nextOrder,
+      createdById: userId,
+      updatedById: userId,
+    }).returning();
+    return created;
+  }
+
+  async updateMetricFeature(id: string, feature: Partial<InsertMetricFeature>, userId: string): Promise<MetricFeature | undefined> {
+    const [updated] = await db.update(metricFeatures)
+      .set({
+        ...feature,
+        updatedById: userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(metricFeatures.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteMetricFeature(id: string): Promise<void> {
+    await db.delete(metricFeatures).where(eq(metricFeatures.id, id));
   }
 }
 
