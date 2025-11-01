@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 
 interface PowerBIDashboardProps {
   embedUrl: string;
+  reportId?: string;
   title: string;
   description?: string;
   width?: string;
@@ -17,6 +18,7 @@ interface PowerBIDashboardProps {
 
 export default function PowerBIDashboard({
   embedUrl,
+  reportId,
   title,
   description,
   width = '100%',

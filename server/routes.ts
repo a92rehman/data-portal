@@ -11,6 +11,8 @@ import { z } from "zod";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { generateAIInsight } from "./openaiService";
+import { generateDashboardInsights, sendChatMessage, getDashboardContextData } from "./openaiChatService";
+import { getOrCreateConversation, generateConversationId } from "./conversationStore";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -3010,7 +3012,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Power BI AI Insights endpoint
+  // Dashboard Insights endpoint (new)
+  app.post('/api/dashboard/insights', isAuthenticated, async (req: any, res) => {
+    try {
+      const { reportId, dashboardId, dashboardTitle } = req.body;
+      const user = await storage.getUser(req.user.id);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Fetch relevant data based on dashboard
+      let dataContext = {};
+      
+      if (dashboardId === 'program-delivery') {
+        // Fetch program-specific metrics
+        const requestStats = await storage.getRequestStats(user.id, user.role);
+        const taskStats = await storage.getTaskStats();
+        
+        dataContext = {
+          totalRequests: requestStats.totalRequests,
+          completed: requestStats.completed,
+          inProgress: requestStats.inProgress,
+          avgCompletion: requestStats.avgCompletionDays,
+          taskCompletion: taskStats.completed,
+          totalTasks: taskStats.totalTasks,
+        };
+      }
+
+      // Generate insights using OpenAI
+      const insights = await generateDashboardInsights({
+        dashboardId: dashboardId || 'program-delivery',
+        dashboardTitle: dashboardTitle || 'Program Delivery Dashboard',
+        dataContext,
+        userRole: user.role,
+      });
+
+      res.json({ 
+        insights,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error("Error generating insights:", error);
+      res.status(500).json({ message: "Failed to generate insights" });
+    }
+  });
+
+  // Dashboard Chat endpoint
+  app.post('/api/dashboard/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const { message, conversationId, dashboardContext } = req.body;
+      const user = await storage.getUser(req.user.id);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Get or create conversation
+      const conversation = getOrCreateConversation(
+        conversationId || generateConversationId(),
+        user.id
+      );
+
+      // Get dashboard data for context
+      const contextData = await getDashboardContextData(
+        dashboardContext.dashboardId || 'program-delivery',
+        user.id,
+        user.role,
+        storage
+      );
+
+      // Send to OpenAI
+      const response = await sendChatMessage({
+        message,
+        conversation,
+        dashboardContext: {
+          ...dashboardContext,
+          data: contextData,
+        },
+        userRole: user.role,
+      });
+
+      // Save message to conversation
+      conversation.messages.push(
+        { role: 'user', content: message, timestamp: new Date() },
+        { role: 'assistant', content: response, timestamp: new Date() }
+      );
+
+      res.json({
+        reply: response,
+        conversationId: conversation.id,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error("Error in chat:", error);
+      res.status(500).json({ message: "Failed to process message" });
+    }
+  });
+
+  // Power BI AI Insights endpoint (legacy - keep for backward compatibility)
   app.post('/api/powerbi/insights', isAuthenticated, async (req: any, res) => {
     try {
       const user = await storage.getUser(req.user.id);

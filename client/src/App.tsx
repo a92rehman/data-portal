@@ -66,7 +66,8 @@ function Router() {
       <Route path="/tasks">{() => <Tasks />}</Route>
       <Route path="/team">{() => <Team />}</Route>
       <Route path="/analytics">{() => <Analytics />}</Route>
-      <Route path="/dashboards">{() => <Dashboards />}</Route>
+      <Route path="/dashboards/:dashboardId">{() => <Dashboards />}</Route>
+      <Route path="/dashboards">{() => <Redirect to="/dashboards/program-delivery" />}</Route>
       <Route path="/profile-setup">{() => <ProfileSetup />}</Route>
       <Route path="/settings">{() => <Settings />}</Route>
       <Route path="/metric-definitions" component={MetricDefinitions} />
