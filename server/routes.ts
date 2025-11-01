@@ -10,6 +10,7 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import { generateAIInsight } from "./openaiService";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -3006,6 +3007,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error deleting metric:", error);
       res.status(500).json({ message: error.message || "Failed to delete metric" });
+    }
+  });
+
+  // Power BI AI Insights endpoint
+  app.post('/api/powerbi/insights', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Fetch relevant data for context
+      const requestStats = await storage.getRequestStats(user.id, user.role);
+      const taskStats = await storage.getTaskStats();
+      let teamWorkload = undefined;
+
+      // Only fetch team workload if user is a team lead
+      if (user.role === 'team_lead') {
+        teamWorkload = await storage.getTeamWorkload();
+      }
+
+      // Generate AI insight
+      const insight = await generateAIInsight({
+        userRole: user.role,
+        department: user.department || undefined,
+        requestStats: {
+          totalRequests: requestStats.totalRequests,
+          completed: requestStats.completed,
+          inProgress: requestStats.inProgress,
+          avgCompletionDays: requestStats.avgCompletionDays,
+          overdue: requestStats.overdue,
+        },
+        taskStats: {
+          totalTasks: taskStats.totalTasks,
+          completed: taskStats.completed,
+          inProgress: taskStats.inProgress,
+          overdue: 0, // Will be calculated if needed
+        },
+        teamWorkload: teamWorkload?.map(m => ({
+          firstName: m.firstName,
+          lastName: m.lastName,
+          capacityLevel: m.capacityLevel,
+          currentUtilization: m.currentUtilization,
+        })),
+      });
+
+      res.json({ 
+        insight,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error("Error generating AI insight:", error);
+      res.status(500).json({ message: "Failed to generate insight" });
     }
   });
 

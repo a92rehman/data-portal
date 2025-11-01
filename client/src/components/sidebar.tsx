@@ -10,7 +10,8 @@ import {
   FileText,
   ListTodo,
   ClipboardList,
-  BookOpen
+  BookOpen,
+  Layers
 } from "lucide-react";
 
 interface SidebarProps {
@@ -34,6 +35,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-tasks" },
         { href: "/all-requests", icon: FileText, label: "All Requests", testId: "nav-all-requests" },
         { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
+        { href: "/dashboards", icon: Layers, label: "Dashboards", testId: "nav-dashboards" },
         { href: "/team", icon: Users, label: "Team Management", testId: "nav-team" },
       ];
     } else if (role === "analyst") {
@@ -43,11 +45,13 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-my-requests" },
         { href: "/request-assignments", icon: ClipboardList, label: "Request Assignments", testId: "nav-request-assignments" },
         { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-tasks" },
+        { href: "/dashboards", icon: Layers, label: "Dashboards", testId: "nav-dashboards" },
       ];
     } else {
       // Requester - Limited access
       return [
         { href: "/", icon: LayoutDashboard, label: "My Requests", testId: "nav-dashboard" },
+        { href: "/dashboards", icon: Layers, label: "Dashboards", testId: "nav-dashboards" },
       ];
     }
   };

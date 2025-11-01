@@ -15,7 +15,8 @@ import {
   Plus,
   FileText,
   ListTodo,
-  ClipboardList
+  ClipboardList,
+  Layers
 } from "lucide-react";
 
 interface MobileNavProps {
@@ -38,6 +39,7 @@ export default function MobileNav({ open, onOpenChange, user }: MobileNavProps) 
         { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-mobile-tasks" },
         { href: "/all-requests", icon: FileText, label: "All Requests", testId: "nav-mobile-all-requests" },
         { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-mobile-analytics" },
+        { href: "/dashboards", icon: Layers, label: "Dashboards", testId: "nav-mobile-dashboards" },
         { href: "/team", icon: Users, label: "Team Management", testId: "nav-mobile-team" },
       ];
     } else if (role === "analyst") {
@@ -46,10 +48,12 @@ export default function MobileNav({ open, onOpenChange, user }: MobileNavProps) 
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-mobile-my-requests" },
         { href: "/request-assignments", icon: ClipboardList, label: "Request Assignments", testId: "nav-mobile-request-assignments" },
         { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-mobile-tasks" },
+        { href: "/dashboards", icon: Layers, label: "Dashboards", testId: "nav-mobile-dashboards" },
       ];
     } else {
       return [
         { href: "/", icon: LayoutDashboard, label: "My Requests", testId: "nav-mobile-dashboard" },
+        { href: "/dashboards", icon: Layers, label: "Dashboards", testId: "nav-mobile-dashboards" },
       ];
     }
   };

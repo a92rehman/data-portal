@@ -28,6 +28,7 @@ import RequestWorkspace from "@/pages/request-workspace";
 import NewRequest from "@/pages/new-request";
 import Tasks from "@/pages/tasks";
 import MetricDefinitions from "@/pages/metric-definitions";
+import Dashboards from "@/pages/dashboards";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/tasks">{() => <Tasks />}</Route>
       <Route path="/team">{() => <Team />}</Route>
       <Route path="/analytics">{() => <Analytics />}</Route>
+      <Route path="/dashboards">{() => <Dashboards />}</Route>
       <Route path="/profile-setup">{() => <ProfileSetup />}</Route>
       <Route path="/settings">{() => <Settings />}</Route>
       <Route path="/metric-definitions" component={MetricDefinitions} />
