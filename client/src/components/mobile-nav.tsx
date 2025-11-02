@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -16,10 +15,7 @@ import {
   Plus,
   FileText,
   ListTodo,
-  ClipboardList,
-  Layers,
-  ChevronDown,
-  ChevronRight
+  ClipboardList
 } from "lucide-react";
 
 interface MobileNavProps {
@@ -30,15 +26,6 @@ interface MobileNavProps {
 
 export default function MobileNav({ open, onOpenChange, user }: MobileNavProps) {
   const [location, setLocation] = useLocation();
-  const [expandedSections, setExpandedSections] = useState<string[]>(['dashboards']);
-
-  const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => 
-      prev.includes(sectionId)
-        ? prev.filter(s => s !== sectionId)
-        : [...prev, sectionId]
-    );
-  };
 
   const getNavItems = () => {
     const role = user?.role;
@@ -63,12 +50,21 @@ export default function MobileNav({ open, onOpenChange, user }: MobileNavProps) 
     } else {
       return [
         { href: "/", icon: LayoutDashboard, label: "My Requests", testId: "nav-mobile-dashboard" },
-        { href: "/dashboards", icon: Layers, label: "Dashboards", testId: "nav-mobile-dashboards" },
       ];
     }
   };
 
   const navItems = getNavItems();
+
+  // Analytics section links
+  const analyticsLinks = [
+    { 
+      href: '/dashboards/program-delivery',
+      label: 'Program Delivery',
+      icon: BarChart3,
+      testId: 'nav-mobile-program-delivery'
+    }
+  ];
 
   const handleNavClick = (href: string) => {
     setLocation(href);
@@ -118,6 +114,34 @@ export default function MobileNav({ open, onOpenChange, user }: MobileNavProps) 
                   <Plus className="w-5 h-5 mr-3" />
                   New Data Request
                 </button>
+              </div>
+            </>
+          )}
+
+          {/* Analytics Section */}
+          {(user?.role === "team_lead" || user?.role === "analyst" || user?.role === "requester") && (
+            <>
+              <Separator className="my-4 bg-purple-200 dark:bg-purple-700" />
+              
+              <div className="pt-2">
+                <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
+                  Analytics
+                </p>
+                {analyticsLinks.map((link) => {
+                  const LinkIcon = link.icon;
+                  const isActive = location === link.href;
+                  return (
+                    <button
+                      key={link.href}
+                      onClick={() => handleNavClick(link.href)}
+                      className={`w-full sidebar-link ${isActive ? "gradient-button-primary text-white" : "text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"}`}
+                      data-testid={link.testId}
+                    >
+                      <LinkIcon className="w-5 h-5" />
+                      <span>{link.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </>
           )}

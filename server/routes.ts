@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { generateAIInsight } from "./openaiService";
 import { generateDashboardInsights, sendChatMessage, getDashboardContextData } from "./openaiChatService";
 import { getOrCreateConversation, generateConversationId } from "./conversationStore";
+import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData } from "./powerbiService";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -3015,29 +3016,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard Insights endpoint (new)
   app.post('/api/dashboard/insights', isAuthenticated, async (req: any, res) => {
     try {
+      console.log('[DASHBOARD INSIGHTS] Request received:', { body: req.body, userId: req.user.id });
+      
       const { reportId, dashboardId, dashboardTitle } = req.body;
       const user = await storage.getUser(req.user.id);
       
       if (!user) {
+        console.error('[DASHBOARD INSIGHTS] User not found');
         return res.status(401).json({ message: "User not found" });
       }
 
-      // Fetch relevant data based on dashboard
-      let dataContext = {};
-      
-      if (dashboardId === 'program-delivery') {
-        // Fetch program-specific metrics
-        const requestStats = await storage.getRequestStats(user.id, user.role);
-        const taskStats = await storage.getTaskStats();
-        
-        dataContext = {
-          totalRequests: requestStats.totalRequests,
-          completed: requestStats.completed,
-          inProgress: requestStats.inProgress,
-          avgCompletion: requestStats.avgCompletionDays,
-          taskCompletion: taskStats.completed,
-          totalTasks: taskStats.totalTasks,
-        };
+      // Fetch relevant data using centralized function
+      const dataContext = await getDashboardContextData(
+        dashboardId || 'program-delivery',
+        user.id,
+        user.role || 'requester',
+        storage,
+        reportId
+      );
+      console.log('[DASHBOARD INSIGHTS] Data context fetched:', {
+        source: dataContext.source || 'unknown',
+        success: dataContext.success,
+        hasData: !!(dataContext.data && Array.isArray(dataContext.data) && dataContext.data.length > 0),
+        dataRows: dataContext.data?.length || 0,
+        tableCount: dataContext.tableCount || 0
+      });
+
+      // Validate that we have real Power BI data
+      if (dataContext.source === 'powerbi' && dataContext.success === true) {
+        console.log('[DASHBOARD INSIGHTS] ✓ Using REAL Power BI data for insights generation');
+      } else {
+        console.warn('[DASHBOARD INSIGHTS] ⚠ Using fallback data. Source:', dataContext.source, 'Success:', dataContext.success);
       }
 
       // Generate insights using OpenAI
@@ -3045,26 +3054,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dashboardId: dashboardId || 'program-delivery',
         dashboardTitle: dashboardTitle || 'Program Delivery Dashboard',
         dataContext,
-        userRole: user.role,
+        userRole: user.role || 'requester',
       });
 
+      console.log('[DASHBOARD INSIGHTS] Insights generated successfully:', {
+        count: insights.length,
+        items: insights.map((i: any) => ({ title: i.title, metric: i.metric }))
+      });
+      
       res.json({ 
         insights,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        dataSource: dataContext.source || 'unknown',
+        isLiveData: dataContext.source === 'powerbi' && dataContext.success === true
       });
     } catch (error: any) {
-      console.error("Error generating insights:", error);
-      res.status(500).json({ message: "Failed to generate insights" });
+      console.error('[DASHBOARD INSIGHTS] Error generating insights:', error);
+      console.error('[DASHBOARD INSIGHTS] Error stack:', error.stack);
+      console.error('[DASHBOARD INSIGHTS] Error message:', error.message);
+      res.status(500).json({ 
+        message: "Failed to generate insights",
+        error: error.message 
+      });
     }
   });
 
   // Dashboard Chat endpoint
   app.post('/api/dashboard/chat', isAuthenticated, async (req: any, res) => {
     try {
+      console.log('[DASHBOARD CHAT] Request received:', { message: req.body.message, userId: req.user.id });
+      
       const { message, conversationId, dashboardContext } = req.body;
       const user = await storage.getUser(req.user.id);
       
       if (!user) {
+        console.error('[DASHBOARD CHAT] User not found');
         return res.status(401).json({ message: "User not found" });
       }
 
@@ -3073,14 +3097,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversationId || generateConversationId(),
         user.id
       );
+      console.log('[DASHBOARD CHAT] Conversation:', conversation.id, 'Messages:', conversation.messages.length);
 
       // Get dashboard data for context
       const contextData = await getDashboardContextData(
         dashboardContext.dashboardId || 'program-delivery',
         user.id,
-        user.role,
-        storage
+        user.role || 'requester',
+        storage,
+        dashboardContext.reportId
       );
+      console.log('[DASHBOARD CHAT] Context data fetched, source:', contextData.source || 'unknown');
 
       // Send to OpenAI
       const response = await sendChatMessage({
@@ -3088,10 +3115,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conversation,
         dashboardContext: {
           ...dashboardContext,
-          data: contextData,
+          dataContext: contextData,
         },
-        userRole: user.role,
+        userRole: user.role || 'requester',
       });
+
+      console.log('[DASHBOARD CHAT] Response received from OpenAI');
 
       // Save message to conversation
       conversation.messages.push(
@@ -3105,8 +3134,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
-      console.error("Error in chat:", error);
-      res.status(500).json({ message: "Failed to process message" });
+      console.error("[DASHBOARD CHAT] Error in chat:", error);
+      console.error("[DASHBOARD CHAT] Error stack:", error.stack);
+      console.error("[DASHBOARD CHAT] Error message:", error.message);
+      res.status(500).json({ 
+        message: "Failed to process message",
+        error: error.message
+      });
+    }
+  });
+
+  // Power BI REST API endpoints
+  app.get('/api/powerbi/test', isAuthenticated, async (req: any, res) => {
+    try {
+      const result = await testConnection();
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error testing Power BI connection:", error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Failed to test connection" 
+      });
+    }
+  });
+
+  app.get('/api/powerbi/datasets', isAuthenticated, async (req: any, res) => {
+    try {
+      const datasets = await listDatasets();
+      res.json({ datasets });
+    } catch (error: any) {
+      console.error("Error listing datasets:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to list datasets" 
+      });
+    }
+  });
+
+  app.get('/api/powerbi/dataset/schema', isAuthenticated, async (req: any, res) => {
+    try {
+      const schema = await getDatasetSchema();
+      res.json({ schema });
+    } catch (error: any) {
+      console.error("Error fetching schema:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to fetch schema" 
+      });
+    }
+  });
+
+  app.post('/api/powerbi/query', isAuthenticated, async (req: any, res) => {
+    try {
+      const { query } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Query is required" });
+      }
+
+      const result = await executeDaxQuery(query);
+      res.json({ result });
+    } catch (error: any) {
+      console.error("Error executing query:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to execute query" 
+      });
     }
   });
 
@@ -3119,7 +3209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Fetch relevant data for context
-      const requestStats = await storage.getRequestStats(user.id, user.role);
+      const requestStats = await storage.getRequestStats(user.id, user.role || 'requester');
       const taskStats = await storage.getTaskStats();
       let teamWorkload = undefined;
 
@@ -3130,7 +3220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate AI insight
       const insight = await generateAIInsight({
-        userRole: user.role,
+        userRole: user.role || 'requester',
         department: user.department || undefined,
         requestStats: {
           totalRequests: requestStats.totalRequests,

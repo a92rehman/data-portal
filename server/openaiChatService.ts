@@ -1,4 +1,12 @@
 import OpenAI from 'openai';
+import { getDashboardData } from './powerbiService';
+
+console.log('[OPENAI] Initializing OpenAI client...');
+if (!process.env.OPENAI_API_KEY) {
+  console.error('[OPENAI] WARNING: OPENAI_API_KEY environment variable is not set!');
+} else {
+  console.log('[OPENAI] OpenAI API key found, length:', process.env.OPENAI_API_KEY.length);
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -23,27 +31,100 @@ export async function generateDashboardInsights(
   change?: number;
   metric?: string;
 }>> {
-  const prompt = `You are analyzing the "${context.dashboardTitle}" dashboard for a ${context.userRole}.
+  const dataSource = context.dataContext?.source || 'unknown';
+  const dataSuccess = context.dataContext?.success;
+  let prompt = '';
+  
+  // Validate data exists before generating insights
+  if (!context.dataContext || (!context.dataContext.data && !context.dataContext.formattedData)) {
+    console.warn('[OPENAI] No data context available, using fallback insights');
+    return generateFallbackInsights(context.dataContext || {});
+  }
+  
+  if (dataSource === 'powerbi' && dataSuccess === true) {
+    // Power BI specific prompt - actual Power BI data extracted successfully
+    const hasData = context.dataContext.data && Array.isArray(context.dataContext.data) && context.dataContext.data.length > 0;
+    
+    if (!hasData) {
+      console.warn('[OPENAI] Power BI source marked but no data available, using fallback');
+      return generateFallbackInsights(context.dataContext);
+    }
+    
+    prompt = `You are analyzing the "${context.dashboardTitle}" Power BI dashboard showing Program Delivery metrics.
 
-Current data:
-${JSON.stringify(context.dataContext, null, 2)}
+IMPORTANT: This is REAL LIVE DATA extracted directly from the Power BI dataset API in real-time. You must analyze actual metrics from the dataset and generate insights based ONLY on the numbers, aggregations, and sample data provided below.
 
-Generate 3-5 key insights in JSON format. Each insight should have:
+=== LIVE POWER BI DATA ===
+${context.dataContext.formattedData || formatPowerBIData(context.dataContext.data || [])}
+
+=== DATA CONTEXT ===
+- Total tables processed: ${context.dataContext.tableCount || 'unknown'}
+- Data extracted at: ${context.dataContext.timestamp || new Date().toISOString()}
+- Source: Power BI Dataset (Live)
+
+=== INSTRUCTIONS ===
+1. Analyze the KEY METRICS SUMMARY section - these are real aggregated values (sums, counts, totals)
+2. Review the SAMPLE DATA to understand the data structure and actual values
+3. Check CATEGORIZATION DATA for groupings (grades, subjects, types, etc.)
+4. Calculate percentages, trends, and patterns from the actual numbers
+5. Generate actionable insights based ONLY on the real data above
+
+Generate 3-5 key insights in JSON format about the PROGRAM DELIVERY data from Power BI. Include:
+- Specific numbers and percentages from the data (e.g., "1,834 observations completed", "62% completion rate")
+- Trends calculated from aggregations (e.g., which grade has the most observations)
+- Patterns identified from sample data and categorizations
+- Performance metrics extracted from the sums and counts
+
+Each insight should have:
+- title: Short, actionable title with actual numbers (max 50 chars)
+- description: Brief explanation with specific metrics from the data (max 100 chars)
+- trend: "up", "down", or "neutral" based on the actual numbers
+- change: percentage change if calculable from the data (optional)
+- metric: which metric this relates to (observations, schools, grades, subjects, etc.)
+
+CRITICAL: 
+- Base insights ONLY on the actual Power BI data provided above
+- Use the real numbers, aggregations, and values from the data
+- Do NOT make up or guess metrics
+- Do NOT reference request management, tasks, or data requests
+- Focus ONLY on Program Delivery metrics (observations, schools, teachers, grades, subjects)
+
+Return ONLY valid JSON array, no other text.`;
+  } else {
+    // Fallback prompt - using demo/sample data
+    const dataContext = context.dataContext.formattedData || JSON.stringify(context.dataContext, null, 2);
+    
+    const isFallback = dataSource === 'fallback' || dataSource !== 'powerbi';
+    const fallbackNote = isFallback ? 'NOTE: This is demo/sample data. Power BI data extraction was unsuccessful or unavailable.' : '';
+    
+    prompt = `You are analyzing the "${context.dashboardTitle}" Program Delivery Dashboard showing observation and completion metrics.
+
+${fallbackNote}
+
+Current data from the dashboard:
+${dataContext}
+
+Generate 3-5 key insights in JSON format about the Program Delivery metrics. Focus on:
+- Observation completion rates and progress to targets
+- Performance by grade and subject
+- School visits and teacher observations
+- Trends and patterns in the data
+
+Each insight should have:
 - title: Short, actionable title (max 50 chars)
 - description: Brief explanation (max 100 chars)
 - trend: "up", "down", or "neutral" (optional)
 - change: percentage change if applicable (optional)
-- metric: which metric this relates to (optional)
+- metric: which metric this relates to (observations, schools, grades, etc.)
 
-Focus on:
-1. Notable trends or changes
-2. Anomalies or unexpected patterns
-3. Performance highlights or concerns
-4. Actionable recommendations
+Focus ONLY on Program Delivery metrics. Do NOT reference request management, tasks, or data requests.
 
 Return ONLY valid JSON array, no other text.`;
+  }
 
   try {
+    console.log('[OPENAI] Generating dashboard insights...');
+    
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -61,6 +142,8 @@ Return ONLY valid JSON array, no other text.`;
     });
 
     const content = response.choices[0]?.message?.content || '[]';
+    console.log('[OPENAI] Raw response received:', content.substring(0, 200));
+    
     let insights;
     try {
       insights = JSON.parse(content);
@@ -70,16 +153,22 @@ Return ONLY valid JSON array, no other text.`;
       if (jsonMatch) {
         insights = JSON.parse(jsonMatch[0]);
       } else {
+        console.warn('[OPENAI] Failed to parse JSON, using fallback');
         insights = [];
       }
     }
     
+    console.log('[OPENAI] Insights generated:', insights.length, 'items');
     return insights;
   } catch (error) {
-    console.error('Error generating insights:', error);
+    console.error('[OPENAI] Error generating insights:', error);
+    console.error('[OPENAI] Error stack:', (error as any)?.stack);
+    console.error('[OPENAI] Error message:', (error as any)?.message);
     
     // Fallback insights
-    return generateFallbackInsights(context.dataContext);
+    const fallbackInsights = generateFallbackInsights(context.dataContext);
+    console.log('[OPENAI] Using fallback insights:', fallbackInsights.length, 'items');
+    return fallbackInsights;
   }
 }
 
@@ -92,14 +181,67 @@ export async function sendChatMessage(params: {
   dashboardContext: any;
   userRole: string;
 }): Promise<string> {
-  const systemPrompt = `You are an AI assistant helping users understand their ${params.dashboardContext.dashboardTitle || 'dashboard'}.
+  const dashboardTitle = params.dashboardContext.dashboardTitle || 'Program Delivery Dashboard';
+  const dataSource = params.dashboardContext.dataContext?.source || 'unknown';
+  const dataSuccess = params.dashboardContext.dataContext?.success;
+  
+  // Build context-aware system prompt
+  let systemPrompt = `You are an AI assistant helping users understand their ${dashboardTitle}. `;
+  
+  // Validate Power BI data - must be successful and have actual data
+  const isPowerBISuccess = dataSource === 'powerbi' && 
+                           dataSuccess === true && 
+                           params.dashboardContext.dataContext?.data && 
+                           Array.isArray(params.dashboardContext.dataContext.data) && 
+                           params.dashboardContext.dataContext.data.length > 0;
+  
+  if (isPowerBISuccess) {
+    // Power BI specific prompt - actual Power BI data extracted successfully
+    systemPrompt += `You are analyzing a Power BI dashboard showing Program Delivery metrics.
+
+IMPORTANT: You are analyzing REAL data extracted directly from the Power BI dataset API.
+
+Current dashboard data extracted from Power BI:
+${params.dashboardContext.dataContext?.formattedData || formatPowerBIData(params.dashboardContext.dataContext?.data || [])}
+
+Raw data structure:
+${JSON.stringify(params.dashboardContext.dataContext?.data?.slice(0, 10) || [], null, 2)}
+
+Focus on interpreting these PROGRAM DELIVERY metrics from the actual Power BI data. Provide insights about observations, schools, teachers, grades, subjects, and any other metrics visible in the dashboard data.
+
+Base all answers ONLY on the actual Power BI data provided above.
+Do NOT reference request management system, tasks, or data requests. Only discuss what's shown in the Power BI dashboard data.
+
+Be concise and helpful. Keep responses under 200 words.`;
+  } else {
+    // Fallback prompt for demo/sample data
+    const dataContext = params.dashboardContext.dataContext?.formattedData || 
+                       JSON.stringify(params.dashboardContext.dataContext || {}, null, 2);
+    
+    const isFallback = dataSource === 'fallback' || dataSource !== 'powerbi';
+    const fallbackNote = isFallback ? 'NOTE: This is demo/sample data. Power BI data extraction was unsuccessful or unavailable.' : '';
+    
+    systemPrompt += `You are analyzing the "${dashboardTitle}" Program Delivery Dashboard showing observation and completion metrics.
+
+${fallbackNote}
 
 Current dashboard data:
-${JSON.stringify(params.dashboardContext.data || {}, null, 2)}
+${dataContext}
+
+Focus on providing insights about:
+- Observation completion rates and progress to targets
+- Performance by grade and subject
+- School visits and teacher observations
+- Trends and patterns in the data
 
 User role: ${params.userRole}
 
-Answer questions about the data, provide explanations, and offer insights. Be concise and helpful. Keep responses under 200 words.`;
+Answer questions about the Program Delivery dashboard data, provide explanations, and offer actionable insights. 
+Focus ONLY on observation metrics, schools, teachers, grades, and subjects. 
+Do NOT reference request management, tasks, or data requests.
+
+Be concise and helpful. Keep responses under 200 words.`;
+  }
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -111,6 +253,8 @@ Answer questions about the data, provide explanations, and offer insights. Be co
   ];
 
   try {
+    console.log('[OPENAI] Sending chat message...');
+    
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: messages as any,
@@ -118,9 +262,13 @@ Answer questions about the data, provide explanations, and offer insights. Be co
       max_tokens: 300,
     });
 
-    return response.choices[0]?.message?.content || 'I apologize, I could not process your question.';
+    const reply = response.choices[0]?.message?.content || 'I apologize, I could not process your question.';
+    console.log('[OPENAI] Chat response received:', reply.substring(0, 100));
+    return reply;
   } catch (error) {
-    console.error('Error in chat:', error);
+    console.error('[OPENAI] Error in chat:', error);
+    console.error('[OPENAI] Error stack:', (error as any)?.stack);
+    console.error('[OPENAI] Error message:', (error as any)?.message);
     throw new Error('Failed to get response from AI');
   }
 }
@@ -128,29 +276,40 @@ Answer questions about the data, provide explanations, and offer insights. Be co
 function generateFallbackInsights(data: any): any[] {
   const insights = [];
   
-  if (data.completed && data.totalRequests) {
-    const rate = Math.round((data.completed / data.totalRequests) * 100);
+  // Check for Program Delivery dashboard data
+  if (data.completedObservations && data.targetObservations) {
+    const progressRate = Math.round((data.completedObservations / data.targetObservations) * 100);
     insights.push({
-      title: `${rate}% Completion Rate`,
-      description: `${data.completed} of ${data.totalRequests} requests completed`,
-      trend: rate > 50 ? "up" : "down",
+      title: `${progressRate}% Progress to Target`,
+      description: `${data.completedObservations} observations completed of ${data.targetObservations} target`,
+      trend: progressRate >= 30 ? "up" : "down",
+      metric: "observations",
+      change: progressRate
+    });
+  }
+  
+  if (data.completionRate) {
+    insights.push({
+      title: `${data.completionRate}% Completion Rate`,
+      description: `62% of scheduled observations have been completed`,
+      trend: data.completionRate >= 60 ? "up" : "neutral",
       metric: "completion"
     });
   }
   
-  if (data.avgCompletion) {
+  if (data.observationsByGrade && data.observationsByGrade.gradeThree) {
     insights.push({
-      title: `${data.avgCompletion} Days Average`,
-      description: `Average time to complete requests`,
-      trend: "neutral",
-      metric: "duration"
+      title: 'Grade Three Leads',
+      description: `Grade Three has ${data.observationsByGrade.gradeThree} completed observations`,
+      trend: "up",
+      metric: "grade"
     });
   }
   
   if (insights.length === 0) {
     insights.push({
       title: 'Dashboard Ready',
-      description: 'Your dashboard data is available for analysis',
+      description: 'Program Delivery dashboard data is available for analysis',
       trend: "neutral"
     });
   }
@@ -160,30 +319,302 @@ function generateFallbackInsights(data: any): any[] {
 
 /**
  * Get dashboard context data for chat
+ * Properly identifies data source (Power BI vs fallback)
  */
 export async function getDashboardContextData(
   dashboardId: string,
   userId: string,
   userRole: string,
-  storage: any
+  storage: any,
+  reportId?: string
 ): Promise<any> {
   // Fetch relevant data based on dashboard
   if (dashboardId === 'program-delivery') {
-    // Fetch program-specific metrics
-    const requestStats = await storage.getRequestStats(userId, userRole);
-    const taskStats = await storage.getTaskStats();
+    // Try to fetch from Power BI first
+    if (reportId) {
+      try {
+        console.log('[DASHBOARD CONTEXT] Fetching Power BI data for report:', reportId);
+        const powerBIData = await getDashboardData(reportId);
+        
+        // Validate Power BI data - must be successful, have rows, and source must be 'powerbi'
+        const isPowerBISuccess = powerBIData.success === true && 
+                                 powerBIData.source === 'powerbi' &&
+                                 powerBIData.rows && 
+                                 Array.isArray(powerBIData.rows) && 
+                                 powerBIData.rows.length > 0;
+        
+        if (isPowerBISuccess) {
+          // Verify data is meaningful (not just empty structures)
+          const hasMeaningfulData = powerBIData.rows.some((row: any) => {
+            if (row.TotalRows && row.TotalRows > 0) return true;
+            if (row.Count && row.Count > 0) return true;
+            if (row.SampleRows && Array.isArray(row.SampleRows) && row.SampleRows.length > 0) return true;
+            return false;
+          });
+          
+          if (hasMeaningfulData) {
+            console.log('[DASHBOARD CONTEXT] ✓ Power BI data fetched successfully:', {
+              rows: powerBIData.rows.length,
+              tables: powerBIData.tableCount,
+              source: powerBIData.source,
+              success: powerBIData.success
+            });
+            
+            // Format Power BI data for better AI consumption
+            const formattedData = formatPowerBIData(powerBIData.rows);
+            
+            return {
+              source: 'powerbi',
+              data: powerBIData.rows,
+              formattedData: formattedData,
+              timestamp: powerBIData.timestamp,
+              tableCount: powerBIData.tableCount,
+              success: true,
+              error: null
+            };
+          } else {
+            console.warn('[DASHBOARD CONTEXT] Power BI data fetched but contains no meaningful data');
+          }
+        } else {
+          console.warn('[DASHBOARD CONTEXT] Power BI data fetch unsuccessful:', {
+            success: powerBIData.success,
+            source: powerBIData.source,
+            error: powerBIData.error,
+            rowsCount: powerBIData.rows?.length || 0
+          });
+        }
+      } catch (powerBIError: any) {
+        console.error('[DASHBOARD CONTEXT] ✗ Power BI fetch failed with exception:', {
+          error: powerBIError.message,
+          stack: powerBIError.stack
+        });
+      }
+    } else {
+      console.warn('[DASHBOARD CONTEXT] No reportId provided, cannot fetch Power BI data');
+    }
+    
+    // Fallback: Use demo data when Power BI API is not accessible or fails
+    console.log('[DASHBOARD CONTEXT] ⚠ Using fallback demo Program Delivery data');
+    const demoData = {
+      targetObservations: 5650,
+      scheduledObservations: 2940,
+      completedObservations: 1834,
+      schoolsVisited: 324,
+      teachersObserved: 1987,
+      observationsByGrade: {
+        gradeOne: 251,
+        gradeTwo: 479,
+        gradeThree: 501,
+        gradeFour: 301,
+        gradeFive: 300
+      },
+      observationsBySubject: {
+        urdu: 662,
+        english: 584,
+        math: 566,
+        numeracy: 9,
+        readingHourUrdu: 7,
+        readingHourEnglish: 2,
+        generalScience: 1,
+        socialStudies: 1,
+        waqfiyatAmaa: 1
+      },
+      observationsByType: {
+        fico: 771,
+        fln: 1063
+      },
+      completionRate: Math.round((1834 / 2940) * 100),
+      progressToTarget: Math.round((1834 / 5650) * 100)
+    };
     
     return {
-      totalRequests: requestStats.totalRequests,
-      completed: requestStats.completed,
-      inProgress: requestStats.inProgress,
-      avgCompletion: requestStats.avgCompletionDays,
-      taskCompletion: taskStats.completed,
-      totalTasks: taskStats.totalTasks,
+      source: 'fallback', // Changed from 'powerbi' to 'fallback' to correctly identify demo data
+      ...demoData,
+      formattedData: `Program Delivery Dashboard Metrics (Demo Data):
+
+Note: This is demo/sample data. Power BI data extraction was unsuccessful.
+
+Key Performance Indicators:
+- Target Observations: ${demoData.targetObservations}
+- Observations Scheduled: ${demoData.scheduledObservations}
+- Observations Completed: ${demoData.completedObservations}
+- Schools Visited: ${demoData.schoolsVisited}
+- Teachers Observed: ${demoData.teachersObserved}
+
+Completion Status:
+- Completion Rate: ${demoData.completionRate}% (${demoData.completedObservations} of ${demoData.scheduledObservations} scheduled)
+- Progress to Target: ${demoData.progressToTarget}% (${demoData.completedObservations} of ${demoData.targetObservations} target)
+
+Top Performing Grades:
+- Grade Three: ${demoData.observationsByGrade.gradeThree} observations
+- Grade Two: ${demoData.observationsByGrade.gradeTwo} observations
+- Grade Four: ${demoData.observationsByGrade.gradeFour} observations
+
+Top Performing Subjects:
+- Urdu: ${demoData.observationsBySubject.urdu} observations
+- English: ${demoData.observationsBySubject.english} observations
+- Math: ${demoData.observationsBySubject.math} observations
+
+Observation Types:
+- FLN: ${demoData.observationsByType.fln} (${Math.round((1063/1834)*100)}%)
+- FICO: ${demoData.observationsByType.fico} (${Math.round((771/1834)*100)}%)`,
+      success: false,
+      error: 'Using fallback demo data - Power BI extraction failed or unavailable'
     };
   }
   
   // Default return for other dashboards
-  return {};
+  return {
+    source: 'unknown',
+    success: false,
+    error: 'Dashboard not supported'
+  };
+}
+
+/**
+ * Format raw Power BI data for better AI consumption
+ * Enhanced to extract meaningful metrics for insights generation
+ */
+function formatPowerBIData(rows: any[]): string {
+  try {
+    if (!rows || rows.length === 0) {
+      return 'No data available from Power BI dataset.';
+    }
+
+    // Build a comprehensive, human-readable summary optimized for AI insights
+    let summary = 'Power BI Dataset - Live Data Extract:\n\n';
+    
+    // Group data by table
+    const tables: Record<string, any[]> = {};
+    rows.forEach(row => {
+      if (row.TableName) {
+        if (!tables[row.TableName]) {
+          tables[row.TableName] = [];
+        }
+        tables[row.TableName].push(row);
+      } else {
+        if (!tables['_general']) {
+          tables['_general'] = [];
+        }
+        tables['_general'].push(row);
+      }
+    });
+
+    // Extract key metrics and aggregations
+    const keyMetrics: any[] = [];
+    const aggregations: any[] = [];
+    const sampleData: any[] = [];
+    const distinctValues: any[] = [];
+
+    // Process each table
+    Object.entries(tables).forEach(([tableName, tableRows]) => {
+      if (tableName.startsWith('$')) return; // Skip system tables
+      
+      summary += `\n=== ${tableName} ===\n`;
+      
+      tableRows.forEach((row) => {
+        // Extract row counts and totals
+        if (row.TotalRows !== undefined && row.TotalRows !== null) {
+          keyMetrics.push({ table: tableName, metric: 'Total Rows', value: row.TotalRows });
+          summary += `Total Records: ${row.TotalRows}\n`;
+        }
+
+        // Extract aggregations (sums, counts, averages)
+        Object.keys(row).forEach(key => {
+          if (key.endsWith('_Sum') || key.endsWith('_Count') || key.endsWith('_Average')) {
+            const metricName = key.replace(/_Sum|_Count|_Average$/, '');
+            aggregations.push({ table: tableName, metric: metricName, type: key.split('_').pop()?.toLowerCase(), value: row[key] });
+            summary += `  ${metricName} ${key.split('_').pop()}: ${row[key]}\n`;
+          }
+        });
+
+        // Extract sample data rows
+        if (row.SampleRows && Array.isArray(row.SampleRows) && row.SampleRows.length > 0) {
+          summary += `\nSample Data (${row.SampleRows.length} rows):\n`;
+          row.SampleRows.slice(0, 5).forEach((sampleRow: any, idx: number) => {
+            summary += `  Row ${idx + 1}: `;
+            const sampleValues = Object.entries(sampleRow)
+              .filter(([k]) => k !== 'TableName')
+              .slice(0, 5)
+              .map(([k, v]) => `${k}=${v}`)
+              .join(', ');
+            summary += sampleValues + '\n';
+          });
+          sampleData.push({ table: tableName, samples: row.SampleRows.length, data: row.SampleRows.slice(0, 5) });
+        }
+
+        // Extract distinct values for categorization
+        if (row.DistinctValues && Array.isArray(row.DistinctValues)) {
+          summary += `\n${row.ColumnName || 'Categories'}: ${row.DistinctValues.join(', ')}\n`;
+          distinctValues.push({ table: tableName, column: row.ColumnName, values: row.DistinctValues });
+        }
+
+        // Include other numeric metrics
+        Object.keys(row).forEach(key => {
+          if (key !== 'TableName' && key !== 'SampleRows' && key !== 'SampleRowCount' && 
+              key !== 'ColumnNames' && key !== 'ColumnName' && key !== 'DistinctValues' &&
+              !key.endsWith('_Sum') && !key.endsWith('_Count') && !key.endsWith('_Average') &&
+              key !== 'TotalRows' && key !== 'Count') {
+            const value = row[key];
+            if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+              summary += `  ${key}: ${value}\n`;
+              keyMetrics.push({ table: tableName, metric: key, value: value });
+            }
+          }
+        });
+      });
+      
+      summary += '\n';
+    });
+
+    // Create a summary section with key insights-ready metrics
+    if (keyMetrics.length > 0 || aggregations.length > 0) {
+      summary += '\n=== KEY METRICS SUMMARY ===\n';
+      
+      // Group by table
+      const metricsByTable: Record<string, any[]> = {};
+      [...keyMetrics, ...aggregations].forEach(m => {
+        if (!metricsByTable[m.table]) {
+          metricsByTable[m.table] = [];
+        }
+        metricsByTable[m.table].push(m);
+      });
+
+      Object.entries(metricsByTable).forEach(([table, metrics]) => {
+        summary += `\n${table}:\n`;
+        metrics.slice(0, 10).forEach(m => {
+          summary += `  • ${m.metric}: ${m.value}${m.type ? ` (${m.type})` : ''}\n`;
+        });
+      });
+    }
+
+    // Add sample data summary
+    if (sampleData.length > 0) {
+      summary += '\n=== SAMPLE DATA AVAILABLE ===\n';
+      sampleData.forEach(s => {
+        summary += `  ${s.table}: ${s.samples} sample rows\n`;
+      });
+    }
+
+    // Add distinct values summary for categorization insights
+    if (distinctValues.length > 0) {
+      summary += '\n=== CATEGORIZATION DATA ===\n';
+      distinctValues.forEach(d => {
+        summary += `  ${d.table}.${d.column}: ${d.values.length} distinct values (${d.values.slice(0, 5).join(', ')}${d.values.length > 5 ? '...' : ''})\n`;
+      });
+    }
+
+    // Add statistics
+    const totalRows = rows.length;
+    const tableCount = Object.keys(tables).filter(k => !k.startsWith('$')).length;
+    summary += `\n\nDataset Overview: ${tableCount} tables, ${totalRows} data points extracted`;
+
+    console.log('[DASHBOARD CONTEXT] Formatted Power BI data summary length:', summary.length);
+    console.log('[DASHBOARD CONTEXT] Key metrics extracted:', keyMetrics.length, 'Aggregations:', aggregations.length);
+    return summary;
+  } catch (error) {
+    console.error('[DASHBOARD CONTEXT] Error formatting Power BI data:', error);
+    return JSON.stringify(rows, null, 2);
+  }
 }
 
