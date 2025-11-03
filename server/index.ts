@@ -18,6 +18,23 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Request timeout middleware - prevents hanging requests
+app.use((req, res, next) => {
+  // Set timeout for all requests to prevent hanging
+  const timeout = 60000; // 60 seconds default
+  const reqTimeout = setTimeout(() => {
+    if (!res.headersSent) {
+      console.warn(`[TIMEOUT] Request ${req.method} ${req.path} timed out after ${timeout}ms`);
+      res.status(504).json({ message: 'Request timeout' });
+    }
+  }, timeout);
+
+  // Clear timeout when response finishes
+  res.on('finish', () => clearTimeout(reqTimeout));
+  next();
+});
+
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -209,6 +226,11 @@ app.use((req, res, next) => {
     console.error('[Migration] Failed to seed metric definitions:', error);
     // Don't throw - allow server to start even if seeding fails
   }
+
+  // Health check endpoint - simple connection test
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
   // Ensure API routes are registered and matched BEFORE Vite middleware
   // The Power BI embed token route is already registered above (before registerRoutes)

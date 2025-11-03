@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
-import { getNotificationPriority, playNotificationSound, getPriorityIcon } from '@/lib/notificationUtils';
+import { getNotificationPriority, playNotificationSound, getPriorityIcon, showDesktopNotification } from '@/lib/notificationUtils';
 
 interface TypingIndicator {
   requestId: string;
@@ -102,14 +102,14 @@ export function useWebSocket(userId: string | undefined) {
           // Handle other notifications
           console.log('[WebSocket] Invalidating queries for notification');
           
-          // Determine priority and show toast
+          // Determine priority
           const priority = getNotificationPriority(notification);
           const priorityIcon = getPriorityIcon(priority);
           
           // Play notification sound
           playNotificationSound(priority);
           
-          // Show toast notification
+          // Always show toast notification (in-app)
           const toastConfig = {
             autoClose: 5000,
             hideProgressBar: false,
@@ -127,6 +127,11 @@ export function useWebSocket(userId: string | undefined) {
             toast.warning(`${priorityIcon} ${notification.title}`, toastConfig);
           } else {
             toast.info(`${priorityIcon} ${notification.title}`, toastConfig);
+          }
+          
+          // Show desktop notification if tab is inactive or always for critical
+          if (document.hidden || priority === 'critical') {
+            showDesktopNotification(notification, priority);
           }
           
           queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });

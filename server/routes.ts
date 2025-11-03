@@ -967,6 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (recipients.length > 0) {
           wsServer.notifyMultipleUsers(recipients, {
             type: 'status_changed',
+            title: 'Request Status Updated',
             requestId: request.id,
             message: `Status changed to ${statusDisplay}`,
           });
@@ -1108,6 +1109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (recipients.length > 0) {
           wsServer.notifyMultipleUsers(recipients, {
             type: 'priority_deadline_changed',
+            title: 'Priority & Deadline Updated',
             requestId: request.id,
             message: `Priority and deadline updated`,
           });
@@ -1218,6 +1220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (wsServer) {
         wsServer.notifyUser(request.requestedById, {
           type: 'request_accepted',
+          title: 'Request Accepted',
           requestId: request.id,
           message: `Your request "${request.title}" has been accepted`,
         });
@@ -1226,6 +1229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (request.assignedToId) {
           wsServer.notifyUser(request.assignedToId, {
             type: 'request_accepted',
+            title: 'Request Ready to Work',
             requestId: request.id,
             message: `Request "${request.title}" is ready to work on`,
           });
@@ -1302,6 +1306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (wsServer) {
             wsServer.notifyUser(requester.id, {
               type: 'request_rejected',
+              title: 'Request Update Required',
               requestId: request.id,
               message: `Your request "${request.title}" requires modifications`,
             });
@@ -1329,6 +1334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (wsServer) {
               wsServer.notifyUser(dataLead.id, {
                 type: 'analyst_rejected_request',
+                title: 'Analyst Rejected Request',
                 requestId: request.id,
                 message: `Analyst rejected request "${request.title}"`,
               });
@@ -1403,6 +1409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (wsServer) {
             wsServer.notifyUser(requester.id, {
               type: 'request_completed',
+              title: 'Request Completed',
               requestId: request.id,
               message: `Your request "${request.title}" has been completed`,
             });
@@ -1430,6 +1437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (wsServer) {
               wsServer.notifyUser(analyst.id, {
                 type: 'request_completed',
+                title: 'Request Completed',
                 requestId: request.id,
                 message: `Request "${request.title}" has been completed`,
               });
@@ -1458,6 +1466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (wsServer) {
               wsServer.notifyUser(teamLead.id, {
                 type: 'request_completed',
+                title: 'Request Completed',
                 requestId: request.id,
                 message: `Request "${request.title}" has been completed`,
               });
@@ -1584,6 +1593,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notifyUsers.forEach(userId => {
           wsServer.notifyUser(userId, {
             type: 'request_delivered',
+            title: 'Work Delivered',
             requestId: request.id,
             message: `Request "${request.title}" has been delivered`,
           });
@@ -1775,6 +1785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (wsServer) {
             wsServer.notifyUser(assignedAnalyst.id, {
               type: 'request_assigned',
+              title: 'New Assignment',
               requestId: request.id,
               message: `You have been assigned to work on "${request.title}"`,
             });
@@ -1819,6 +1830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (wsServer) {
             wsServer.notifyUser(requester.id, {
               type: 'request_accepted',
+              title: 'Request Accepted & In Progress',
               requestId: request.id,
               message: `Your request "${request.title}" has been accepted`,
             });
@@ -1900,6 +1912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           wsServer.notifyMultipleUsers(recipients, {
             type: 'blocker_added',
+            title: 'Blocker Added to Your Request',
             requestId: request.id,
             message: `A blocker was added to "${request.title}"`,
           });
@@ -1980,6 +1993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (wsServer) {
           wsServer.notifyMultipleUsers(uniqueParticipants, {
             type: 'new_comment',
+            title: 'New Comment Added',
             requestId: request.id,
             message: `New comment added to "${request.title}"`,
           });

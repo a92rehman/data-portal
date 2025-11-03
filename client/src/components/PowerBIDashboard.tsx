@@ -33,6 +33,7 @@ export default function PowerBIDashboard({
   showAiInsights = true,
   onAiInsightGenerated,
 }: PowerBIDashboardProps) {
+  // SDK refs removed - using iframe method only
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,14 @@ export default function PowerBIDashboard({
     const fetchEmbedToken = async (forceRefresh = false) => {
       if (!reportId) {
         // If no reportId, use original embedUrl
+        setFinalEmbedUrl(embedUrl);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If embedUrl already has autoAuth=true, use it directly (for PPU)
+      if (embedUrl.includes('autoAuth=true')) {
+        console.log('[PowerBI] Using autoAuth URL directly (PPU mode)');
         setFinalEmbedUrl(embedUrl);
         setIsLoading(false);
         return;
@@ -111,31 +120,25 @@ export default function PowerBIDashboard({
         
         setEmbedToken(data.token);
         
-        // Use PowerBI SDK if available, otherwise fall back to iframe
-        if (window.powerbi && reportId) {
-          console.log('[PowerBI] ✅ Using PowerBI SDK embedding method');
-          setIsLoading(false); // SDK will handle loading
-        } else {
-          // Use simple iframe approach - more reliable than SDK
-          // For Service Principal embedding, pass the token in the URL
-          console.log('[PowerBI] ✅ Using iframe embedding method');
-          console.log('[PowerBI] Embed URL:', data.embedUrl || embedUrl);
-          console.log('[PowerBI] Token received:', !!data.token);
+        // Always use iframe method - no SDK
+        console.log('[PowerBI] ✅ Using iframe embedding method');
+        console.log('[PowerBI] Embed URL:', data.embedUrl || embedUrl);
+        console.log('[PowerBI] Token received:', !!data.token);
+        
+        try {
+          // Use the embedUrl from server exactly as provided - don't modify it
+          // PowerBI embed URLs are carefully constructed by the API
+          const baseEmbedUrl = data.embedUrl || embedUrl;
           
-          try {
-            // Use the embedUrl from server exactly as provided - don't modify it
-            // PowerBI embed URLs are carefully constructed by the API
-            const baseEmbedUrl = data.embedUrl || embedUrl;
-            
-            // Simply append the token parameter - don't modify anything else
-            // PowerBI handles the rest of the URL construction
-            const separator = baseEmbedUrl.includes('?') ? '&' : '?';
-            const finalUrl = `${baseEmbedUrl}${separator}token=${encodeURIComponent(data.token)}`;
-            console.log('[PowerBI] Final embed URL prepared (length:', finalUrl.length, ')');
-            console.log('[PowerBI] URL preview:', finalUrl.substring(0, 100) + '...');
-            
-            setFinalEmbedUrl(finalUrl);
-            setIsLoading(false); // Set to false - iframe will trigger onLoad
+          // Simply append the token parameter - don't modify anything else
+          // PowerBI handles the rest of the URL construction
+          const separator = baseEmbedUrl.includes('?') ? '&' : '?';
+          const finalUrl = `${baseEmbedUrl}${separator}token=${encodeURIComponent(data.token)}`;
+          console.log('[PowerBI] Final embed URL prepared (length:', finalUrl.length, ')');
+          console.log('[PowerBI] URL preview:', finalUrl.substring(0, 100) + '...');
+          
+          setFinalEmbedUrl(finalUrl);
+          setIsLoading(false); // Set to false - iframe will trigger onLoad
         } catch (urlError) {
           console.error('[PowerBI] Error building embed URL:', urlError);
           // Fallback: build URL manually
@@ -154,19 +157,23 @@ export default function PowerBIDashboard({
           console.error('[PowerBI] Error fetching embed token:', err);
         }
         
-        // If this is the first failure, try once more after a delay (in case permissions just propagated)
-        if (retryCount === 0 && !forceRefresh) {
-          console.log('[PowerBI] First failure - will retry once after 15 seconds in case permissions just propagated');
+        // Exponential backoff retry with max 3 attempts
+        const maxRetries = 3;
+        const baseDelayMs = 2000; // 2 seconds
+        const currentRetryDelay = baseDelayMs * Math.pow(2, retryCount); // 2s, 4s, 8s
+        
+        if (retryCount < maxRetries && !forceRefresh) {
+          console.log(`[PowerBI] Retry ${retryCount + 1}/${maxRetries} - waiting ${currentRetryDelay / 1000}s before retry`);
           setTimeout(() => {
-            setRetryCount(1);
+            setRetryCount(retryCount + 1);
             fetchEmbedToken(true).catch(console.error);
-          }, 15000); // Wait 15 seconds for permissions to propagate
+          }, currentRetryDelay);
           return; // Don't fall back to autoAuth yet
         }
         
         // IMPORTANT: Since embed token generation failed, we'll use autoAuth as a fallback
         // This requires users to sign in to Power BI, but allows them to see the dashboard
-        console.error('[PowerBI] Token generation failed after retry - falling back to autoAuth');
+        console.error('[PowerBI] Token generation failed after all retries - falling back to autoAuth');
         console.error('[PowerBI] Error details:', err);
         
         // Build fallback URL with autoAuth - this will prompt users to sign in to Power BI
@@ -287,6 +294,7 @@ export default function PowerBIDashboard({
     let timeoutId: NodeJS.Timeout | null = null;
     let checkInterval: NodeJS.Timeout | null = null;
     let loadCheckCount = 0;
+    let messageHandler: ((event: MessageEvent) => void) | null = null;
     const maxChecks = 30; // Check every 2 seconds for 60 seconds total
 
     const markAsLoaded = () => {
@@ -319,18 +327,53 @@ export default function PowerBIDashboard({
       }
       
       // Don't mark as loaded immediately - PowerBI needs significant time to authenticate and render
-      // The iframe loads quickly, but PowerBI content inside takes 5-15 seconds to fully render
-      console.log('[PowerBI] Iframe loaded - PowerBI is authenticating and rendering (this can take 10-15 seconds)...');
+      // The iframe loads quickly, but PowerBI content inside takes 10-30 seconds to fully render
+      console.log('[PowerBI] Iframe loaded - PowerBI is authenticating and rendering (this can take 15-30 seconds)...');
       
-      // Wait much longer - PowerBI embeds can take up to 15 seconds on first load
-      // Especially when using Service Principal authentication
-      setTimeout(() => {
+      // Listen for PowerBI postMessage events to detect actual load completion
+      messageHandler = (event: MessageEvent) => {
+        // PowerBI sends postMessage events when content is loaded
+        // We can detect these even from cross-origin iframes
+        if (event.origin.includes('powerbi.com') || event.origin.includes('powerbi.microsoft.com')) {
+          console.log('[PowerBI] Received postMessage from PowerBI:', event.type, event.data);
+          
+          // Check for various PowerBI load events
+          const data = event.data;
+          if (data && (
+            (typeof data === 'object' && (
+              data.eventName === 'loaded' ||
+              data.type === 'reportLoaded' ||
+              data.name === 'loaded'
+            )) ||
+            (typeof data === 'string' && data.includes('loaded'))
+          )) {
+            console.log('[PowerBI] ✅ PowerBI report loaded successfully (detected via postMessage)');
+            markAsLoaded();
+            if (messageHandler) {
+              window.removeEventListener('message', messageHandler);
+              messageHandler = null;
+            }
+          }
+        }
+      };
+      
+      // Listen for PowerBI postMessage events
+      window.addEventListener('message', messageHandler);
+      
+      // Also set a longer timeout as fallback - PowerBI can take 20-30 seconds on slow connections
+      // Especially with Service Principal authentication
+      timeoutId = setTimeout(() => {
         if (!loadHandled) {
           markAsLoaded();
-          console.log('[PowerBI] Loading timeout reached - hiding loader');
-          console.log('[PowerBI] If report is still not visible, click "Open in New Tab" to verify the URL works');
+          if (messageHandler) {
+            window.removeEventListener('message', messageHandler);
+            messageHandler = null;
+          }
+          console.log('[PowerBI] Loading timeout reached (30s) - hiding loader');
+          console.log('[PowerBI] If report is still not visible, the token may have insufficient permissions');
+          console.log('[PowerBI] Click "Open in New Tab" to verify the URL works directly');
         }
-      }, 12000); // 12 seconds - PowerBI needs this much time
+      }, 30000); // 30 seconds - give PowerBI plenty of time
     };
 
     const handleError = () => {
@@ -422,86 +465,14 @@ export default function PowerBIDashboard({
       }
       if (timeoutId) clearTimeout(timeoutId);
       if (checkInterval) clearInterval(checkInterval);
-    };
-  }, [finalEmbedUrl, showAiInsights, embedToken, generateAIInsight]);
-
-  // Use PowerBI SDK to embed if available and token is ready
-  useEffect(() => {
-    // Wait for container to be mounted before embedding
-    if (!window.powerbi || !embedToken || !reportId || !finalEmbedUrl) {
-      return;
-    }
-
-    // Give container time to mount
-    const timer = setTimeout(() => {
-      if (!containerRef.current) {
-        console.warn('[PowerBI] Container not ready for SDK embedding, using iframe fallback');
-        return;
-      }
-
-      console.log('[PowerBI] Attempting to embed using PowerBI SDK');
-      setIsLoading(true);
-      
-      try {
-        // Extract base embed URL (remove query params as SDK handles token separately)
-        const baseEmbedUrl = finalEmbedUrl.split('?')[0] || finalEmbedUrl;
-        
-        const embedConfig = {
-          type: 'report',
-          id: reportId,
-          embedUrl: baseEmbedUrl,
-          accessToken: embedToken,
-          tokenType: window.powerbi.models.TokenType.Embed,
-          viewMode: window.powerbi.models.ViewMode.View,
-          settings: {
-            filterPaneEnabled: false,
-            navContentPaneEnabled: false,
-            background: window.powerbi.models.BackgroundType.Transparent,
-          }
-        };
-
-        // Embed the report using SDK
-        embedRef.current = window.powerbi.embed(containerRef.current, embedConfig as any);
-
-        // Handle load event
-        embedRef.current.on('loaded', () => {
-          console.log('[PowerBI] ✅ Report loaded successfully via SDK');
-          setIsLoading(false);
-          setError(null);
-          if (showAiInsights) {
-            generateAIInsight().catch(console.error);
-          }
-        });
-
-        // Handle error event
-        embedRef.current.on('error', (event: any) => {
-          console.error('[PowerBI] SDK embed error:', event);
-          console.warn('[PowerBI] Falling back to iframe method');
-          setError(null); // Clear error - will use iframe
-          setIsLoading(false);
-        });
-
-      } catch (error: any) {
-        console.error('[PowerBI] Error embedding with SDK:', error);
-        console.warn('[PowerBI] Using iframe fallback');
-        setError(null); // Clear error - will use iframe
-        setIsLoading(false);
-      }
-    }, 100); // Small delay to ensure container is mounted
-
-    return () => {
-      clearTimeout(timer);
-      // Cleanup SDK embed on unmount
-      if (embedRef.current && containerRef.current) {
-        try {
-          window.powerbi?.reset(containerRef.current);
-        } catch (e) {
-          console.warn('[PowerBI] Error resetting embed:', e);
-        }
-        embedRef.current = null;
+      if (messageHandler) {
+        window.removeEventListener('message', messageHandler);
+        messageHandler = null;
       }
     };
-  }, [embedToken, reportId, finalEmbedUrl, showAiInsights, generateAIInsight]);
+  }, [finalEmbedUrl, showAiInsights, embedToken]);
+
+  // SDK embedding disabled - using iframe method only
 
   const refreshDashboard = () => {
     if (iframeRef.current) {
@@ -561,14 +532,7 @@ export default function PowerBIDashboard({
           </div>
         )}
 
-        {/* Power BI embed container for SDK (if available) */}
-        {embedToken && reportId && window.powerbi && (
-          <div
-            ref={containerRef}
-            className="absolute inset-0 w-full h-full"
-            style={{ zIndex: 10, minHeight: '600px' }}
-          />
-        )}
+        {/* SDK container removed - using iframe method only */}
 
         {/* Test button - Open PowerBI URL directly in new tab for debugging */}
         {finalEmbedUrl && embedToken && (
@@ -586,8 +550,8 @@ export default function PowerBIDashboard({
           </div>
         )}
 
-        {/* Power BI iframe - Simple and reliable approach */}
-        {finalEmbedUrl && finalEmbedUrl.length > 0 && !(embedToken && reportId && window.powerbi && embedRef.current) && (
+        {/* Power BI iframe - Always use iframe method (SDK disabled) */}
+        {finalEmbedUrl && finalEmbedUrl.length > 0 && (
           <iframe
             key={finalEmbedUrl} // Use URL as key to remount when URL changes
             ref={iframeRef}
@@ -615,9 +579,10 @@ export default function PowerBIDashboard({
             }}
             // Removed sandbox attribute - PowerBI requires full functionality including WebSocket connections
             // PowerBI from app.powerbi.com is a trusted Microsoft domain, so removing sandbox is safe
-            allow="fullscreen; clipboard-read; clipboard-write; accelerometer; gyroscope; payment; usb; xr-spatial-tracking"
+            allow="fullscreen; clipboard-read; clipboard-write; accelerometer; gyroscope; payment; usb; xr-spatial-tracking; autoplay; encrypted-media; picture-in-picture"
             referrerPolicy="no-referrer-when-downgrade"
             loading="eager"
+            // No sandbox attribute - PowerBI requires full iframe permissions for proper rendering
             // Add debugging - log when iframe src changes
             onLoad={() => {
               console.log('[PowerBI] Iframe src loaded:', iframeRef.current?.src?.substring(0, 150));
@@ -641,38 +606,7 @@ export default function PowerBIDashboard({
           />
         )}
 
-        {/* Show info banner if using autoAuth fallback (non-blocking) with retry button */}
-        {finalEmbedUrl && finalEmbedUrl.includes('autoAuth=true') && !embedToken && (
-          <div className="absolute top-2 left-2 right-2 z-30 bg-blue-50 dark:bg-blue-950 border border-blue-300 dark:border-blue-800 rounded p-3 text-sm flex items-start gap-2 shadow-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-blue-600 dark:text-blue-400 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-blue-800 dark:text-blue-200 font-medium mb-1">
-                Dashboard requires Power BI sign-in
-              </p>
-              <p className="text-blue-700 dark:text-blue-300 text-xs mb-2">
-                Anonymous access will be available once Service Principal permissions are fully configured. 
-                {retryCount > 0 && ' You can retry now that permissions may have propagated.'}
-              </p>
-              <Button
-                onClick={() => {
-                  setRetryCount(0);
-                  setFinalEmbedUrl('');
-                  setIsLoading(true);
-                  setError(null);
-                  if (fetchEmbedTokenRef.current) {
-                    fetchEmbedTokenRef.current();
-                  }
-                }}
-                variant="outline"
-                size="sm"
-                className="mt-1 text-xs h-7 bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-800"
-              >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Retry Anonymous Access
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Info banner removed - autoAuth is the correct behavior for PPU */}
         
         {/* Show full error screen only if we have no URL at all */}
         {error && !isLoading && (!finalEmbedUrl || finalEmbedUrl.length === 0) && (

@@ -20,25 +20,32 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
-    middlewareMode: true,
-    // Disable HMR completely to prevent WebSocket errors that interfere with PowerBI iframe
-    // HMR causes localhost:undefined errors in the client bundle
-    hmr: false,
-    allowedHosts: true as const,
-  };
-
   const vite = await createViteServer({
     ...viteConfig,
     configFile: false,
+    server: {
+      middlewareMode: true,
+      // Disable HMR completely to prevent WebSocket errors that interfere with PowerBI iframe
+      // HMR causes localhost:undefined errors in the client bundle
+      hmr: false,
+      allowedHosts: true as const,
+      // Explicitly disable WebSocket to prevent connection attempts
+      ws: false,
+    },
     customLogger: {
       ...viteLogger,
       error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
+        // Only exit on critical errors, not on recoverable issues
+        const errorMsg = String(msg).toLowerCase();
+        if (errorMsg.includes('fatal') || errorMsg.includes('critical')) {
+          viteLogger.error(msg, options);
+          process.exit(1);
+        } else {
+          // Log warning instead of crashing on non-critical errors
+          viteLogger.error(msg, options);
+        }
       },
     },
-    server: serverOptions,
     appType: "custom",
   });
 

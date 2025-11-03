@@ -32,7 +32,20 @@ if (typeof window !== 'undefined') {
     }
     
     // Suppress network timeout errors for Vite HMR port
-    if (errorString.includes('err_connection_timed_out') && errorString.includes('24678')) {
+    if (errorString.includes('err_connection_timed_out') && (
+      errorString.includes('24678') ||
+      errorString.includes('spock.replit.dev:24678')
+    )) {
+      return; // Silently ignore
+    }
+    
+    // Suppress WebSocket connection errors to port 24678
+    if (errorString.includes('websocket') && errorString.includes('24678')) {
+      return; // Silently ignore
+    }
+    
+    // Suppress GET errors to port 24678
+    if (errorString.includes('get http') && errorString.includes('24678')) {
       return; // Silently ignore
     }
     

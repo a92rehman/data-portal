@@ -147,3 +147,91 @@ export function getPriorityIcon(priority: NotificationPriority): string {
       return '🔵';
   }
 }
+
+// Check if browser supports desktop notifications
+export function isNotificationSupported(): boolean {
+  return 'Notification' in window;
+}
+
+// Request notification permission from user
+export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  if (!isNotificationSupported()) {
+    console.log('[Notifications] Desktop notifications not supported');
+    return 'denied';
+  }
+  
+  // Check current permission
+  const currentPermission = Notification.permission;
+  
+  if (currentPermission === 'granted') {
+    console.log('[Notifications] Permission already granted');
+    return 'granted';
+  }
+  
+  if (currentPermission === 'denied') {
+    console.log('[Notifications] Permission denied by user');
+    return 'denied';
+  }
+  
+  // Request permission (default)
+  try {
+    const permission = await Notification.requestPermission();
+    console.log('[Notifications] Permission result:', permission);
+    return permission;
+  } catch (error) {
+    console.error('[Notifications] Error requesting permission:', error);
+    return 'denied';
+  }
+}
+
+// Show desktop notification
+export function showDesktopNotification(
+  notification: Notification,
+  priority: NotificationPriority = 'normal'
+): void {
+  if (!isNotificationSupported()) {
+    console.log('[Notifications] Desktop notifications not supported');
+    return;
+  }
+  
+  if (Notification.permission !== 'granted') {
+    console.log('[Notifications] Permission not granted');
+    return;
+  }
+  
+  try {
+    const icon = getPriorityIcon(priority);
+    const title = notification.title || 'New Notification';
+    const body = notification.message || '';
+    
+    const desktopNotification = new Notification(`${icon} ${title}`, {
+      body: body.length > 100 ? body.substring(0, 100) + '...' : body,
+      icon: '/favicon.ico', // You can customize this with a better icon
+      badge: '/favicon.ico',
+      tag: notification.id || `notification-${Date.now()}`, // Prevent duplicate notifications
+      requireInteraction: priority === 'critical', // Critical notifications require user interaction
+      silent: false,
+    });
+    
+    // Auto-close based on priority
+    const autoCloseTime = priority === 'critical' ? 10000 : priority === 'high' ? 7000 : 5000;
+    setTimeout(() => {
+      desktopNotification.close();
+    }, autoCloseTime);
+    
+    // Handle notification click - focus the app and navigate to request
+    desktopNotification.onclick = () => {
+      window.focus();
+      desktopNotification.close();
+      
+      // Navigate to request if available
+      if (notification.requestId) {
+        window.location.href = `/requests/${notification.requestId}`;
+      }
+    };
+    
+    console.log('[Notifications] Desktop notification shown:', title);
+  } catch (error) {
+    console.error('[Notifications] Error showing desktop notification:', error);
+  }
+}

@@ -12,9 +12,9 @@ export const DASHBOARDS: Record<string, DashboardConfig> = {
     id: 'program-delivery',
     title: 'Program Delivery Dashboard',
     description: 'Comprehensive overview of program delivery metrics and performance indicators',
-    // Base URL without autoAuth - token will be added dynamically via API
-    // If token generation fails, autoAuth will be added as fallback
-    embedUrl: 'https://app.powerbi.com/reportEmbed?reportId=c1b79fbf-b77a-4d42-a8b5-913c0b9280d9&ctid=REDACTED_TENANT_ID',
+    // Using autoAuth=true for PPU (Premium Per User)
+    // Service Principal embed tokens don't work on PPU - requires dedicated Premium capacity
+    embedUrl: 'https://app.powerbi.com/reportEmbed?reportId=c1b79fbf-b77a-4d42-a8b5-913c0b9280d9&ctid=REDACTED_TENANT_ID&autoAuth=true',
     reportId: 'c1b79fbf-b77a-4d42-a8b5-913c0b9280d9',
     roles: ['team_lead', 'analyst', 'requester']
   }

@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
+import { requestNotificationPermission } from "@/lib/notificationUtils";
 import type { User } from "@shared/schema";
 import Landing from "@/pages/landing";
 import AuthSimple from "@/pages/auth-simple";
@@ -111,6 +112,18 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+  }, []);
+
+  // Request notification permission on app load
+  useEffect(() => {
+    const initNotifications = async () => {
+      // Wait a bit for the app to fully load before requesting permission
+      setTimeout(async () => {
+        await requestNotificationPermission();
+      }, 2000);
+    };
+    
+    initNotifications();
   }, []);
 
   return (
