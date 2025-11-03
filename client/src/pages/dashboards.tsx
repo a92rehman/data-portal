@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useParams } from 'wouter';
+import { useAuth } from '@/hooks/useAuth';
 import Header from '@/components/header';
 import Sidebar from '@/components/sidebar';
 import PowerBIDashboard from '@/components/PowerBIDashboard';
@@ -10,7 +11,8 @@ import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Dashboards() {
-  // Remove authentication hooks - allow anonymous access
+  // Get authenticated user (if available) - dashboard is accessible without auth too
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const params = useParams();
   const dashboardId = params.dashboardId || "program-delivery";
@@ -19,14 +21,12 @@ export default function Dashboards() {
   // Get dashboard config
   const dashboard = getDashboardConfig(dashboardId);
 
-  // Remove authentication check - allow unauthenticated access
-
   return (
     <div className="h-screen flex flex-col">
-      <Header user={undefined} />
+      <Header user={user || null} />
       
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar onNewRequest={() => setLocation("/?new=true")} user={undefined} />
+        <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user || undefined} />
         
         {/* Main content - Side by side layout */}
         <main className="flex-1 md:ml-64 relative flex h-full overflow-hidden">

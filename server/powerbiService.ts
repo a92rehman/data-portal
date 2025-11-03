@@ -28,6 +28,15 @@ interface TokenCache {
 let tokenCache: TokenCache | null = null;
 
 /**
+ * Clear the token cache to force a fresh token fetch
+ * Useful when Service Principal permissions are updated
+ */
+export function clearPowerBITokenCache(): void {
+  console.log('[POWERBI] Clearing token cache to force fresh token fetch');
+  tokenCache = null;
+}
+
+/**
  * Get Power BI access token using Service Principal (client credentials flow)
  */
 async function getPowerBIAccessToken(): Promise<string> {
@@ -52,7 +61,14 @@ async function getPowerBIAccessToken(): Promise<string> {
     );
 
     // Get token for Power BI service
+    // Use .default scope for client credentials flow (Service Principal)
     const token = await credential.getToken('https://analysis.windows.net/powerbi/api/.default');
+    
+    if (!token || !token.token) {
+      throw new Error('Failed to obtain access token from Azure AD');
+    }
+    
+    console.log('[POWERBI] Token obtained, expires at:', new Date(token.expiresOnTimestamp).toISOString());
 
     // Cache token
     tokenCache = {
@@ -554,12 +570,17 @@ export async function generateEmbedToken(reportId: string, workspaceId?: string)
         }
       );
 
-      if (reportResponse.ok) {
+      if (!reportResponse.ok) {
+        const errorText = await reportResponse.text();
+        console.warn('[POWERBI] Could not fetch report details:', reportResponse.status, errorText);
+      } else {
         const reportData = await reportResponse.json();
         // If report is in a workspace (group), use that workspace ID
         if (reportData.workspaceId) {
           actualWorkspaceId = reportData.workspaceId;
           console.log('[POWERBI] Found report workspace:', actualWorkspaceId);
+        } else {
+          console.log('[POWERBI] Report is in My Workspace (workspaceId not specified)');
         }
       }
     } catch (error) {
@@ -567,11 +588,14 @@ export async function generateEmbedToken(reportId: string, workspaceId?: string)
     }
     
     // Request embed token for the report
-    const embedTokenUrl = actualWorkspaceId === 'me' 
+    // Try the workspace-specific endpoint first, then fall back to myorg if needed
+    const embedTokenUrl = actualWorkspaceId === 'me' || !actualWorkspaceId
       ? `https://api.powerbi.com/v1.0/myorg/reports/${reportId}/GenerateToken`
       : `https://api.powerbi.com/v1.0/myorg/groups/${actualWorkspaceId}/reports/${reportId}/GenerateToken`;
     
     console.log('[POWERBI] Requesting embed token from:', embedTokenUrl);
+    console.log('[POWERBI] Using workspace ID:', actualWorkspaceId);
+    console.log('[POWERBI] Report ID:', reportId);
     
     const response = await fetch(embedTokenUrl, {
       method: 'POST',
@@ -591,12 +615,60 @@ export async function generateEmbedToken(reportId: string, workspaceId?: string)
       
       // If it's a 403, provide helpful error message about Service Principal permissions
       if (response.status === 403) {
-        const errorMessage = `Power BI API access denied (403). The Service Principal needs to be:
-1. Added as a member or admin to the Power BI workspace containing the report
-2. Granted 'View' permissions on the report
-3. Enabled for Power BI API access in Azure AD
+        console.error('[POWERBI] 403 Forbidden - Detailed diagnostics:');
+        console.error('[POWERBI] - Embed Token URL:', embedTokenUrl);
+        console.error('[POWERBI] - Workspace ID:', actualWorkspaceId);
+        console.error('[POWERBI] - Report ID:', reportId);
+        console.error('[POWERBI] - Service Principal Client ID:', process.env.AZURE_CLIENT_ID);
+        console.error('[POWERBI] - Error response:', errorText);
+        
+        // Check for specific error messages and provide targeted guidance
+        let errorMessage: string;
+        
+        if (errorText.includes('Embedding is disabled on tenant level') || errorText.includes('embedding is disabled')) {
+          errorMessage = `Power BI Embedding is disabled (403). Enable it in Power BI Admin Portal:
 
-Error details: ${errorText}`;
+1. Go to: https://app.powerbi.com/admin-portal
+2. Navigate to: Tenant settings → Developer settings
+3. Find the setting: "Embed content in apps"
+4. Toggle it to "Enabled"
+5. Set scope to "Entire organization" (or your security group)
+6. Click "Apply" to save changes
+7. Wait 15-30 minutes for propagation
+
+Additional requirements:
+- "Allow service principals to use Power BI APIs" must also be enabled in Tenant settings
+- Service Principal (Client ID: ${process.env.AZURE_CLIENT_ID}) must be added to workspace (${actualWorkspaceId || 'My Workspace'}) as Member or Admin role
+- Workspace must allow embedding
+
+Note: Changes can take 15-30 minutes to propagate across the tenant.
+
+URL attempted: ${embedTokenUrl}
+Workspace: ${actualWorkspaceId || 'My Workspace'}
+Response: ${errorText}`;
+        } else if (errorText.includes('API is not accessible for application')) {
+          errorMessage = `Power BI API access denied (403). Verify:
+1. "Allow service principals to use Power BI APIs" is ENABLED in Power BI Admin Portal → Tenant settings
+2. Service Principal (Client ID: ${process.env.AZURE_CLIENT_ID}) is added to the workspace
+3. Service Principal has Member or Admin role (not Viewer)
+4. Tenant setting applies to the correct security group or "Entire organization"
+
+URL attempted: ${embedTokenUrl}
+Workspace: ${actualWorkspaceId || 'My Workspace'}
+Response: ${errorText}`;
+        } else {
+          errorMessage = `Power BI API access denied (403). Verify:
+1. "Allow service principals to use Power BI APIs" is ENABLED in Power BI Admin Portal → Tenant settings
+2. Service Principal (Client ID: ${process.env.AZURE_CLIENT_ID}) is added to the workspace
+3. Service Principal has Member or Admin role (not Viewer)
+4. Tenant setting applies to the correct security group or "Entire organization"
+5. Check if "Allow embedding" or "Allow service principals to embed" is enabled in Tenant settings
+
+URL attempted: ${embedTokenUrl}
+Workspace: ${actualWorkspaceId || 'My Workspace'}
+Response: ${errorText}`;
+        }
+        
         throw new Error(errorMessage);
       }
       
@@ -610,15 +682,50 @@ Error details: ${errorText}`;
       throw new Error('No token in response from Power BI API');
     }
     
-    // Construct embed URL with token
-    const tenantId = process.env.AZURE_TENANT_ID || '';
-    const embedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&ctid=${tenantId}`;
+    // Get the actual embed URL from the report (this is what Power BI SDK needs)
+    let actualEmbedUrl: string;
+    try {
+      // Try to get the embedUrl from the report metadata
+      const reportResponse = await fetch(
+        `https://api.powerbi.com/v1.0/myorg/reports/${reportId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+      
+      if (reportResponse.ok) {
+        const reportData = await reportResponse.json();
+        // Power BI API returns embedUrl in the report data
+        if (reportData.embedUrl) {
+          actualEmbedUrl = reportData.embedUrl;
+          console.log('[POWERBI] Found embedUrl from report API:', actualEmbedUrl.substring(0, 100) + '...');
+        } else {
+          // Fallback: construct embed URL
+          const tenantId = process.env.AZURE_TENANT_ID || '';
+          actualEmbedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&ctid=${tenantId}`;
+          console.log('[POWERBI] Using constructed embedUrl');
+        }
+      } else {
+        // Fallback: construct embed URL
+        const tenantId = process.env.AZURE_TENANT_ID || '';
+        actualEmbedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&ctid=${tenantId}`;
+        console.log('[POWERBI] Could not fetch report metadata, using constructed embedUrl');
+      }
+    } catch (error) {
+      // Fallback: construct embed URL
+      const tenantId = process.env.AZURE_TENANT_ID || '';
+      actualEmbedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&ctid=${tenantId}`;
+      console.log('[POWERBI] Error fetching report metadata, using constructed embedUrl');
+    }
     
-    console.log('[POWERBI] Embed URL constructed:', embedUrl.substring(0, 100) + '...');
+    console.log('[POWERBI] Embed URL for SDK:', actualEmbedUrl.substring(0, 100) + '...');
     
     return {
       token: data.token,
-      embedUrl: embedUrl,
+      embedUrl: actualEmbedUrl,
       tokenId: data.tokenId || '',
       expiration: data.expiration || new Date(Date.now() + 3600000).toISOString(), // 1 hour default
     };

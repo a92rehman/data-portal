@@ -13,7 +13,7 @@ import { eq } from "drizzle-orm";
 import { generateAIInsight } from "./openaiService";
 import { generateDashboardInsights, sendChatMessage, getDashboardContextData } from "./openaiChatService";
 import { getOrCreateConversation, generateConversationId } from "./conversationStore";
-import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData, generateEmbedToken } from "./powerbiService";
+import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData, generateEmbedToken, clearPowerBITokenCache } from "./powerbiService";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -58,6 +58,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: 'Report ID is required' 
         });
         return;
+      }
+      
+      // Check if client wants to force refresh (clear cache)
+      const forceRefresh = req.query.forceRefresh === 'true';
+      if (forceRefresh) {
+        console.log('[ROUTES] Force refresh requested - clearing token cache');
+        clearPowerBITokenCache();
       }
       
       const embedToken = await generateEmbedToken(reportId, workspaceId);

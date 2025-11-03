@@ -36,5 +36,8 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    // Disable HMR to prevent WebSocket errors with iframe embedding
+    // HMR causes issues with PowerBI iframe rendering
+    hmr: false,
   },
 });

@@ -22,7 +22,9 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
-    hmr: { server },
+    // Disable HMR completely to prevent WebSocket errors that interfere with PowerBI iframe
+    // HMR causes localhost:undefined errors in the client bundle
+    hmr: false,
     allowedHosts: true as const,
   };
 
