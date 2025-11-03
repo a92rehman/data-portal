@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle } from 'lucide-react';
@@ -31,17 +31,64 @@ export default function PowerBIDashboard({
   const [error, setError] = useState<string | null>(null);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [loadingInsight, setLoadingInsight] = useState(false);
+  const [finalEmbedUrl, setFinalEmbedUrl] = useState<string>(embedUrl);
+  const [embedToken, setEmbedToken] = useState<string | null>(null);
 
+  // Fetch embed token on mount if reportId is provided
   useEffect(() => {
-    // Set up loading state
+    const fetchEmbedToken = async () => {
+      if (!reportId) {
+        // If no reportId, use original embedUrl
+        setFinalEmbedUrl(embedUrl);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        console.log('[PowerBI] Fetching embed token for report:', reportId);
+        
+        const response = await fetch(`/api/powerbi/embed-token/${reportId}`, {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch embed token');
+        }
+
+        const data = await response.json();
+        setEmbedToken(data.token);
+        
+        // Construct embed URL with token (remove autoAuth if present)
+        const url = new URL(data.embedUrl || embedUrl);
+        url.searchParams.delete('autoAuth'); // Remove autoAuth
+        url.searchParams.set('token', data.token); // Add token
+        setFinalEmbedUrl(url.toString());
+        
+        console.log('[PowerBI] Embed token fetched successfully');
+        setIsLoading(false);
+      } catch (err: any) {
+        console.error('Error fetching embed token:', err);
+        // Fallback to original URL if token generation fails
+        setFinalEmbedUrl(embedUrl);
+        setIsLoading(false);
+        // Don't set error here - still try to load with original URL
+      }
+    };
+
+    fetchEmbedToken();
+  }, [reportId, embedUrl]);
+
+  // Set up iframe load handlers
+  useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
     const handleLoad = () => {
       setIsLoading(false);
       setError(null);
-      if (showAiInsights) {
-        generateAIInsight();
+      if (showAiInsights && embedToken) {
+        generateAIInsight().catch(console.error);
       }
     };
 
@@ -64,15 +111,21 @@ export default function PowerBIDashboard({
       iframe.removeEventListener('error', handleError);
       clearTimeout(loadingTimeout);
     };
-  }, [embedUrl, showAiInsights]);
+  }, [finalEmbedUrl, showAiInsights, embedToken, generateAIInsight]);
 
-  const generateAIInsight = async () => {
+  const generateAIInsight = useCallback(async () => {
+    if (!embedToken || !reportId) return;
+    
     setLoadingInsight(true);
     try {
       const response = await fetch('/api/powerbi/insights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({
+          reportId: reportId,
+          dashboardId: 'program-delivery',
+        }),
       });
 
       if (!response.ok) {
@@ -89,7 +142,7 @@ export default function PowerBIDashboard({
     } finally {
       setLoadingInsight(false);
     }
-  };
+  }, [embedToken, reportId, onAiInsightGenerated]);
 
   const refreshDashboard = () => {
     if (iframeRef.current) {
@@ -142,11 +195,11 @@ export default function PowerBIDashboard({
           </div>
         )}
 
-        {!error && (
+        {!error && !isLoading && (
           <iframe
             ref={iframeRef}
             title={title}
-            src={embedUrl}
+            src={finalEmbedUrl}
             frameBorder="0"
             allowFullScreen={true}
             className="w-full h-full"

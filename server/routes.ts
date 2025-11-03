@@ -13,7 +13,7 @@ import { eq } from "drizzle-orm";
 import { generateAIInsight } from "./openaiService";
 import { generateDashboardInsights, sendChatMessage, getDashboardContextData } from "./openaiChatService";
 import { getOrCreateConversation, generateConversationId } from "./conversationStore";
-import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData } from "./powerbiService";
+import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData, generateEmbedToken } from "./powerbiService";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -3140,6 +3140,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         message: "Failed to process message",
         error: error.message
+      });
+    }
+  });
+
+  // Power BI embed token endpoint - NO authentication required
+  app.get('/api/powerbi/embed-token/:reportId', async (req: any, res) => {
+    try {
+      const { reportId } = req.params;
+      const workspaceId = req.query.workspaceId as string | undefined;
+      
+      console.log('[ROUTES] Generating embed token for report:', reportId);
+      
+      const embedToken = await generateEmbedToken(reportId, workspaceId);
+      
+      res.json(embedToken);
+    } catch (error: any) {
+      console.error("Error generating embed token:", error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Failed to generate embed token" 
       });
     }
   });

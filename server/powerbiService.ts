@@ -523,6 +523,92 @@ export async function listDatasets(): Promise<any[]> {
 }
 
 /**
+ * Generate embed token for a Power BI report using Service Principal
+ * This allows anonymous users to view the report without signing in
+ */
+export async function generateEmbedToken(reportId: string, workspaceId?: string): Promise<{
+  token: string;
+  embedUrl: string;
+  tokenId: string;
+  expiration: string;
+}> {
+  try {
+    const accessToken = await getPowerBIAccessToken();
+    
+    // Default workspace ID (can be from env or passed as parameter)
+    // Use 'me' if no workspace ID is provided (workspace of the Service Principal)
+    const targetWorkspaceId = workspaceId || process.env.POWERBI_WORKSPACE_ID || 'me';
+    
+    console.log('[POWERBI] Generating embed token for report:', reportId, 'in workspace:', targetWorkspaceId);
+    
+    // Get the report to find its workspace
+    let actualWorkspaceId = targetWorkspaceId;
+    try {
+      const reportResponse = await fetch(
+        `https://api.powerbi.com/v1.0/myorg/reports/${reportId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (reportResponse.ok) {
+        const reportData = await reportResponse.json();
+        // If report is in a workspace (group), use that workspace ID
+        if (reportData.workspaceId) {
+          actualWorkspaceId = reportData.workspaceId;
+          console.log('[POWERBI] Found report workspace:', actualWorkspaceId);
+        }
+      }
+    } catch (error) {
+      console.warn('[POWERBI] Could not fetch report details, using default workspace:', error);
+    }
+    
+    // Request embed token for the report
+    const embedTokenUrl = actualWorkspaceId === 'me' 
+      ? `https://api.powerbi.com/v1.0/myorg/reports/${reportId}/GenerateToken`
+      : `https://api.powerbi.com/v1.0/myorg/groups/${actualWorkspaceId}/reports/${reportId}/GenerateToken`;
+    
+    const response = await fetch(embedTokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        accessLevel: 'View', // Allow viewing only
+        allowSaveAs: false, // Don't allow saving
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[POWERBI] Failed to generate embed token:', response.status, errorText);
+      throw new Error(`Failed to generate embed token: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('[POWERBI] Embed token generated successfully');
+    
+    // Construct embed URL with token
+    const tenantId = process.env.AZURE_TENANT_ID || '';
+    const embedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&ctid=${tenantId}`;
+    
+    return {
+      token: data.token,
+      embedUrl: embedUrl,
+      tokenId: data.tokenId || '',
+      expiration: data.expiration || new Date(Date.now() + 3600000).toISOString(), // 1 hour default
+    };
+  } catch (error: any) {
+    console.error('[POWERBI] Error generating embed token:', error);
+    throw error;
+  }
+}
+
+/**
  * Test Power BI connection
  */
 export async function testConnection(): Promise<{ success: boolean; message: string }> {

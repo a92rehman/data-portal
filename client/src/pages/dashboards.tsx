@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 import { useLocation, useParams } from 'wouter';
 import Header from '@/components/header';
 import Sidebar from '@/components/sidebar';
@@ -12,8 +10,7 @@ import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Dashboards() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const { toast } = useToast();
+  // Remove authentication hooks - allow anonymous access
   const [, setLocation] = useLocation();
   const params = useParams();
   const dashboardId = params.dashboardId || "program-delivery";
@@ -22,38 +19,14 @@ export default function Dashboards() {
   // Get dashboard config
   const dashboard = getDashboardConfig(dashboardId);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Remove authentication check - allow unauthenticated access
 
   return (
     <div className="h-screen flex flex-col">
-      <Header user={user as any} />
+      <Header user={undefined} />
       
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar onNewRequest={() => setLocation("/?new=true")} user={user as any} />
+        <Sidebar onNewRequest={() => setLocation("/?new=true")} user={undefined} />
         
         {/* Main content - Side by side layout */}
         <main className="flex-1 md:ml-64 relative flex h-full overflow-hidden">
