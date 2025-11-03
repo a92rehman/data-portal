@@ -1,6 +1,6 @@
 import express, { type Express } from "express";
 import fs from "fs";
-import path from "path";
+import { resolve } from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
@@ -41,26 +41,55 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   // Only apply Vite middleware to non-API routes
+  // CRITICAL: This MUST run AFTER all Express routes are registered
+  // Express routes (app.get(), app.post(), etc.) are checked BEFORE middleware
+  // But we add a check here as a safety measure
   app.use((req, res, next) => {
-    // Skip Vite middleware for API routes - let Express routes handle them
-    if (req.path.startsWith('/api/')) {
+    // CRITICAL: Skip Vite middleware for ALL API routes - let Express routes handle them
+    // Check both req.path and req.originalUrl to be safe
+    const requestPath = req.path || '';
+    const originalUrl = req.originalUrl || '';
+    const isApiRoute = requestPath.startsWith('/api/') || originalUrl.startsWith('/api/');
+    
+    if (isApiRoute) {
+      // API route - let Express routes handle it
+      // If no route matches, it will fall through to the catch-all below
       return next();
     }
     // For all other routes, use Vite middleware
     vite.middlewares(req, res, next);
   });
   
-  // Catch-all route for SPA - but only for non-API routes
+  // Catch-all route for SPA - but ONLY for non-API routes
+  // CRITICAL: This middleware MUST check for API routes and skip them
+  // Express routes (registered with app.get(), etc.) should match first,
+  // but this is a safety check to ensure we never serve HTML for API routes
   app.use("*", async (req, res, next) => {
-    // Skip API routes - they should have been handled by Express routes
-    if (req.path.startsWith('/api/')) {
-      return next();
+    // CRITICAL: Skip API routes - they should have been handled by Express routes first
+    // Check both req.path and req.originalUrl to be absolutely sure
+    const requestPath = req.path || '';
+    const originalUrl = req.originalUrl || '';
+    const isApiRoute = requestPath.startsWith('/api/') || originalUrl.startsWith('/api/');
+    
+    if (isApiRoute) {
+      // API route - if we got here, it means no Express route matched
+      // This shouldn't happen, but if it does, return 404 JSON instead of HTML
+      if (!res.headersSent) {
+        console.warn('[VITE] API route not handled by Express:', originalUrl);
+        res.status(404).setHeader('Content-Type', 'application/json').json({
+          success: false,
+          message: 'API endpoint not found',
+          path: requestPath,
+          originalUrl: originalUrl
+        });
+      }
+      return; // Don't call next() - response already sent
     }
     
     const url = req.originalUrl;
 
     try {
-      const clientTemplate = path.resolve(
+      const clientTemplate = resolve(
         import.meta.dirname,
         "..",
         "client",
@@ -83,7 +112,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  const distPath = resolve(import.meta.dirname, "public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -95,6 +124,6 @@ export function serveStatic(app: Express) {
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(resolve(distPath, "index.html"));
   });
 }

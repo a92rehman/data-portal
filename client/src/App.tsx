@@ -47,6 +47,9 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/metric-definitions" component={MetricDefinitions} />
+        {/* Dashboard routes - accessible without authentication */}
+        <Route path="/dashboards/:dashboardId">{() => <Dashboards />}</Route>
+        <Route path="/dashboards">{() => <Redirect to="/dashboards/program-delivery" />}</Route>
         <Route component={Landing} />
       </Switch>
     );

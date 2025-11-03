@@ -36,6 +36,49 @@ function isAuthenticated(req: any, res: any, next: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register Power BI embed token route FIRST - before auth middleware
+  // This ensures it's matched before any other middleware or catch-all routes
+  // CRITICAL: This route MUST be registered before setupAuth() to avoid session middleware
+  console.log('[ROUTES] Registering Power BI embed token route...');
+  app.get('/api/powerbi/embed-token/:reportId', async (req: any, res) => {
+    console.log('[ROUTES] Power BI embed token route HIT!', req.method, req.path, req.originalUrl);
+    try {
+      // Ensure we always return JSON - set headers first and end response explicitly
+      res.setHeader('Content-Type', 'application/json');
+      
+      const { reportId } = req.params;
+      const workspaceId = req.query.workspaceId as string | undefined;
+      
+      console.log('[ROUTES] Generating embed token for report:', reportId, 'path:', req.path, 'originalUrl:', req.originalUrl);
+      
+      if (!reportId) {
+        console.log('[ROUTES] No reportId provided');
+        res.status(400).json({ 
+          success: false,
+          message: 'Report ID is required' 
+        });
+        return;
+      }
+      
+      const embedToken = await generateEmbedToken(reportId, workspaceId);
+      
+      console.log('[ROUTES] Embed token generated successfully, sending response');
+      res.json(embedToken);
+      return; // Explicitly end - don't call next()
+    } catch (error: any) {
+      console.error("[ROUTES] Error generating embed token:", error);
+      // Always return JSON, never HTML - ensure Content-Type is set
+      res.setHeader('Content-Type', 'application/json');
+      res.status(500).json({ 
+        success: false,
+        message: error.message || "Failed to generate embed token",
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+      return; // Explicitly end - don't call next()
+    }
+  });
+  console.log('[ROUTES] Power BI embed token route registered successfully');
+  
   // Auth middleware
   setupAuth(app);
 
@@ -3144,25 +3187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Power BI embed token endpoint - NO authentication required
-  app.get('/api/powerbi/embed-token/:reportId', async (req: any, res) => {
-    try {
-      const { reportId } = req.params;
-      const workspaceId = req.query.workspaceId as string | undefined;
-      
-      console.log('[ROUTES] Generating embed token for report:', reportId);
-      
-      const embedToken = await generateEmbedToken(reportId, workspaceId);
-      
-      res.json(embedToken);
-    } catch (error: any) {
-      console.error("Error generating embed token:", error);
-      res.status(500).json({ 
-        success: false,
-        message: error.message || "Failed to generate embed token" 
-      });
-    }
-  });
+  // Power BI embed token endpoint - NO authentication required (already registered at top of registerRoutes)
 
   // Power BI REST API endpoints
   app.get('/api/powerbi/test', isAuthenticated, async (req: any, res) => {

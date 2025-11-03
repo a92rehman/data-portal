@@ -571,6 +571,8 @@ export async function generateEmbedToken(reportId: string, workspaceId?: string)
       ? `https://api.powerbi.com/v1.0/myorg/reports/${reportId}/GenerateToken`
       : `https://api.powerbi.com/v1.0/myorg/groups/${actualWorkspaceId}/reports/${reportId}/GenerateToken`;
     
+    console.log('[POWERBI] Requesting embed token from:', embedTokenUrl);
+    
     const response = await fetch(embedTokenUrl, {
       method: 'POST',
       headers: {
@@ -586,15 +588,33 @@ export async function generateEmbedToken(reportId: string, workspaceId?: string)
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[POWERBI] Failed to generate embed token:', response.status, errorText);
+      
+      // If it's a 403, provide helpful error message about Service Principal permissions
+      if (response.status === 403) {
+        const errorMessage = `Power BI API access denied (403). The Service Principal needs to be:
+1. Added as a member or admin to the Power BI workspace containing the report
+2. Granted 'View' permissions on the report
+3. Enabled for Power BI API access in Azure AD
+
+Error details: ${errorText}`;
+        throw new Error(errorMessage);
+      }
+      
       throw new Error(`Failed to generate embed token: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('[POWERBI] Embed token generated successfully');
+    console.log('[POWERBI] Embed token generated successfully, token length:', data.token?.length || 0);
+    
+    if (!data.token) {
+      throw new Error('No token in response from Power BI API');
+    }
     
     // Construct embed URL with token
     const tenantId = process.env.AZURE_TENANT_ID || '';
     const embedUrl = `https://app.powerbi.com/reportEmbed?reportId=${reportId}&ctid=${tenantId}`;
+    
+    console.log('[POWERBI] Embed URL constructed:', embedUrl.substring(0, 100) + '...');
     
     return {
       token: data.token,

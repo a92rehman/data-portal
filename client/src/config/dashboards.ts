@@ -12,7 +12,8 @@ export const DASHBOARDS: Record<string, DashboardConfig> = {
     id: 'program-delivery',
     title: 'Program Delivery Dashboard',
     description: 'Comprehensive overview of program delivery metrics and performance indicators',
-    // Remove autoAuth=true - token will be added dynamically via API
+    // Base URL without autoAuth - token will be added dynamically via API
+    // If token generation fails, autoAuth will be added as fallback
     embedUrl: 'https://app.powerbi.com/reportEmbed?reportId=c1b79fbf-b77a-4d42-a8b5-913c0b9280d9&ctid=REDACTED_TENANT_ID',
     reportId: 'c1b79fbf-b77a-4d42-a8b5-913c0b9280d9',
     roles: ['team_lead', 'analyst', 'requester']

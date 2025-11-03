@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { generateEmbedToken } from './powerbiService';
 
 const app = express();
 
@@ -9,6 +10,7 @@ declare module 'http' {
     rawBody: unknown
   }
 }
+
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf;
@@ -208,6 +210,11 @@ app.use((req, res, next) => {
     // Don't throw - allow server to start even if seeding fails
   }
 
+  // Ensure API routes are registered and matched BEFORE Vite middleware
+  // The Power BI embed token route is already registered above (before registerRoutes)
+  // All other API routes are registered in registerRoutes()
+  // Now set up Vite middleware - it will skip /api/* routes
+  
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
