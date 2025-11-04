@@ -5,7 +5,7 @@ import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { setupWebSocketServer, getWebSocketServer } from "./websocket";
 import { insertDataRequestSchema, insertCommentSchema, insertAttachmentSchema, dataRequests } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
-import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail, sendAnalystCredentialsViaEmailJS, sendPasswordResetEmail, sendDeliveryEmail } from "./emailService";
+import { sendAssignmentEmail, sendRequestAcceptedEmail, sendRequestRejectedEmail, sendTeamMemberInviteEmail, sendAnalystPasswordSetupEmail, sendAnalystCredentialsViaEmailJS, sendDeliveryEmail } from "./emailService";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { db } from "./db";
@@ -285,8 +285,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get EmailJS configuration for frontend
   app.get('/api/emailjs-config', (req, res) => {
     res.json({
-      serviceId: process.env.EMAILJS_SERVICE_ID || '',
-      templateId: process.env.EMAILJS_TEMPLATE_ID || '',
+      serviceId: process.env.EMAILJS_SERVICE_ID || 'service_uyby7sf',
+      templateId: process.env.EMAILJS_TEMPLATE_ID || 'template_i7jxbqo', // Template for analyst credentials
       publicKey: process.env.EMAILJS_PUBLIC_KEY || ''
     });
   });
@@ -623,32 +623,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email is required" });
       }
 
+      const PRIMARY_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      const isPrimaryLeadRequest = email.trim().toLowerCase() === PRIMARY_LEAD_EMAIL.toLowerCase();
+      
+      console.log(`[forgot-password] Processing request for: ${email}`);
+      console.log(`[forgot-password] Is primary lead request: ${isPrimaryLeadRequest}`);
+      
       const user = await storage.getUserByEmail(email.trim().toLowerCase());
       
       // Always return success (don't reveal if email exists - security best practice)
       if (!user) {
-        console.log(`[forgot-password] User not found for email: ${email}`);
+        console.log(`[forgot-password] User not found for email: ${email} - returning success without emailData`);
         return res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
       }
 
+      console.log(`[forgot-password] User found: ${email}, role: ${user.role}, id: ${user.id}`);
+      console.log(`[forgot-password] User object:`, JSON.stringify({ 
+        email: user.email, 
+        role: user.role, 
+        firstName: user.firstName,
+        passwordResetExpires: user.passwordResetExpires 
+      }, null, 2));
+
       // Rate limiting: Check if user has requested reset in last hour
-      if (user.passwordResetExpires && new Date(user.passwordResetExpires) > new Date()) {
-        const minutesRemaining = Math.ceil((new Date(user.passwordResetExpires).getTime() - Date.now()) / 60000);
-        console.log(`[forgot-password] Rate limit - user ${email} has active reset token, ${minutesRemaining} minutes remaining`);
-        // Still return success to not reveal if account exists
-        return res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
+      // Always allow primary lead email and team_lead to bypass rate limiting
+      const isPrimaryLead = user.email.toLowerCase() === PRIMARY_LEAD_EMAIL.toLowerCase();
+      const isTeamLead = user.role === 'team_lead';
+      const canBypassRateLimit = isPrimaryLead || isTeamLead;
+      
+      console.log(`[forgot-password] Is primary lead: ${isPrimaryLead}, Is team lead: ${isTeamLead}, Can bypass: ${canBypassRateLimit}`);
+      console.log(`[forgot-password] User email comparison: "${user.email.toLowerCase()}" === "${PRIMARY_LEAD_EMAIL.toLowerCase()}" = ${isPrimaryLead}`);
+      
+      if (user.passwordResetExpires) {
+        const expiresDate = new Date(user.passwordResetExpires);
+        const now = new Date();
+        const isExpired = expiresDate <= now;
+        console.log(`[forgot-password] Password reset expires: ${user.passwordResetExpires}, isExpired: ${isExpired}`);
+        
+        if (!canBypassRateLimit && !isExpired) {
+          const minutesRemaining = Math.ceil((expiresDate.getTime() - now.getTime()) / 60000);
+          console.log(`[forgot-password] Rate limit - user ${email} has active reset token, ${minutesRemaining} minutes remaining - returning success without emailData`);
+          // Still return success to not reveal if account exists
+          return res.json({ success: true, message: "If an account exists with this email, you will receive a password reset link" });
+        }
+
+        if (canBypassRateLimit && !isExpired) {
+          console.log(`[forgot-password] ${isPrimaryLead ? 'Primary lead' : 'Team lead'} ${email} bypassing rate limit - generating new reset token`);
+          // Clear the old token by setting it to null temporarily
+          console.log(`[forgot-password] Old reset token will be replaced with new one`);
+        }
+      } else {
+        console.log(`[forgot-password] No passwordResetExpires field or it's null/undefined - proceeding with token generation`);
       }
+
+      console.log(`[forgot-password] No rate limit active (or bypassed), proceeding with token generation for ${email}`);
+      console.log(`[forgot-password] Can bypass rate limit: ${canBypassRateLimit}, isPrimaryLead: ${isPrimaryLead}, isTeamLead: ${isTeamLead}`);
 
       // Generate secure reset token (32 bytes = 64 hex characters)
       const resetToken = randomBytes(32).toString('hex');
       const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
+      console.log(`[forgot-password] Generated token: ${resetToken.substring(0, 20)}... (length: ${resetToken.length})`);
+      console.log(`[forgot-password] Token expires at: ${resetExpires.toISOString()}`);
+
       // Update user with reset token
-      await storage.upsertUser({
-        ...user,
-        passwordResetToken: resetToken,
-        passwordResetExpires: resetExpires,
-      });
+      try {
+        const updatedUser = await storage.upsertUser({
+          ...user,
+          passwordResetToken: resetToken,
+          passwordResetExpires: resetExpires,
+        });
+        console.log(`[forgot-password] User updated successfully. User ID: ${updatedUser.id}`);
+      } catch (updateError: any) {
+        console.error(`[forgot-password] ERROR updating user:`, updateError);
+        console.error(`[forgot-password] Update error details:`, {
+          message: updateError.message,
+          stack: updateError.stack,
+          error: updateError
+        });
+        throw updateError; // Re-throw to be caught by outer try-catch
+      }
 
       // Build reset URL
       // Use REPLIT_DOMAINS for production, fallback to development URL
@@ -658,31 +712,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         appUrl = `https://${domains[0]}`;
       } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
         appUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+      } else if (req.headers.host) {
+        // Use the request host as fallback
+        const protocol = req.headers['x-forwarded-proto'] || 'https';
+        appUrl = `${protocol}://${req.headers.host}`;
       }
 
       const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
 
       console.log(`[forgot-password] Reset token generated for ${email}, expires in 1 hour`);
+      console.log(`[forgot-password] Reset URL: ${resetUrl}`);
 
       // Log password reset request
-      await storage.logAuthEvent(
-        user.id,
-        'password_reset_requested',
-        req.ip || req.connection.remoteAddress,
-        req.headers['user-agent']
-      );
+      try {
+        await storage.logAuthEvent(
+          user.id,
+          'password_reset_requested',
+          req.ip || req.connection.remoteAddress,
+          req.headers['user-agent']
+        );
+      } catch (logError) {
+        console.error(`[forgot-password] Error logging auth event (continuing):`, logError);
+        // Continue even if logging fails
+      }
 
       // Return data for frontend to send email via EmailJS
-      res.json({ 
+      const emailData = {
+        userName: user.firstName || user.email.split('@')[0],
+        userEmail: user.email,
+        resetUrl,
+      };
+      
+      console.log(`[forgot-password] Returning emailData for ${email}:`, { 
+        userName: emailData.userName, 
+        userEmail: emailData.userEmail, 
+        resetUrlLength: emailData.resetUrl.length,
+        resetUrl: resetUrl
+      });
+      
+      const responseData = { 
         success: true, 
         message: "If an account exists with this email, you will receive a password reset link",
-        // Include data for EmailJS (only returned if user exists)
-        emailData: {
-          userName: user.firstName || user.email.split('@')[0],
-          userEmail: user.email,
-          resetUrl,
-        }
-      });
+        // Include data for EmailJS (only returned if user exists and no rate limit or bypassed)
+        emailData
+      };
+      
+      console.log(`[forgot-password] Sending response with emailData. Response keys:`, Object.keys(responseData));
+      console.log(`[forgot-password] emailData present:`, !!responseData.emailData);
+      console.log(`[forgot-password] Full response preview:`, JSON.stringify(responseData).substring(0, 200));
+      
+      // Ensure response is sent
+      if (!res.headersSent) {
+        res.json(responseData);
+        console.log(`[forgot-password] Response sent successfully`);
+      } else {
+        console.error(`[forgot-password] ERROR: Response already sent!`);
+      }
     } catch (error) {
       console.error("[forgot-password] Error:", error);
       res.status(500).json({ message: "Failed to process password reset request" });

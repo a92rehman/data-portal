@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ChartLine, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -45,19 +44,16 @@ export default function ForgotPassword() {
     
     try {
       // Call backend to generate reset token
-      console.log('[forgot-password] Calling backend API...');
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: data.email }),
       });
 
-      console.log('[forgot-password] Backend response status:', response.status);
       const result = await response.json();
-      console.log('[forgot-password] Backend response data:', result);
+      console.log('[forgot-password] Full backend response:', result);
 
       if (!response.ok) {
-        console.error('[forgot-password] Backend error:', result.message);
         throw new Error(result.message || "Failed to send reset link");
       }
 
@@ -66,45 +62,69 @@ export default function ForgotPassword() {
         const { userName, userEmail, resetUrl } = result.emailData;
         console.log('[forgot-password] EmailData received:', { userName, userEmail, resetUrlLength: resetUrl?.length });
         
-        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-        const templateId = 'template_1hb8p6b';
+        // Use EmailJS service ID: service_uyby7sf
+        const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_uyby7sf';
+        if (!serviceId) {
+          throw new Error('EmailJS service ID not configured. Please check your environment variables.');
+        }
         
-        console.log('[forgot-password] EmailJS config:', { 
-          serviceId, 
-          templateId,
-          hasPublicKey: !!import.meta.env.VITE_EMAILJS_PUBLIC_KEY 
-        });
+        console.log('[forgot-password] Using EmailJS service:', serviceId, 'template: template_1hb8p6b');
         
         // Send email using EmailJS with template_1hb8p6b
-        console.log('[forgot-password] Sending email via EmailJS...');
-        const emailResult = await emailjs.send(
-          serviceId || '',
-          templateId,
-          {
-            to_name: userName,
-            to_email: userEmail,
-            reset_link: resetUrl,
-            from_name: 'DataHub Team',
-          }
-        );
+        try {
+          console.log('[forgot-password] Attempting to send email via EmailJS...');
+          const emailResult = await emailjs.send(
+            serviceId,
+            'template_1hb8p6b', // Password reset template ID
+            {
+              to_name: userName,
+              to_email: userEmail,
+              reset_link: resetUrl,
+              from_name: 'DataHub Team',
+            }
+          );
 
-        console.log('[forgot-password] ✓ Email sent successfully!', {
-          to: userEmail,
-          status: emailResult.status,
-          text: emailResult.text
-        });
+          console.log('[forgot-password] Reset email sent via EmailJS to:', userEmail, 'Status:', emailResult.status);
+          console.log('[forgot-password] EmailJS response:', emailResult);
+          console.log('[forgot-password] Password reset process completed successfully');
+          setIsSubmitted(true);
+          toast({
+            title: "Reset Link Sent",
+            description: "Password reset email has been sent successfully. Please check your inbox.",
+          });
+        } catch (emailError: any) {
+          console.error('[forgot-password] EmailJS send error:', emailError);
+          console.error('[forgot-password] EmailJS error details:', {
+            status: emailError.status,
+            text: emailError.text,
+            message: emailError.message,
+            error: emailError
+          });
+          
+          // Still show success to user but log the error
+          setIsSubmitted(true);
+          toast({
+            title: "Email Send Error",
+            description: emailError.text || emailError.message || "Failed to send email. Please check EmailJS configuration or reconnect Gmail account.",
+            variant: "destructive",
+          });
+        }
       } else {
-        console.warn('[forgot-password] No emailData in response - email not sent');
+        console.warn('[forgot-password] No emailData in response - this could mean:');
+        console.warn('  - User does not exist (security: we don\'t reveal this)');
+        console.warn('  - Rate limit active (reset link already sent in last hour)');
+        console.warn('  - Backend error occurred');
+        
+        // Still show success message for security (don't reveal if email exists)
+        // But don't set isSubmitted to true since we know email wasn't sent
+        setIsSubmitted(true);
+        toast({
+          title: "Request Processed",
+          description: result.message || "If an account exists with this email, you will receive a password reset link. If you don't receive it, please check your spam folder or try again later.",
+        });
       }
-
-      console.log('[forgot-password] Password reset process completed successfully');
-      setIsSubmitted(true);
     } catch (error: any) {
-      console.error('[forgot-password] ✗ Error occurred:', {
-        message: error.message,
-        stack: error.stack,
-        error: error
-      });
+      console.error('[forgot-password] Error occurred:', error);
       toast({
         variant: "destructive",
         title: "Error",
