@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle, Copy, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 
@@ -23,6 +23,13 @@ declare global {
   }
 }
 
+// Power BI credentials constants
+const POWERBI_EMAIL = 'abdur.rehman@taleemabad.com';
+const POWERBI_PASSWORD = 'Abdul@6045099';
+const STORAGE_KEY_CREDENTIALS_SAVED = 'app_powerbi_credentials_saved';
+const STORAGE_KEY_EMAIL = 'app_powerbi_email';
+const STORAGE_KEY_PASSWORD = 'app_powerbi_password';
+
 export default function PowerBIDashboard({
   embedUrl,
   reportId,
@@ -43,6 +50,43 @@ export default function PowerBIDashboard({
   const [embedToken, setEmbedToken] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const fetchEmbedTokenRef = useRef<(() => Promise<void>) | null>(null);
+  
+  // Credentials display state
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [isPowerBILoggedIn, setIsPowerBILoggedIn] = useState(false);
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
+
+  // Check localStorage on mount
+  useEffect(() => {
+    const credentialsSaved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
+    if (credentialsSaved === 'true') {
+      setIsPowerBILoggedIn(true);
+      setShowCredentials(false);
+    } else {
+      // Show credentials if not saved yet
+      setShowCredentials(true);
+    }
+  }, []);
+
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string, field: 'email' | 'password') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Save credentials to localStorage - use useCallback to make it stable
+  const saveCredentials = useCallback(() => {
+    localStorage.setItem(STORAGE_KEY_EMAIL, POWERBI_EMAIL);
+    localStorage.setItem(STORAGE_KEY_PASSWORD, POWERBI_PASSWORD);
+    localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
+    setIsPowerBILoggedIn(true);
+    setShowCredentials(false);
+  }, []);
 
   // Fetch embed token on mount if reportId is provided
   useEffect(() => {
@@ -307,6 +351,13 @@ export default function PowerBIDashboard({
       setIsLoading(false);
       setError(null);
       
+      // If report loaded successfully and credentials not saved yet, save them
+      const credentialsSaved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
+      if (credentialsSaved !== 'true') {
+        console.log('[PowerBI] Report loaded successfully - saving credentials');
+        saveCredentials();
+      }
+      
       if (showAiInsights && embedToken) {
         generateAIInsight().catch(console.error);
       }
@@ -348,6 +399,7 @@ export default function PowerBIDashboard({
             (typeof data === 'string' && data.includes('loaded'))
           )) {
             console.log('[PowerBI] ✅ PowerBI report loaded successfully (detected via postMessage)');
+            
             markAsLoaded();
             if (messageHandler) {
               window.removeEventListener('message', messageHandler);
@@ -470,7 +522,7 @@ export default function PowerBIDashboard({
         messageHandler = null;
       }
     };
-  }, [finalEmbedUrl, showAiInsights, embedToken]);
+  }, [finalEmbedUrl, showAiInsights, embedToken, saveCredentials]);
 
   // SDK embedding disabled - using iframe method only
 
@@ -515,6 +567,67 @@ export default function PowerBIDashboard({
     >
       {/* Dashboard Embed Container */}
       <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-border">
+        {/* Power BI Credentials Banner - Show when login is required */}
+        {showCredentials && !isPowerBILoggedIn && (
+          <div className="absolute top-4 left-4 right-4 z-50 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border-2 border-purple-300 dark:border-purple-700 rounded-lg p-4 shadow-lg">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  Please login to Power BI using the following credentials:
+                </h3>
+                <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">
+                  Use these credentials when prompted to sign in to Power BI. They will be saved automatically after successful login.
+                </p>
+                <div className="space-y-2">
+                  {/* Email Field */}
+                  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Email:</span>
+                    <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100">{POWERBI_EMAIL}</code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => copyToClipboard(POWERBI_EMAIL, 'email')}
+                    >
+                      {copiedField === 'email' ? (
+                        <Check className="w-3 h-3 text-green-600" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-purple-600" />
+                      )}
+                    </Button>
+                  </div>
+                  {/* Password Field */}
+                  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Password:</span>
+                    <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100">{POWERBI_PASSWORD}</code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => copyToClipboard(POWERBI_PASSWORD, 'password')}
+                    >
+                      {copiedField === 'password' ? (
+                        <Check className="w-3 h-3 text-green-600" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-purple-600" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowCredentials(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* React UI - Error and loading overlays */}
         {error && !error.includes('Failed to load dashboard') && (
           <div className="absolute top-2 left-2 right-2 z-30 bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 rounded p-2 text-xs flex items-center gap-2">

@@ -130,7 +130,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
             
             <div className="pt-2">
               <p className="px-3 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-2">
-                Dashboards
+                Analytics
               </p>
               {analyticsLinks.map((link) => {
                 const LinkIcon = link.icon;
