@@ -121,6 +121,21 @@ app.use((req, res, next) => {
       await db.execute(sql.raw(cleanMetricFeaturesSQL));
       console.log('[Migration] ✅ Metric features table created/verified');
     }
+
+    // Run metric_detail_body migration
+    const metricDetailSQL = readFileSync(
+      join(process.cwd(), 'migrations', 'add_metric_detail_body.sql'),
+      'utf-8'
+    );
+    const cleanMetricDetailSQL = metricDetailSQL
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n')
+      .trim();
+    if (cleanMetricDetailSQL) {
+      await db.execute(sql.raw(cleanMetricDetailSQL));
+      console.log('[Migration] ✅ Metric detail body column created/verified');
+    }
   } catch (error: any) {
     console.error('[Migration] Failed to setup metric definitions:', error);
     // Don't throw - allow server to start even if migrations fail

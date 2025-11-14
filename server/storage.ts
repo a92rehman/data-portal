@@ -314,15 +314,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async destroyUserSessions(userId: string): Promise<void> {
-    try {
-      const query = `
-        DELETE FROM sessions
-        WHERE sess -> 'passport' ->> 'user' = $1
-      `;
-      await pool.query(query, [userId]);
-    } catch (error) {
-      console.error(`[storage] Failed to destroy sessions for user ${userId}:`, error);
+    const tableNames = ['session', 'sessions'];
+    for (const table of tableNames) {
+      try {
+        const query = `
+          DELETE FROM "${table}"
+          WHERE sess -> 'passport' ->> 'user' = $1
+        `;
+        await pool.query(query, [userId]);
+        return;
+      } catch (error: any) {
+        if (!error?.message?.includes('does not exist')) {
+          console.error(`[storage] Failed to destroy sessions for user ${userId} using table ${table}:`, error);
+          return;
+        }
+        // Table missing, try next alias
+      }
     }
+    console.warn(`[storage] No session table found when removing sessions for user ${userId}`);
   }
 
   async createInvitedUser(email: string, role: string, department?: string, firstName?: string, lastName?: string): Promise<User> {

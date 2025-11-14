@@ -28,6 +28,7 @@ const POWERBI_EMAIL = 'abdur.rehman@taleemabad.com';
 const POWERBI_PASSWORD = 'Abdul@6045099';
 const STORAGE_KEY_EMAIL = 'app_powerbi_email';
 const STORAGE_KEY_PASSWORD = 'app_powerbi_password';
+const STORAGE_KEY_CREDENTIALS_SAVED = 'app_powerbi_credentials_saved';
 
 export default function PowerBIDashboard({
   embedUrl,
@@ -90,14 +91,29 @@ export default function PowerBIDashboard({
   };
 
   // Save credentials to localStorage - use useCallback to make it stable
+  // Check localStorage on mount for prior acknowledgement
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
+      if (saved === 'true') {
+        setCredentialsAcknowledged(true);
+        setIsPowerBILoggedIn(true);
+      }
+    } catch (err) {
+      console.warn('Unable to read credential saved flag:', err);
+    }
+  }, []);
+
   const saveCredentials = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY_EMAIL, POWERBI_EMAIL);
       localStorage.setItem(STORAGE_KEY_PASSWORD, POWERBI_PASSWORD);
+      localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
     } catch (err) {
       console.warn('Unable to persist Power BI credentials locally:', err);
     }
     setIsPowerBILoggedIn(true);
+    setCredentialsAcknowledged(true);
   }, []);
 
   // Fetch embed token on mount if reportId is provided
@@ -644,7 +660,10 @@ export default function PowerBIDashboard({
                   variant="secondary"
                   className="text-xs font-semibold"
                   disabled={!isPowerBILoggedIn}
-                  onClick={() => setCredentialsAcknowledged(true)}
+                  onClick={() => {
+                    localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
+                    setCredentialsAcknowledged(true);
+                  }}
                 >
                   I’ve signed in – hide this
                 </Button>
