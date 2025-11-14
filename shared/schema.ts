@@ -325,6 +325,7 @@ export const metrics = pgTable("metrics", {
   name: varchar("name").notNull(),
   definition: text("definition").notNull(),
   threshold: text("threshold"),
+  detailBody: text("detail_body"),
   orderIndex: integer("order_index").default(0),
   createdById: varchar("created_by_id").references(() => users.id),
   updatedById: varchar("updated_by_id").references(() => users.id),
@@ -530,6 +531,7 @@ export const insertMetricSchema = createInsertSchema(metrics).omit({
   orderIndex: true
 }).extend({
   threshold: z.string().optional(),
+  detailBody: z.string().optional(),
 });
 
 export const insertMetricFeatureSchema = createInsertSchema(metricFeatures).omit({ 

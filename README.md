@@ -11,6 +11,7 @@ A comprehensive data request management system that streamlines data workflows f
 - **Real-time Notifications**: WebSocket-based notifications for status updates and assignments
 - **File Attachments**: Secure file upload and management with cloud storage
 - **Analytics Dashboard**: Comprehensive insights and reporting for data operations
+- **Metric Narratives**: Data Leads can author rich “More Detail” pages per metric with formatted text and pasted charts/screenshots, giving the team a single source of truth for calculation methods.
 
 ### User Roles & Permissions
 - **Data Requester**: Submit requests, view own requests, track progress

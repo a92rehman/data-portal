@@ -91,8 +91,12 @@ export default function PowerBIDashboard({
 
   // Save credentials to localStorage - use useCallback to make it stable
   const saveCredentials = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY_EMAIL, POWERBI_EMAIL);
-    localStorage.setItem(STORAGE_KEY_PASSWORD, POWERBI_PASSWORD);
+    try {
+      localStorage.setItem(STORAGE_KEY_EMAIL, POWERBI_EMAIL);
+      localStorage.setItem(STORAGE_KEY_PASSWORD, POWERBI_PASSWORD);
+    } catch (err) {
+      console.warn('Unable to persist Power BI credentials locally:', err);
+    }
     setIsPowerBILoggedIn(true);
   }, []);
 
@@ -359,10 +363,9 @@ export default function PowerBIDashboard({
       setIsLoading(false);
       setError(null);
       
-      // If report loaded successfully and credentials not saved yet, save them
-      const credentialsSaved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
-      if (credentialsSaved !== 'true') {
-        console.log('[PowerBI] Report loaded successfully - saving credentials');
+      // Report loaded successfully - mark user as logged in for this session
+      console.log('[PowerBI] Report loaded successfully - marking Power BI login complete');
+      if (!isPowerBILoggedIn) {
         saveCredentials();
       }
       

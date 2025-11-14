@@ -1,0 +1,4 @@
+ALTER TABLE metrics
+ADD COLUMN IF NOT EXISTS detail_body TEXT;
+
+

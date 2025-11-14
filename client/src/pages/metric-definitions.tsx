@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import notify from "@/lib/notifications";
@@ -17,18 +17,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
   BarChart3, Search, Plus, Edit, Trash2, Users, Target, HelpCircle, Lightbulb,
-  TrendingUp, CheckCircle2, Info, X
+  TrendingUp, CheckCircle2, Info, X, FileText
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  Tooltip,
-  CartesianGrid,
-  YAxis,
-} from "recharts";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 
@@ -46,6 +37,7 @@ const metricSchema = z.object({
   name: z.string().min(1, "Metric name is required"),
   definition: z.string().min(1, "Definition is required"),
   threshold: z.string().optional(),
+  detailBody: z.string().optional(),
 });
 
 const metricFeatureSchema = z.object({
@@ -78,6 +70,7 @@ type MetricTypeWithMetrics = {
     name: string;
     definition: string;
     threshold?: string | null;
+    detailBody?: string | null;
     features?: MetricFeature[];
   }>;
 };
@@ -101,6 +94,9 @@ export default function MetricDefinitions() {
     type: MetricTypeWithMetrics;
     metric: Metric;
   } | null>(null);
+  const [isEditingDetail, setIsEditingDetail] = useState(false);
+  const [detailDraft, setDetailDraft] = useState("");
+  const detailEditorRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch metric definitions (public endpoint)
   const { data: metricTypes = [], isLoading } = useQuery<MetricTypeWithMetrics[]>({
@@ -126,6 +122,7 @@ export default function MetricDefinitions() {
       name: "",
       definition: "",
       threshold: "",
+      detailBody: "",
     },
   });
 
@@ -297,32 +294,43 @@ export default function MetricDefinitions() {
   });
 
   const isTeamLead = user && (user as any)?.role === "team_lead";
-
-  const parseNumericValue = (text?: string | null) => {
-    if (!text) return null;
-    const match = text.match(/-?\d+(\.\d+)?/);
-    return match ? Number(match[0]) : null;
-  };
-
-  const detailChartData = useMemo(() => {
-    if (!selectedMetricDetail) return [];
-    const { metric } = selectedMetricDetail;
-    if (metric.features && metric.features.length > 0) {
-      return metric.features.map((feature, idx) => ({
-        label: feature.name,
-        value: parseNumericValue(feature.threshold) ?? idx + 1,
-      }));
+  const updateDetailMutation = useMutation({
+    mutationFn: async ({ id, detailBody }: { id: string; detailBody: string }) => {
+      return await apiRequest("PATCH", `/api/metrics/${id}`, { detailBody });
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/metric-definitions"] });
+      setIsEditingDetail(false);
+      setSelectedMetricDetail((prev) => {
+        if (!prev || prev.metric.id !== variables.id) return prev;
+        return {
+          ...prev,
+          metric: {
+            ...prev.metric,
+            detailBody: variables.detailBody,
+          },
+        };
+      });
+      notify.success("Metric detail saved");
+    },
+    onError: (error: Error) => {
+      notify.error(error.message || "Failed to save metric detail");
+    },
+  });
+  
+  useEffect(() => {
+    if (selectedMetricDetail) {
+      setDetailDraft(selectedMetricDetail.metric.detailBody || "");
+      setIsEditingDetail(false);
     }
-    if (metric.threshold) {
-      return [
-        {
-          label: metric.name,
-          value: parseNumericValue(metric.threshold) ?? 1,
-        },
-      ];
+  }, [selectedMetricDetail?.metric.id]);
+
+  useEffect(() => {
+    if (isEditingDetail && detailEditorRef.current) {
+      detailEditorRef.current.innerHTML = detailDraft || "";
+      detailEditorRef.current.focus();
     }
-    return [];
-  }, [selectedMetricDetail]);
+  }, [isEditingDetail]);
 
   const handleEditType = (type: MetricTypeWithMetrics) => {
     setEditingType(type);
@@ -350,6 +358,7 @@ export default function MetricDefinitions() {
       name: metric.name,
       definition: metric.definition,
       threshold: metric.threshold || "",
+      detailBody: metric.detailBody || "",
     });
     setSelectedTypeForMetric(typeId);
     setIsMetricDialogOpen(true);
@@ -362,6 +371,7 @@ export default function MetricDefinitions() {
       name: "",
       definition: "",
       threshold: "",
+      detailBody: "",
     });
     setSelectedTypeForMetric(typeId);
     setIsMetricDialogOpen(true);
@@ -387,6 +397,30 @@ export default function MetricDefinitions() {
     });
     setSelectedMetricForFeature(metricId);
     setIsFeatureDialogOpen(true);
+  };
+
+  const handleBeginDetailEdit = () => {
+    if (!selectedMetricDetail) return;
+    setDetailDraft(selectedMetricDetail.metric.detailBody || "");
+    setIsEditingDetail(true);
+  };
+
+  const handleCancelDetailEdit = () => {
+    if (!selectedMetricDetail) return;
+    setDetailDraft(selectedMetricDetail.metric.detailBody || "");
+    setIsEditingDetail(false);
+  };
+
+  const handleDetailEditorInput = (event: React.FormEvent<HTMLDivElement>) => {
+    setDetailDraft(event.currentTarget.innerHTML);
+  };
+
+  const handleSaveDetail = () => {
+    if (!selectedMetricDetail || updateDetailMutation.isPending) return;
+    updateDetailMutation.mutate({
+      id: selectedMetricDetail.metric.id,
+      detailBody: detailDraft || "",
+    });
   };
 
   const onSubmitFeature = (data: MetricFeatureFormData) => {
@@ -838,102 +872,102 @@ export default function MetricDefinitions() {
                 }
               }}
             >
-              <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+              <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
                 {selectedMetricDetail && (
                   <div className="space-y-6">
                     <SheetHeader className="text-left">
-                      <SheetTitle className="text-2xl font-bold text-purple-600 dark:text-purple-300 break-words">
+                      <SheetTitle className="text-3xl font-semibold text-purple-600 dark:text-purple-300 break-words">
                         {selectedMetricDetail.metric.name}
                       </SheetTitle>
-                      <CardDescription className="text-base">
+                      <CardDescription className="text-base text-muted-foreground">
                         {selectedMetricDetail.type.name}
                       </CardDescription>
                     </SheetHeader>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
                       <Badge variant="outline" className="border-purple-300 text-purple-700 dark:text-purple-200">
                         {selectedMetricDetail.type.primaryAudience}
                       </Badge>
-                      {selectedMetricDetail.metric.features?.length ? (
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-                          {selectedMetricDetail.metric.features.length} feature
-                          {selectedMetricDetail.metric.features.length !== 1 ? "s" : ""}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                          Threshold only
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                        {selectedMetricDetail.metric.features?.length || 0} feature
+                        {(selectedMetricDetail.metric.features?.length || 0) !== 1 ? "s" : ""}
+                      </Badge>
+                      {selectedMetricDetail.metric.threshold && (
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+                          Threshold defined
                         </Badge>
                       )}
                     </div>
 
-                    <Card className="border-2">
-                      <CardHeader>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-purple-500" />
-                          Threshold overview
-                        </CardTitle>
-                        <CardDescription>
-                          Compare feature thresholds for this metric.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="h-64">
-                        {detailChartData.length > 0 ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={detailChartData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="label" />
-                              <YAxis />
-                              <Tooltip />
-                              <Bar dataKey="value" fill="#a855f7" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <div className="h-full flex flex-col items-center justify-center text-center text-sm text-muted-foreground">
-                            <Info className="w-5 h-5 mb-2" />
-                            No numeric thresholds were provided for this metric yet.
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-
-                    <div className="grid gap-4">
-                      <Card className="border-2 border-purple-100">
-                        <CardHeader>
-                          <CardTitle className="text-base">Definition</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {selectedMetricDetail.metric.definition}
-                        </CardContent>
-                      </Card>
-                      <Card className="border-2 border-blue-100">
-                        <CardHeader>
-                          <CardTitle className="text-base">Focus</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {selectedMetricDetail.type.focus}
-                        </CardContent>
-                      </Card>
-                      <Card className="border-2 border-green-100">
-                        <CardHeader>
-                          <CardTitle className="text-base">Why it matters</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
-                          {selectedMetricDetail.type.whyTheyMatter}
-                        </CardContent>
-                      </Card>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        Use this canvas to describe calculation logic, context, and paste charts or screenshots.
+                      </p>
+                      {isTeamLead && (
+                        <div className="flex items-center gap-2">
+                          {isEditingDetail ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleCancelDetailEdit}
+                                disabled={updateDetailMutation.isPending}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={handleSaveDetail}
+                                disabled={updateDetailMutation.isPending}
+                                className="text-white gradient-button-primary"
+                              >
+                                {updateDetailMutation.isPending ? "Saving..." : "Save"}
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleBeginDetailEdit}
+                            >
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit Details
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    <Card className="border-2 border-blue-200">
-                      <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                          <CardTitle className="text-base flex items-center gap-2">
-                            <Target className="w-4 h-4 text-blue-500" />
-                            Features & thresholds
-                          </CardTitle>
-                          <CardDescription>
-                            Granular sub-metrics that roll up to this KPI.
-                          </CardDescription>
+                    <div className="rounded-2xl border-2 border-purple-100 dark:border-purple-900 bg-white dark:bg-gray-950 shadow-inner">
+                      {isEditingDetail ? (
+                        <div
+                          ref={detailEditorRef}
+                          contentEditable
+                          onInput={handleDetailEditorInput}
+                          className="min-h-[420px] max-h-[65vh] overflow-y-auto p-6 text-base leading-relaxed prose prose-slate dark:prose-invert focus:outline-none rounded-2xl [&:empty]:before:text-muted-foreground [&:empty]:before:content-[attr(data-placeholder)]"
+                          data-placeholder="Start typing your metric narrative..."
+                          aria-label="Metric detail editor"
+                          suppressContentEditableWarning
+                        />
+                      ) : selectedMetricDetail.metric.detailBody ? (
+                        <article
+                          className="p-6 text-base leading-relaxed prose prose-slate dark:prose-invert"
+                          dangerouslySetInnerHTML={{ __html: selectedMetricDetail.metric.detailBody }}
+                        />
+                      ) : (
+                        <div className="p-10 text-center text-muted-foreground flex flex-col items-center gap-3">
+                          <FileText className="w-10 h-10 opacity-60" />
+                          <p>
+                            {isTeamLead
+                              ? "No metric detail has been captured yet. Click “Edit Details” to start documenting."
+                              : "No additional detail has been published for this metric yet."}
+                          </p>
                         </div>
+                      )}
+                    </div>
+
+                    {!isEditingDetail && (
+                      <div className="flex justify-end">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -943,37 +977,8 @@ export default function MetricDefinitions() {
                           <X className="w-4 h-4 mr-1" />
                           Close
                         </Button>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {selectedMetricDetail.metric.features && selectedMetricDetail.metric.features.length > 0 ? (
-                          selectedMetricDetail.metric.features.map((feature, idx) => (
-                            <div
-                              key={feature.id}
-                              className="rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3"
-                            >
-                              <div className="flex justify-between gap-2">
-                                <div>
-                                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-200">
-                                    {idx + 1}. {feature.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-                                    {feature.threshold}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : selectedMetricDetail.metric.threshold ? (
-                          <div className="rounded-lg border border-green-100 dark:border-green-900/40 bg-green-50/60 dark:bg-green-950/30 p-3 text-sm text-muted-foreground whitespace-pre-wrap">
-                            {selectedMetricDetail.metric.threshold}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            No feature-level data available yet.
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
+                      </div>
+                    )}
                   </div>
                 )}
               </SheetContent>
