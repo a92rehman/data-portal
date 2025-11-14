@@ -55,14 +55,24 @@ export default function PowerBIDashboard({
   const [isPowerBILoggedIn, setIsPowerBILoggedIn] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
 
-  // Check localStorage on mount
-  useEffect(() => {
-    const credentialsSaved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
-    if (credentialsSaved === 'true') {
-      setIsPowerBILoggedIn(true);
-    } else {
-      setIsPowerBILoggedIn(false);
-    }
+  // Helper to bring the Power BI iframe/sign-in dialog back to the front
+  const refocusPowerBISignIn = useCallback(() => {
+    requestAnimationFrame(() => {
+      try {
+        const active = document.activeElement as HTMLElement | null;
+        active?.blur();
+      } catch (err) {
+        console.warn('Unable to blur active element:', err);
+      }
+      try {
+        if (iframeRef.current) {
+          iframeRef.current.focus();
+          iframeRef.current.contentWindow?.focus();
+        }
+      } catch (err) {
+        console.warn('Unable to refocus Power BI iframe:', err);
+      }
+    });
   }, []);
 
   // Copy to clipboard function
@@ -71,8 +81,10 @@ export default function PowerBIDashboard({
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
+      refocusPowerBISignIn();
     } catch (err) {
       console.error('Failed to copy:', err);
+      refocusPowerBISignIn();
     }
   };
 
