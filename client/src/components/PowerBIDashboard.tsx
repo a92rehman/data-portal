@@ -26,7 +26,6 @@ declare global {
 // Power BI credentials constants
 const POWERBI_EMAIL = 'abdur.rehman@taleemabad.com';
 const POWERBI_PASSWORD = 'Abdul@6045099';
-const STORAGE_KEY_CREDENTIALS_SAVED = 'app_powerbi_credentials_saved';
 const STORAGE_KEY_EMAIL = 'app_powerbi_email';
 const STORAGE_KEY_PASSWORD = 'app_powerbi_password';
 
@@ -53,6 +52,7 @@ export default function PowerBIDashboard({
   
   // Credentials display state
   const [isPowerBILoggedIn, setIsPowerBILoggedIn] = useState(false);
+  const [credentialsAcknowledged, setCredentialsAcknowledged] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
 
   // Helper to bring the Power BI iframe/sign-in dialog back to the front
@@ -69,6 +69,7 @@ export default function PowerBIDashboard({
           iframeRef.current.focus();
           iframeRef.current.contentWindow?.focus();
         }
+        window.focus?.();
       } catch (err) {
         console.warn('Unable to refocus Power BI iframe:', err);
       }
@@ -92,7 +93,6 @@ export default function PowerBIDashboard({
   const saveCredentials = useCallback(() => {
     localStorage.setItem(STORAGE_KEY_EMAIL, POWERBI_EMAIL);
     localStorage.setItem(STORAGE_KEY_PASSWORD, POWERBI_PASSWORD);
-    localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
     setIsPowerBILoggedIn(true);
   }, []);
 
@@ -576,7 +576,7 @@ export default function PowerBIDashboard({
       {/* Dashboard Embed Container */}
       <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-border">
         {/* Power BI Credentials Banner - Show when login is required */}
-        {!isPowerBILoggedIn && (
+        {!credentialsAcknowledged && (
           <div className="absolute top-4 left-4 right-4 z-50 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border-2 border-purple-300 dark:border-purple-700 rounded-lg p-4 shadow-lg">
             <div className="flex flex-col gap-3">
               <div>
@@ -599,6 +599,8 @@ export default function PowerBIDashboard({
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0"
+                    tabIndex={-1}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => copyToClipboard(POWERBI_EMAIL, 'email')}
                   >
                     {copiedField === 'email' ? (
@@ -620,6 +622,8 @@ export default function PowerBIDashboard({
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0"
+                    tabIndex={-1}
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => copyToClipboard(POWERBI_PASSWORD, 'password')}
                   >
                     {copiedField === 'password' ? (
@@ -630,8 +634,17 @@ export default function PowerBIDashboard({
                   </Button>
                 </div>
               </div>
-              <div className="text-[11px] text-purple-800 dark:text-purple-200 font-medium">
-                Step 3 · Paste both values into the sign-in screen and continue. Do not use a personal Microsoft account; access will fail.
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] text-purple-800 dark:text-purple-200 font-medium">
+                <span>Step 3 · Paste both values into the sign-in screen and continue. Do not use a personal Microsoft account; access will fail.</span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="text-xs font-semibold"
+                  disabled={!isPowerBILoggedIn}
+                  onClick={() => setCredentialsAcknowledged(true)}
+                >
+                  I’ve signed in – hide this
+                </Button>
               </div>
             </div>
           </div>

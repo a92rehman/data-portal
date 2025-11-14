@@ -17,8 +17,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { 
   BarChart3, Search, Plus, Edit, Trash2, Users, Target, HelpCircle, Lightbulb,
-  TrendingUp, CheckCircle2
+  TrendingUp, CheckCircle2, Info, X
 } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+  CartesianGrid,
+  YAxis,
+} from "recharts";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 
@@ -72,6 +82,8 @@ type MetricTypeWithMetrics = {
   }>;
 };
 
+type Metric = MetricTypeWithMetrics["metrics"][number];
+
 export default function MetricDefinitions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -85,6 +97,10 @@ export default function MetricDefinitions() {
   const [editingFeature, setEditingFeature] = useState<MetricFeature | null>(null);
   const [selectedTypeForMetric, setSelectedTypeForMetric] = useState<string>("");
   const [selectedMetricForFeature, setSelectedMetricForFeature] = useState<string>("");
+  const [selectedMetricDetail, setSelectedMetricDetail] = useState<{
+    type: MetricTypeWithMetrics;
+    metric: Metric;
+  } | null>(null);
 
   // Fetch metric definitions (public endpoint)
   const { data: metricTypes = [], isLoading } = useQuery<MetricTypeWithMetrics[]>({
@@ -281,6 +297,32 @@ export default function MetricDefinitions() {
   });
 
   const isTeamLead = user && (user as any)?.role === "team_lead";
+
+  const parseNumericValue = (text?: string | null) => {
+    if (!text) return null;
+    const match = text.match(/-?\d+(\.\d+)?/);
+    return match ? Number(match[0]) : null;
+  };
+
+  const detailChartData = useMemo(() => {
+    if (!selectedMetricDetail) return [];
+    const { metric } = selectedMetricDetail;
+    if (metric.features && metric.features.length > 0) {
+      return metric.features.map((feature, idx) => ({
+        label: feature.name,
+        value: parseNumericValue(feature.threshold) ?? idx + 1,
+      }));
+    }
+    if (metric.threshold) {
+      return [
+        {
+          label: metric.name,
+          value: parseNumericValue(metric.threshold) ?? 1,
+        },
+      ];
+    }
+    return [];
+  }, [selectedMetricDetail]);
 
   const handleEditType = (type: MetricTypeWithMetrics) => {
     setEditingType(type);
@@ -630,34 +672,48 @@ export default function MetricDefinitions() {
                                       {metric.name}
                                     </CardTitle>
                                   </div>
-                                  {isTeamLead && (
-                                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="hover:bg-purple-100 dark:hover:bg-purple-900/30"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleEditMetric(metric, type.id);
-                                        }}
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="hover:bg-red-100 dark:hover:bg-red-900/30"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (confirm(`Delete "${metric.name}"?`)) {
-                                            deleteMetricMutation.mutate(metric.id);
-                                          }
-                                        }}
-                                      >
-                                        <Trash2 className="w-4 h-4 text-destructive" />
-                                      </Button>
-                                    </div>
-                                  )}
+                                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-purple-200 dark:border-purple-700 text-xs sm:text-sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMetricDetail({ type, metric });
+                                      }}
+                                    >
+                                      <Info className="w-3 h-3 mr-1" />
+                                      More detail
+                                    </Button>
+                                    {isTeamLead && (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditMetric(metric, type.id);
+                                          }}
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="hover:bg-red-100 dark:hover:bg-red-900/30"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (confirm(`Delete \"${metric.name}\"?`)) {
+                                              deleteMetricMutation.mutate(metric.id);
+                                            }
+                                          }}
+                                        >
+                                          <Trash2 className="w-4 h-4 text-destructive" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent className="px-4 pb-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
@@ -773,6 +829,155 @@ export default function MetricDefinitions() {
               ))}
             </Accordion>
             )}
+
+            <Sheet
+              open={!!selectedMetricDetail}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setSelectedMetricDetail(null);
+                }
+              }}
+            >
+              <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+                {selectedMetricDetail && (
+                  <div className="space-y-6">
+                    <SheetHeader className="text-left">
+                      <SheetTitle className="text-2xl font-bold text-purple-600 dark:text-purple-300 break-words">
+                        {selectedMetricDetail.metric.name}
+                      </SheetTitle>
+                      <CardDescription className="text-base">
+                        {selectedMetricDetail.type.name}
+                      </CardDescription>
+                    </SheetHeader>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="border-purple-300 text-purple-700 dark:text-purple-200">
+                        {selectedMetricDetail.type.primaryAudience}
+                      </Badge>
+                      {selectedMetricDetail.metric.features?.length ? (
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                          {selectedMetricDetail.metric.features.length} feature
+                          {selectedMetricDetail.metric.features.length !== 1 ? "s" : ""}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                          Threshold only
+                        </Badge>
+                      )}
+                    </div>
+
+                    <Card className="border-2">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-purple-500" />
+                          Threshold overview
+                        </CardTitle>
+                        <CardDescription>
+                          Compare feature thresholds for this metric.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="h-64">
+                        {detailChartData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={detailChartData}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="label" />
+                              <YAxis />
+                              <Tooltip />
+                              <Bar dataKey="value" fill="#a855f7" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                            <Info className="w-5 h-5 mb-2" />
+                            No numeric thresholds were provided for this metric yet.
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <div className="grid gap-4">
+                      <Card className="border-2 border-purple-100">
+                        <CardHeader>
+                          <CardTitle className="text-base">Definition</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {selectedMetricDetail.metric.definition}
+                        </CardContent>
+                      </Card>
+                      <Card className="border-2 border-blue-100">
+                        <CardHeader>
+                          <CardTitle className="text-base">Focus</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {selectedMetricDetail.type.focus}
+                        </CardContent>
+                      </Card>
+                      <Card className="border-2 border-green-100">
+                        <CardHeader>
+                          <CardTitle className="text-base">Why it matters</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {selectedMetricDetail.type.whyTheyMatter}
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    <Card className="border-2 border-blue-200">
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Target className="w-4 h-4 text-blue-500" />
+                            Features & thresholds
+                          </CardTitle>
+                          <CardDescription>
+                            Granular sub-metrics that roll up to this KPI.
+                          </CardDescription>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedMetricDetail(null)}
+                          className="text-muted-foreground"
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Close
+                        </Button>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {selectedMetricDetail.metric.features && selectedMetricDetail.metric.features.length > 0 ? (
+                          selectedMetricDetail.metric.features.map((feature, idx) => (
+                            <div
+                              key={feature.id}
+                              className="rounded-lg border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3"
+                            >
+                              <div className="flex justify-between gap-2">
+                                <div>
+                                  <p className="text-sm font-semibold text-blue-700 dark:text-blue-200">
+                                    {idx + 1}. {feature.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                    {feature.threshold}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : selectedMetricDetail.metric.threshold ? (
+                          <div className="rounded-lg border border-green-100 dark:border-green-900/40 bg-green-50/60 dark:bg-green-950/30 p-3 text-sm text-muted-foreground whitespace-pre-wrap">
+                            {selectedMetricDetail.metric.threshold}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No feature-level data available yet.
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
 
             {/* Create/Edit Metric Type Dialog */}
             <Dialog open={isTypeDialogOpen} onOpenChange={setIsTypeDialogOpen}>

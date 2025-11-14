@@ -309,6 +309,20 @@ export class DatabaseStorage implements IStorage {
     
     // 9. Finally, delete the user
     await db.delete(users).where(eq(users.id, userId));
+
+    await this.destroyUserSessions(userId);
+  }
+
+  private async destroyUserSessions(userId: string): Promise<void> {
+    try {
+      const query = `
+        DELETE FROM sessions
+        WHERE sess -> 'passport' ->> 'user' = $1
+      `;
+      await pool.query(query, [userId]);
+    } catch (error) {
+      console.error(`[storage] Failed to destroy sessions for user ${userId}:`, error);
+    }
   }
 
   async createInvitedUser(email: string, role: string, department?: string, firstName?: string, lastName?: string): Promise<User> {
