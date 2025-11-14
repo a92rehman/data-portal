@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle, Copy, Check, X } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle, Copy, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 
@@ -52,7 +52,6 @@ export default function PowerBIDashboard({
   const fetchEmbedTokenRef = useRef<(() => Promise<void>) | null>(null);
   
   // Credentials display state
-  const [showCredentials, setShowCredentials] = useState(false);
   const [isPowerBILoggedIn, setIsPowerBILoggedIn] = useState(false);
   const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
 
@@ -61,10 +60,8 @@ export default function PowerBIDashboard({
     const credentialsSaved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
     if (credentialsSaved === 'true') {
       setIsPowerBILoggedIn(true);
-      setShowCredentials(false);
     } else {
-      // Show credentials if not saved yet
-      setShowCredentials(true);
+      setIsPowerBILoggedIn(false);
     }
   }, []);
 
@@ -85,7 +82,6 @@ export default function PowerBIDashboard({
     localStorage.setItem(STORAGE_KEY_PASSWORD, POWERBI_PASSWORD);
     localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
     setIsPowerBILoggedIn(true);
-    setShowCredentials(false);
   }, []);
 
   // Fetch embed token on mount if reportId is provided
@@ -568,62 +564,63 @@ export default function PowerBIDashboard({
       {/* Dashboard Embed Container */}
       <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-border">
         {/* Power BI Credentials Banner - Show when login is required */}
-        {showCredentials && !isPowerBILoggedIn && (
+        {!isPowerBILoggedIn && (
           <div className="absolute top-4 left-4 right-4 z-50 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border-2 border-purple-300 dark:border-purple-700 rounded-lg p-4 shadow-lg">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-2 flex items-center gap-2">
+            <div className="flex flex-col gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-1 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
-                  Please login to Power BI using the following credentials:
+                  Use only these credentials to sign in
                 </h3>
-                <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">
-                  Use these credentials when prompted to sign in to Power BI. They will be saved automatically after successful login.
+                <p className="text-xs text-purple-700 dark:text-purple-300">
+                  Keep this window visible. Copy both values below and paste them into the Microsoft sign-in dialog that appears. After a successful login this banner will disappear automatically.
                 </p>
-                <div className="space-y-2">
-                  {/* Email Field */}
-                  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Email:</span>
-                    <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100">{POWERBI_EMAIL}</code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => copyToClipboard(POWERBI_EMAIL, 'email')}
-                    >
-                      {copiedField === 'email' ? (
-                        <Check className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <Copy className="w-3 h-3 text-purple-600" />
-                      )}
-                    </Button>
-                  </div>
-                  {/* Password Field */}
-                  <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Password:</span>
-                    <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100">{POWERBI_PASSWORD}</code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => copyToClipboard(POWERBI_PASSWORD, 'password')}
-                    >
-                      {copiedField === 'password' ? (
-                        <Check className="w-3 h-3 text-green-600" />
-                      ) : (
-                        <Copy className="w-3 h-3 text-purple-600" />
-                      )}
-                    </Button>
-                  </div>
+              </div>
+              <div className="bg-white/70 dark:bg-gray-950/60 rounded-lg border border-purple-200 dark:border-purple-800 p-3 space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-200">
+                  Step 1 · Copy the email
+                </div>
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Email:</span>
+                  <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100 break-all">{POWERBI_EMAIL}</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => copyToClipboard(POWERBI_EMAIL, 'email')}
+                  >
+                    {copiedField === 'email' ? (
+                      <Check className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <Copy className="w-3 h-3 text-purple-600" />
+                    )}
+                  </Button>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowCredentials(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <div className="bg-white/70 dark:bg-gray-950/60 rounded-lg border border-purple-200 dark:border-purple-800 p-3 space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-200">
+                  Step 2 · Copy the password
+                </div>
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Password:</span>
+                  <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100 break-all">{POWERBI_PASSWORD}</code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => copyToClipboard(POWERBI_PASSWORD, 'password')}
+                  >
+                    {copiedField === 'password' ? (
+                      <Check className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <Copy className="w-3 h-3 text-purple-600" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              <div className="text-[11px] text-purple-800 dark:text-purple-200 font-medium">
+                Step 3 · Paste both values into the sign-in screen and continue. Do not use a personal Microsoft account; access will fail.
+              </div>
             </div>
           </div>
         )}
