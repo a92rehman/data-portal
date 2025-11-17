@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle, Copy, Check } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle, Copy, Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 
@@ -597,7 +597,22 @@ export default function PowerBIDashboard({
         {/* Power BI Credentials Banner - Show when login is required */}
         {!credentialsAcknowledged && (
           <div className="absolute top-4 left-4 right-4 z-50 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border-2 border-purple-300 dark:border-purple-700 rounded-lg p-4 shadow-lg">
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 relative">
+              {/* Close button - only show when logged in */}
+              {isPowerBILoggedIn && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-0 right-0 h-6 w-6 p-0 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-800/50 rounded-full"
+                  onClick={() => {
+                    localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
+                    setCredentialsAcknowledged(true);
+                  }}
+                  aria-label="Close credentials banner"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
               <div>
                 <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-1 flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />
