@@ -92,8 +92,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const user = await storage.getUser(userId);
+      if (!user) {
+        // User was deleted - destroy their session and return 401
+        req.logout((err: any) => {
+          if (err) console.error("Error logging out deleted user:", err);
+        });
+        return res.status(401).json({ message: "User not found" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -274,7 +286,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      await storage.deleteUser(req.params.userId);
+      const removedUserId = req.params.userId;
+      await storage.deleteUser(removedUserId);
+      
+      // Notify the removed user via WebSocket to logout immediately
+      const wsServer = getWebSocketServer();
+      if (wsServer && removedUserId) {
+        try {
+          wsServer.notifyUser(removedUserId, {
+            type: 'user_removed',
+            message: 'Your account has been removed from the team. You have been logged out.',
+            title: 'Account Removed'
+          });
+        } catch (wsError) {
+          console.error("Error sending WebSocket notification to removed user:", wsError);
+          // Don't fail the deletion if WebSocket notification fails
+        }
+      }
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error removing user:", error);

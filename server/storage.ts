@@ -321,8 +321,13 @@ export class DatabaseStorage implements IStorage {
           DELETE FROM "${table}"
           WHERE sess -> 'passport' ->> 'user' = $1
         `;
-        await pool.query(query, [userId]);
-        return;
+        const result = await pool.query(query, [userId]);
+        if (result.rowCount && result.rowCount > 0) {
+          console.log(`[storage] Successfully destroyed ${result.rowCount} session(s) for user ${userId} from table ${table}`);
+          return;
+        } else {
+          console.log(`[storage] No sessions found for user ${userId} in table ${table}`);
+        }
       } catch (error: any) {
         if (!error?.message?.includes('does not exist')) {
           console.error(`[storage] Failed to destroy sessions for user ${userId} using table ${table}:`, error);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { toast } from 'react-toastify';
 import { getNotificationPriority, playNotificationSound, getPriorityIcon, showDesktopNotification } from '@/lib/notificationUtils';
 
@@ -16,6 +17,7 @@ export function useWebSocket(userId: string | undefined) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const userIdRef = useRef(userId);
   const isConnectingRef = useRef(false);
+  const [, setLocation] = useLocation();
   const [typingUsers, setTypingUsers] = useState<Map<string, TypingIndicator>>(new Map());
   const [typingByRequest, setTypingByRequest] = useState<Record<string, string[]>>({});
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
@@ -77,6 +79,44 @@ export function useWebSocket(userId: string | undefined) {
       try {
         const notification = JSON.parse(event.data);
         console.log('[WebSocket] Received notification:', notification);
+        
+        if (notification.type === 'user_removed') {
+          // User has been removed - logout immediately
+          console.log('[WebSocket] User removed - logging out');
+          
+          // Show toast notification
+          toast.error(notification.message || 'Your account has been removed. You have been logged out.', {
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+          
+          // Clear auth query data and invalidate to trigger logout
+          queryClient.setQueryData(['/api/auth/user'], null);
+          queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+          
+          // Close WebSocket connection
+          if (wsRef.current) {
+            wsRef.current.close(1000, 'User removed');
+            wsRef.current = null;
+          }
+          
+          // Clear reconnect timeout if it exists
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
+            reconnectTimeoutRef.current = undefined;
+          }
+          
+          // Redirect to landing page and force reload to clear any cached state
+          setTimeout(() => {
+            setLocation('/');
+            window.location.reload();
+          }, 100);
+          
+          return;
+        }
         
         if (notification.type === 'typing_indicator') {
           // Handle typing indicator
@@ -163,7 +203,7 @@ export function useWebSocket(userId: string | undefined) {
         reconnectTimeoutRef.current = setTimeout(connect, 3000);
       }
     };
-  }, [queryClient]);
+  }, [queryClient, setLocation]);
 
   const sendTyping = useCallback((requestId: string, isTyping: boolean, userName: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
