@@ -43,6 +43,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-my-requests" },
         { href: "/request-assignments", icon: ClipboardList, label: "Request Assignments", testId: "nav-request-assignments" },
         { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-tasks" },
+        { href: "/my-analytics", icon: BarChart3, label: "My Analytics", testId: "nav-my-analytics" },
       ];
     } else {
       // Requester - Limited access

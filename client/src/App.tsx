@@ -17,6 +17,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import Analytics from "@/pages/analytics";
+import MyAnalytics from "@/pages/my-analytics";
 import ProfileSetup from "@/pages/profile-setup";
 import RequesterSignup from "@/pages/requester-signup";
 import AllRequests from "@/pages/all-requests";
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/tasks">{() => <Tasks />}</Route>
       <Route path="/team">{() => <Team />}</Route>
       <Route path="/analytics">{() => <Analytics />}</Route>
+      <Route path="/my-analytics">{() => <MyAnalytics />}</Route>
       <Route path="/dashboards/:dashboardId">{() => <Dashboards />}</Route>
       <Route path="/dashboards">{() => <Redirect to="/dashboards/program-delivery" />}</Route>
       <Route path="/profile-setup">{() => <ProfileSetup />}</Route>

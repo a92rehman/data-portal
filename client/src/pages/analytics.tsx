@@ -120,12 +120,12 @@ export default function Analytics() {
     enabled: isAuthenticated,
   });
 
-  const { data: avgTaskDuration } = useQuery<{ avgTaskDuration: number }>({
+  const { data: avgTaskDuration } = useQuery<{ days: number }>({
     queryKey: ["/api/analytics/tasks/avg-duration"],
     enabled: isAuthenticated,
   });
 
-  const { data: completionVelocity } = useQuery<{ completionVelocity: number }>({
+  const { data: completionVelocity } = useQuery<{ tasksPerWeek: number; recentCompletions: number }>({
     queryKey: ["/api/analytics/tasks/velocity"],
     enabled: isAuthenticated,
   });
@@ -882,7 +882,7 @@ export default function Analytics() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold mb-1 text-blue-600 dark:text-blue-400" data-testid="stat-avg-task-duration">
-                      {avgTaskDuration?.avgTaskDuration || 0}
+                      {avgTaskDuration?.days || 0}
                     </div>
                     <p className="text-xs text-muted-foreground">Days on average</p>
                   </CardContent>
@@ -1033,13 +1033,13 @@ export default function Analytics() {
                   <CardContent>
                     <div className="flex flex-col items-center justify-center h-[250px]">
                       <div className="text-5xl font-bold text-green-600 dark:text-green-400 mb-2" data-testid="stat-completion-velocity">
-                        {completionVelocity?.completionVelocity || 0}
+                        {completionVelocity?.tasksPerWeek || 0}
                       </div>
                       <p className="text-sm text-muted-foreground mb-4">Tasks completed per week</p>
-                      {avgTaskDuration?.avgTaskDuration && avgTaskDuration.avgTaskDuration > 0 && (
+                      {avgTaskDuration?.days && avgTaskDuration.days > 0 && (
                         <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800 w-full">
                           <p className="text-xs text-blue-700 dark:text-blue-300 text-center">
-                            Avg duration: <strong>{avgTaskDuration.avgTaskDuration} days</strong>
+                            Avg duration: <strong>{avgTaskDuration.days} days</strong>
                           </p>
                         </div>
                       )}
@@ -1060,7 +1060,7 @@ export default function Analytics() {
                   <CardContent className="pt-0">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {avgTaskDuration?.avgTaskDuration || 0}
+                        {avgTaskDuration?.days || 0}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">Days</p>
                     </div>
@@ -1077,7 +1077,7 @@ export default function Analytics() {
                   <CardContent className="pt-0">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="stat-completion-velocity">
-                        {completionVelocity?.completionVelocity || 0}
+                        {completionVelocity?.tasksPerWeek || 0}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">Tasks/week</p>
                     </div>
@@ -1310,10 +1310,10 @@ export default function Analytics() {
                             </p>
                           </div>
                         )}
-                        {avgTaskDuration?.avgTaskDuration && avgTaskDuration.avgTaskDuration > 7 && (
+                        {avgTaskDuration?.days && avgTaskDuration.days > 7 && (
                           <div className="p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                             <p className="text-sm text-orange-700 dark:text-orange-300">
-                              <strong>Duration:</strong> Average task duration is {avgTaskDuration.avgTaskDuration} days. Review processes for efficiency
+                              <strong>Duration:</strong> Average task duration is {avgTaskDuration.days} days. Review processes for efficiency
                             </p>
                           </div>
                         )}
@@ -1324,7 +1324,7 @@ export default function Analytics() {
                             </p>
                           </div>
                         )}
-                        {(!taskAssigneeChartData.length || taskCompletionRate >= 70) && (!avgTaskDuration?.avgTaskDuration || avgTaskDuration.avgTaskDuration <= 7) && (
+                        {(!taskAssigneeChartData.length || taskCompletionRate >= 70) && (!avgTaskDuration?.days || avgTaskDuration.days <= 7) && (
                           <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
                             <span className="text-sm text-green-700 dark:text-green-300">All metrics are healthy</span>
                           </div>

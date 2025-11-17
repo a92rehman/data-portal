@@ -2747,7 +2747,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied. Only Data Lead and Analysts can view task analytics." });
       }
 
-      const stats = await storage.getTaskStats();
+      // Filter by analyst ID if user is an analyst
+      const analystId = user?.role === 'analyst' ? userId : undefined;
+      const stats = await storage.getTaskStats(analystId);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching task stats:", error);
@@ -2829,6 +2831,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/analytics/my-workload', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'analyst') {
+        return res.status(403).json({ message: "Access denied. Only Analysts can view their workload." });
+      }
+
+      const workload = await storage.getAnalystWorkload(userId);
+      // Ensure responses are never cached so clients always get fresh weekly planning
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+      res.setHeader('ETag', `${Date.now()}`);
+      res.status(200).json(workload);
+    } catch (error) {
+      console.error("Error fetching analyst workload:", error);
+      res.status(500).json({ message: "Failed to fetch analyst workload" });
+    }
+  });
+
   app.get('/api/analytics/tasks/overdue', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
@@ -2838,7 +2863,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied." });
       }
 
-      const count = await storage.getOverdueTasksCount();
+      // Filter by analyst ID if user is an analyst
+      const analystId = user?.role === 'analyst' ? userId : undefined;
+      const count = await storage.getOverdueTasksCount(analystId);
       res.json({ count });
     } catch (error) {
       console.error("Error fetching overdue tasks count:", error);

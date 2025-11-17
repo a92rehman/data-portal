@@ -131,7 +131,7 @@ export interface IStorage {
   }[]>;
   
   // Task Analytics operations
-  getTaskStats(): Promise<{
+  getTaskStats(analystId?: string): Promise<{
     totalTasks: number;
     toDo: number;
     inProgress: number;
@@ -142,9 +142,51 @@ export interface IStorage {
   getTasksByStatus(): Promise<{ status: string; count: number }[]>;
   getTasksByAssignee(): Promise<{ assignee: string; firstName: string; lastName: string; count: number }[]>;
   getTasksRequestLinked(): Promise<{ linked: string; count: number }[]>;
-  getOverdueTasksCount(): Promise<number>;
+  getOverdueTasksCount(analystId?: string): Promise<number>;
   getAvgTaskDuration(): Promise<number>;
   getCompletionVelocity(): Promise<{ tasksPerWeek: number; recentCompletions: number }>;
+  getTeamWorkload(): Promise<Array<{
+    analystId: string;
+    firstName: string;
+    lastName: string;
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    totalExpectedHours: number;
+    totalExpectedDays: number;
+    weeklyCapacity: number;
+    currentUtilization: number;
+    availableDays: number;
+    capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
+    plannedHoursThisWeek?: number;
+  }>>;
+  getAnalystWorkload(analystId: string): Promise<{
+    analystId: string;
+    firstName: string;
+    lastName: string;
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    totalExpectedHours: number;
+    totalExpectedDays: number;
+    weeklyCapacity: number;
+    currentUtilization: number;
+    availableDays: number;
+    capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
+    plannedHoursThisWeek?: number;
+  }>;
+  getTaskStats(analystId?: string): Promise<{
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    avgExpectedTime: number;
+  }>;
   
   // Auth logging operations
   logAuthEvent(userId: string, eventType: 'signup' | 'signin' | 'signout' | 'password_reset_requested' | 'password_reset_completed', ipAddress?: string, userAgent?: string): Promise<AuthLog>;
@@ -975,7 +1017,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Task Analytics Methods
-  async getTaskStats(): Promise<{
+  async getTaskStats(analystId?: string): Promise<{
     totalTasks: number;
     toDo: number;
     inProgress: number;
@@ -983,7 +1025,11 @@ export class DatabaseStorage implements IStorage {
     completed: number;
     avgExpectedTime: number;
   }> {
-    const allTasks = await db.select().from(tasks);
+    const query = analystId 
+      ? db.select().from(tasks).where(eq(tasks.assignedToId, analystId))
+      : db.select().from(tasks);
+    
+    const allTasks = await query;
     
     const totalTasks = allTasks.length;
     const toDo = allTasks.filter(t => t.status === 'to_do').length;
@@ -1238,18 +1284,195 @@ export class DatabaseStorage implements IStorage {
     return workload.sort((a, b) => b.currentUtilization - a.currentUtilization);
   }
 
-  async getOverdueTasksCount(): Promise<number> {
-    // Count tasks past due date and not completed
-    const [result] = await db
-      .select({ count: count() })
+  async getAnalystWorkload(analystId: string): Promise<{
+    analystId: string;
+    firstName: string;
+    lastName: string;
+    totalTasks: number;
+    toDo: number;
+    inProgress: number;
+    blocked: number;
+    completed: number;
+    totalExpectedHours: number;
+    totalExpectedDays: number;
+    weeklyCapacity: number;
+    currentUtilization: number;
+    availableDays: number;
+    capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded';
+    plannedHoursThisWeek?: number;
+  }> {
+    // Constants for workload calculation
+    const HOURS_PER_DAY = 6;
+    const PRODUCTIVITY_FACTOR = 0.75;
+    const DAYS_PER_WEEK = 5;
+    const EFFECTIVE_WEEKLY_CAPACITY = DAYS_PER_WEEK * HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 22.5 hours
+    const EFFECTIVE_HOURS_PER_DAY = HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 4.5 hours
+
+    // Get the analyst
+    const member = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.id, analystId), or(eq(users.role, 'analyst'), eq(users.role, 'team_lead'))))
+      .limit(1);
+
+    if (member.length === 0) {
+      throw new Error('Analyst not found');
+    }
+
+    // Helpers for business-day spreading
+    const startOfDay = (d: Date) => {
+      const date = new Date(d);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+    const endOfDay = (d: Date) => {
+      const date = new Date(d);
+      date.setHours(23, 59, 59, 999);
+      return date;
+    };
+    const startOfWeek = (d: Date) => {
+      const date = new Date(d);
+      const day = date.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      date.setDate(date.getDate() + diff);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+    const endOfWeek = (d: Date) => {
+      const s = startOfWeek(d);
+      const e = new Date(s);
+      e.setDate(e.getDate() + 6);
+      e.setHours(23, 59, 59, 999);
+      return e;
+    };
+    const isBusinessDay = (d: Date) => {
+      const day = d.getDay();
+      return day !== 0 && day !== 6;
+    };
+    const businessDaysBetween = (start: Date, end: Date) => {
+      const s = new Date(start);
+      const e = new Date(end);
+      s.setHours(0,0,0,0);
+      e.setHours(0,0,0,0);
+      if (e < s) return 0;
+      let count = 0;
+      const cur = new Date(s);
+      while (cur <= e) {
+        if (isBusinessDay(cur)) count++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      return count;
+    };
+
+    const now = new Date();
+    const thisWeekStart = startOfWeek(now);
+    const thisWeekEnd = endOfWeek(now);
+
+    // Get task counts by status
+    const statusCounts = await db
+      .select({
+        status: tasks.status,
+        count: count(),
+      })
+      .from(tasks)
+      .where(eq(tasks.assignedToId, analystId))
+      .groupBy(tasks.status);
+
+    // Get expected time for active tasks
+    const activeTasks = await db
+      .select({
+        expectedTime: tasks.expectedTime,
+        dueDate: tasks.dueDate,
+        createdAt: tasks.createdAt,
+      })
       .from(tasks)
       .where(
         and(
-          sql`${tasks.dueDate} < NOW()`,
-          sql`${tasks.status} != 'completed'`,
-          isNotNull(tasks.dueDate)
+          eq(tasks.assignedToId, analystId),
+          sql`${tasks.status} IN ('to_do', 'in_progress', 'blocked')`
         )
       );
+
+    const statusMap = statusCounts.reduce((acc, item) => {
+      acc[item.status] = item.count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
+    
+    // Calculate total workload from expectedTime
+    const totalExpectedHours = activeTasks.reduce((sum, task) => sum + (task.expectedTime || 0), 0);
+
+    // Spread each task's expectedTime across business days
+    let plannedHoursThisWeek = 0;
+    for (const t of activeTasks) {
+      const taskHours = t.expectedTime || 0;
+      if (taskHours <= 0) continue;
+
+      const todayStart = startOfDay(now);
+      const taskStart = todayStart;
+      const taskEnd = t.dueDate ? endOfDay(new Date(t.dueDate)) : endOfDay(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000));
+
+      let totalBizDays = businessDaysBetween(taskStart, taskEnd);
+      if (totalBizDays <= 0) totalBizDays = 1;
+      const hoursPerBizDay = taskHours / totalBizDays;
+
+      const winStart = thisWeekStart > taskStart ? thisWeekStart : taskStart;
+      const winEnd = thisWeekEnd < taskEnd ? thisWeekEnd : taskEnd;
+      let bizDaysThisWeek = 0;
+      if (winEnd >= winStart) {
+        bizDaysThisWeek = businessDaysBetween(winStart, winEnd);
+      }
+      plannedHoursThisWeek += hoursPerBizDay * bizDaysThisWeek;
+    }
+    
+    const totalExpectedDays = totalExpectedHours / EFFECTIVE_HOURS_PER_DAY;
+    const currentUtilization = (plannedHoursThisWeek / EFFECTIVE_WEEKLY_CAPACITY) * 100;
+    const availableHours = Math.max(0, EFFECTIVE_WEEKLY_CAPACITY - plannedHoursThisWeek);
+    const availableDays = availableHours / EFFECTIVE_HOURS_PER_DAY;
+
+    const capacityLevel = 
+      totalExpectedHours === 0 ? 'available' :
+      currentUtilization <= 20 ? 'available' :
+      currentUtilization <= 50 ? 'light' :
+      currentUtilization <= 75 ? 'moderate' :
+      currentUtilization <= 95 ? 'heavy' : 'overloaded';
+
+    return {
+      analystId: member[0].id,
+      firstName: member[0].firstName || '',
+      lastName: member[0].lastName || '',
+      totalTasks,
+      toDo: statusMap['to_do'] || 0,
+      inProgress: statusMap['in_progress'] || 0,
+      blocked: statusMap['blocked'] || 0,
+      completed: statusMap['completed'] || 0,
+      totalExpectedHours: Math.round(totalExpectedHours * 10) / 10,
+      totalExpectedDays: Math.round(totalExpectedDays * 10) / 10,
+      weeklyCapacity: DAYS_PER_WEEK,
+      currentUtilization: Math.round(currentUtilization * 10) / 10,
+      availableDays: Math.round(availableDays * 10) / 10,
+      capacityLevel,
+      plannedHoursThisWeek: Math.round(plannedHoursThisWeek * 10) / 10,
+    };
+  }
+
+  async getOverdueTasksCount(analystId?: string): Promise<number> {
+    // Count tasks past due date and not completed
+    const conditions = [
+      sql`${tasks.dueDate} < NOW()`,
+      sql`${tasks.status} != 'completed'`,
+      isNotNull(tasks.dueDate)
+    ];
+    
+    if (analystId) {
+      conditions.push(eq(tasks.assignedToId, analystId));
+    }
+    
+    const [result] = await db
+      .select({ count: count() })
+      .from(tasks)
+      .where(and(...conditions));
 
     return result.count;
   }

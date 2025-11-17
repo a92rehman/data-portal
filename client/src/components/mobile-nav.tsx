@@ -46,6 +46,7 @@ export default function MobileNav({ open, onOpenChange, user }: MobileNavProps) 
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-mobile-my-requests" },
         { href: "/request-assignments", icon: ClipboardList, label: "Request Assignments", testId: "nav-mobile-request-assignments" },
         { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-mobile-tasks" },
+        { href: "/my-analytics", icon: BarChart3, label: "My Analytics", testId: "nav-mobile-my-analytics" },
       ];
     } else {
       return [
