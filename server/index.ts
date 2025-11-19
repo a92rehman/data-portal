@@ -136,6 +136,21 @@ app.use((req, res, next) => {
       await db.execute(sql.raw(cleanMetricDetailSQL));
       console.log('[Migration] ✅ Metric detail body column created/verified');
     }
+
+    // Run task blocking_reason migration
+    const taskBlockingSQL = readFileSync(
+      join(process.cwd(), 'migrations', 'add_task_blocking_reason.sql'),
+      'utf-8'
+    );
+    const cleanTaskBlockingSQL = taskBlockingSQL
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n')
+      .trim();
+    if (cleanTaskBlockingSQL) {
+      await db.execute(sql.raw(cleanTaskBlockingSQL));
+      console.log('[Migration] ✅ Task blocking_reason column created/verified');
+    }
   } catch (error: any) {
     console.error('[Migration] Failed to setup metric definitions:', error);
     // Don't throw - allow server to start even if migrations fail

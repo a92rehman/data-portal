@@ -2330,9 +2330,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
+    let filters: any = undefined;
     try {
       const user = await storage.getUser(req.user.id);
-      const filters: any = {};
+      filters = {};
 
       // Filter based on query params
       if (req.query.status) filters.status = req.query.status;
@@ -2356,7 +2357,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      res.status(500).json({ message: "Failed to fetch tasks" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      console.error("Error details:", { errorMessage, errorStack, filters: filters ?? null });
+      res.status(500).json({ 
+        message: "Failed to fetch tasks",
+        error: errorMessage 
+      });
     }
   });
 
@@ -2442,10 +2449,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/tasks/:id/status', isAuthenticated, async (req: any, res) => {
     try {
-      const { status } = req.body;
+      const { status, blockingReason } = req.body;
       
       if (!status || !['to_do', 'in_progress', 'blocked', 'completed'].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
+      }
+
+      // Validate that blockingReason is provided when status is blocked
+      if (status === 'blocked' && (!blockingReason || blockingReason.trim() === '')) {
+        return res.status(400).json({ message: "Blocking reason is required when blocking a task" });
       }
 
       const task = await storage.getTask(req.params.id);
@@ -2473,7 +2485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const updatedTask = await storage.updateTaskStatus(req.params.id, status);
+      const updatedTask = await storage.updateTaskStatus(req.params.id, status, blockingReason);
       res.json(updatedTask);
     } catch (error) {
       console.error("Error updating task status:", error);

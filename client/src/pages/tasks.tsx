@@ -80,7 +80,7 @@ export default function Tasks() {
   const isAnalyst = (user as any)?.role === "analyst";
 
   // Fetch tasks with filters
-  const { data: tasks = [], isLoading } = useQuery<TaskWithDetails[]>({
+  const { data: tasks = [], isLoading, error } = useQuery<TaskWithDetails[]>({
     queryKey: ["/api/tasks", { status: filterStatus, assignedToId: filterAssignee }],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -90,7 +90,10 @@ export default function Tasks() {
       const response = await fetch(`/api/tasks?${params.toString()}`, {
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to fetch tasks');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch tasks: ${response.status} ${errorText}`);
+      }
       return response.json();
     },
     enabled: isAuthenticated,
@@ -317,19 +320,28 @@ export default function Tasks() {
   });
 
   const updateTaskStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      return await apiRequest("PATCH", `/api/tasks/${id}/status`, { status });
+    mutationFn: async ({ id, status, blockingReason }: { id: string; status: string; blockingReason?: string | null }) => {
+      return await apiRequest("PATCH", `/api/tasks/${id}/status`, { status, blockingReason });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({ title: "Success", description: "Task status updated" });
     },
     onError: (error: Error) => {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to update task status",
-        variant: "destructive" 
-      });
+      // If blocking without reason, guide user to detail modal
+      if (error.message?.includes("Blocking reason is required")) {
+        toast({ 
+          title: "Blocking Reason Required", 
+          description: "Please open the task detail to provide a blocking reason.",
+          variant: "destructive" 
+        });
+      } else {
+        toast({ 
+          title: "Error", 
+          description: error.message || "Failed to update task status",
+          variant: "destructive" 
+        });
+      }
     },
   });
 
@@ -440,9 +452,18 @@ export default function Tasks() {
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-3"></div>
               <p className="text-muted-foreground">Loading tasks...</p>
             </div>
+          ) : error ? (
+            <Card className="p-12 text-center">
+              <p className="text-destructive font-semibold mb-2">Error loading tasks</p>
+              <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
+            </Card>
           ) : filteredParentTasks.length === 0 ? (
             <Card className="p-12 text-center">
-              <p className="text-muted-foreground">No tasks found matching your criteria</p>
+              <p className="text-muted-foreground">
+                {tasks.length === 0 
+                  ? "No tasks found. Create a new task to get started!" 
+                  : `No parent tasks found matching your criteria (${tasks.length} total task${tasks.length !== 1 ? 's' : ''}, but all are sub-tasks)`}
+              </p>
             </Card>
           ) : (
             <div className="space-y-3">
@@ -695,7 +716,14 @@ function TaskCard({
               <p className="text-xs text-muted-foreground font-medium mb-1.5">Status</p>
               <Select 
                 value={task.status} 
-                onValueChange={(newStatus) => updateStatusMutation.mutate({ id: task.id, status: newStatus })}
+                onValueChange={(newStatus) => {
+                  if (newStatus === 'blocked') {
+                    // Guide user to detail modal for blocking
+                    onSelectTask(task);
+                  } else {
+                    updateStatusMutation.mutate({ id: task.id, status: newStatus, blockingReason: null });
+                  }
+                }}
               >
                 <SelectTrigger 
                   className={`w-full h-9 font-semibold ${getStatusBadge(task.status)}`}
@@ -822,7 +850,14 @@ function TaskCard({
                     <div className="w-32" onClick={(e) => e.stopPropagation()}>
                       <Select 
                         value={subTask.status} 
-                        onValueChange={(newStatus) => updateStatusMutation.mutate({ id: subTask.id, status: newStatus })}
+                        onValueChange={(newStatus) => {
+                          if (newStatus === 'blocked') {
+                            // Guide user to detail modal for blocking (open parent task to see subtask)
+                            onSelectTask(task);
+                          } else {
+                            updateStatusMutation.mutate({ id: subTask.id, status: newStatus, blockingReason: null });
+                          }
+                        }}
                       >
                         <SelectTrigger 
                           className={`w-full h-8 text-xs font-medium ${getStatusBadge(subTask.status)}`}
@@ -1081,6 +1116,11 @@ function TaskDetailDialog({
   const [editedHours, setEditedHours] = useState<number | ''>('');
   const [displayExpectedHours, setDisplayExpectedHours] = useState<number>(Number(task.expectedTime || 0));
   const justUpdatedHoursRef = useRef(false);
+  const lastProcessedExpectedTimeRef = useRef<number | null>(null);
+  const [showBlockingReasonModal, setShowBlockingReasonModal] = useState(false);
+  const [blockingReasonInput, setBlockingReasonInput] = useState("");
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [blockingTaskId, setBlockingTaskId] = useState<string | null>(null); // ID of task/subtask being blocked
 
   const isTeamLead = (user as any)?.role === "team_lead";
   const isAnalyst = (user as any)?.role === "analyst";
@@ -1118,13 +1158,50 @@ function TaskDetailDialog({
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
-      return await apiRequest("PATCH", `/api/tasks/${task.id}/status`, { status });
+    mutationFn: async ({ status, blockingReason }: { status: string; blockingReason?: string | null }) => {
+      return await apiRequest("PATCH", `/api/tasks/${task.id}/status`, { status, blockingReason });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+    onSuccess: async (updatedTask) => {
+      // Refetch the full task with all relations to ensure we have the latest data
+      try {
+        const response = await fetch(`/api/tasks/${task.id}`, {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const fullTask = await response.json();
+          onSelectTask(fullTask);
+        } else {
+          // If refetch fails, use the updated task from the response
+          if (updatedTask) {
+            onSelectTask(updatedTask);
+          }
+        }
+      } catch (error) {
+        // If refetch fails, use the updated task from the response
+        if (updatedTask) {
+          onSelectTask(updatedTask);
+        }
+      }
+      
+      // Invalidate and refetch tasks list to ensure it's up to date
+      // Use refetchQueries to ensure data is actually refetched
+      await queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id] });
+      
       toast({ title: "Success", description: "Task status updated" });
       onUpdate();
+      setShowBlockingReasonModal(false);
+      setBlockingReasonInput("");
+      setPendingStatus(null);
+      setBlockingTaskId(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update task status",
+        variant: "destructive",
+      });
     },
   });
 
@@ -1220,15 +1297,47 @@ function TaskDetailDialog({
     return variants[status as keyof typeof variants] || variants.to_do;
   };
 
+  // Reset tracking ref when task changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      lastProcessedExpectedTimeRef.current = null;
+    }
+  }, [open, task?.id]);
+
   useEffect(() => {
     if (open && typeof task?.expectedTime === 'number') {
-      setEditedHours(Number(task.expectedTime.toFixed(1)));
-      // Avoid momentary revert to old value right after a save
-      if (!justUpdatedHoursRef.current) {
-        setDisplayExpectedHours(Number(task.expectedTime));
+      const taskHours = Number(task.expectedTime);
+      const roundedHours = Number(task.expectedTime.toFixed(1));
+      
+      // Check if task.expectedTime actually changed from what we last processed
+      const hasTaskValueChanged = lastProcessedExpectedTimeRef.current === null || 
+                                   Math.abs(taskHours - lastProcessedExpectedTimeRef.current) > 0.01;
+      
+      // Update editedHours to match the task, but only if not currently editing
+      if (!editingTime && hasTaskValueChanged) {
+        setEditedHours(roundedHours);
+      }
+      
+      // Only update displayExpectedHours if:
+      // 1. We're not currently editing
+      // 2. We haven't just updated (within the guard period)
+      // 3. The task value actually changed from what we last processed
+      // 4. The new value is actually different from what we're displaying
+      if (!editingTime && 
+          !justUpdatedHoursRef.current && 
+          hasTaskValueChanged) {
+        const currentDisplayHours = displayExpectedHours;
+        const isValueDifferent = Math.abs(taskHours - currentDisplayHours) > 0.01;
+        
+        if (isValueDifferent) {
+          setDisplayExpectedHours(taskHours);
+        }
+        
+        // Track that we've processed this expectedTime value
+        lastProcessedExpectedTimeRef.current = taskHours;
       }
     }
-  }, [open, task?.id, task?.expectedTime]);
+  }, [open, task?.id, task?.expectedTime, editingTime, displayExpectedHours]);
 
   const updateTimeMutation = useMutation({
     mutationFn: async () => {
@@ -1238,18 +1347,21 @@ function TaskDetailDialog({
       });
     },
     onSuccess: async () => {
-      // Invalidate lists and this specific task if queried elsewhere
-      queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/tasks', task.id] });
       // Update the local dialog immediately for better UX
-      try {
-        const newHours = Number((editedHours as number).toFixed(1));
-        setDisplayExpectedHours(newHours);
-        justUpdatedHoursRef.current = true;
-        setTimeout(() => { justUpdatedHoursRef.current = false; }, 1500);
-        const fresh = { ...task, expectedTime: newHours } as TaskWithDetails;
-        onSelectTask?.(fresh);
-      } catch {}
+      const newHours = Number((editedHours as number).toFixed(1));
+      setDisplayExpectedHours(newHours);
+      // Mark that we've processed this value to prevent reverts from stale refetch data
+      lastProcessedExpectedTimeRef.current = newHours;
+      justUpdatedHoursRef.current = true;
+      setTimeout(() => { justUpdatedHoursRef.current = false; }, 1500);
+      const fresh = { ...task, expectedTime: newHours } as TaskWithDetails;
+      onSelectTask?.(fresh);
+      
+      // Invalidate and refetch queries to ensure data consistency
+      await queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks', task.id] });
+      
       toast({ title: 'Success', description: 'Task time updated' });
       setEditingTime(false);
       onUpdate();
@@ -1310,7 +1422,17 @@ function TaskDetailDialog({
               </div>
               <Select 
                 value={task.status} 
-                onValueChange={(value) => updateStatusMutation.mutate(value)}
+                onValueChange={(value) => {
+                  if (value === 'blocked') {
+                    // Open modal to get blocking reason
+                    setPendingStatus(value);
+                    setBlockingTaskId(task.id);
+                    setShowBlockingReasonModal(true);
+                  } else {
+                    // For other statuses, update directly (blocking reason will be cleared)
+                    updateStatusMutation.mutate({ status: value, blockingReason: null });
+                  }
+                }}
                 disabled={updateStatusMutation.isPending}
               >
                 <SelectTrigger className={`w-40 ${getStatusBadge(task.status)}`} data-testid="select-task-status">
@@ -1543,6 +1665,17 @@ function TaskDetailDialog({
             </Card>
           )}
 
+          {/* Blocking Reason Section - Only show when status is blocked and reason exists */}
+          {task.status === 'blocked' && task.blockingReason && (
+            <Card className="p-4 bg-gradient-to-br from-red-50/30 to-orange-50/30 dark:from-red-950/20 dark:to-orange-950/20 border-l-4 border-red-500">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Blocking Reason</Label>
+              </div>
+              <p className="text-sm mt-2 leading-relaxed text-foreground">{task.blockingReason}</p>
+            </Card>
+          )}
+
           {/* Sub-tasks Section - Only show for parent tasks, not subtasks */}
           {!isSubTask && (
             <Card className="p-5 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
@@ -1656,19 +1789,26 @@ function TaskDetailDialog({
                         <Select 
                           value={subTask.status} 
                           onValueChange={(newStatus) => {
-                            apiRequest("PATCH", `/api/tasks/${subTask.id}/status`, { status: newStatus })
-                              .then(() => {
-                                queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-                                queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
-                                toast({ title: "Success", description: "Sub-task status updated" });
-                              })
-                              .catch((error: Error) => {
-                                toast({ 
-                                  title: "Error", 
-                                  description: error.message || "Failed to update status",
-                                  variant: "destructive" 
+                            if (newStatus === 'blocked') {
+                              // Open modal to get blocking reason for subtask
+                              setPendingStatus(newStatus);
+                              setBlockingTaskId(subTask.id);
+                              setShowBlockingReasonModal(true);
+                            } else {
+                              apiRequest("PATCH", `/api/tasks/${subTask.id}/status`, { status: newStatus, blockingReason: null })
+                                .then(() => {
+                                  queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+                                  toast({ title: "Success", description: "Sub-task status updated" });
+                                })
+                                .catch((error: Error) => {
+                                  toast({ 
+                                    title: "Error", 
+                                    description: error.message || "Failed to update status",
+                                    variant: "destructive" 
+                                  });
                                 });
-                              });
+                            }
                           }}
                         >
                           <SelectTrigger 
@@ -1797,6 +1937,112 @@ function TaskDetailDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Blocking Reason Input Modal */}
+      <Dialog open={showBlockingReasonModal} onOpenChange={(open) => {
+        if (!open) {
+          setShowBlockingReasonModal(false);
+          setBlockingReasonInput("");
+          setPendingStatus(null);
+          setBlockingTaskId(null);
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Block Task</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for blocking this task. This reason will be visible to all team members.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="blocking-reason">Blocking Reason *</Label>
+              <Textarea
+                id="blocking-reason"
+                placeholder="Enter the reason for blocking this task..."
+                value={blockingReasonInput}
+                onChange={(e) => setBlockingReasonInput(e.target.value)}
+                className="min-h-[100px]"
+                data-testid="textarea-blocking-reason"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowBlockingReasonModal(false);
+                setBlockingReasonInput("");
+                setPendingStatus(null);
+                setBlockingTaskId(null);
+              }}
+              disabled={updateStatusMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!blockingReasonInput.trim()) {
+                  toast({
+                    title: "Error",
+                    description: "Blocking reason is required",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                if (pendingStatus && blockingTaskId) {
+                  // Check if blocking a subtask or main task
+                  if (blockingTaskId === task.id) {
+                    // Main task
+                    updateStatusMutation.mutate({ status: pendingStatus, blockingReason: blockingReasonInput.trim() });
+                  } else {
+                    // Subtask
+                    apiRequest("PATCH", `/api/tasks/${blockingTaskId}/status`, { status: pendingStatus, blockingReason: blockingReasonInput.trim() })
+                      .then(async () => {
+                        // Refetch the parent task to ensure it's up to date
+                        try {
+                          const response = await fetch(`/api/tasks/${task.id}`, {
+                            credentials: 'include',
+                          });
+                          if (response.ok) {
+                            const fullTask = await response.json();
+                            onSelectTask(fullTask);
+                          }
+                        } catch (error) {
+                          // Continue even if refetch fails
+                        }
+                        
+                        // Invalidate and refetch queries to ensure data is up to date
+                        await queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+                        await queryClient.refetchQueries({ queryKey: ["/api/tasks"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/tasks", task.id, "subtasks"] });
+                        
+                        toast({ title: "Success", description: "Sub-task status updated" });
+                        setShowBlockingReasonModal(false);
+                        setBlockingReasonInput("");
+                        setPendingStatus(null);
+                        setBlockingTaskId(null);
+                        onUpdate();
+                      })
+                      .catch((error: Error) => {
+                        toast({ 
+                          title: "Error", 
+                          description: error.message || "Failed to update status",
+                          variant: "destructive" 
+                        });
+                      });
+                  }
+                }
+              }}
+              disabled={updateStatusMutation.isPending || !blockingReasonInput.trim()}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              data-testid="button-confirm-block"
+            >
+              Block Task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

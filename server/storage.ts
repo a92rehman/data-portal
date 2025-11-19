@@ -209,7 +209,7 @@ export interface IStorage {
     requestId?: string;
   }): Promise<TaskWithDetails[]>;
   assignTask(id: string, assignedToId: string): Promise<Task | undefined>;
-  updateTaskStatus(id: string, status: string): Promise<Task | undefined>;
+  updateTaskStatus(id: string, status: string, blockingReason?: string | null): Promise<Task | undefined>;
   deleteTask(id: string): Promise<void>;
   calculatePertTime(optimistic: number, mostLikely: number, pessimistic: number): number;
   getUserWorkload(userId: string): Promise<{ tasks: TaskWithDetails[]; totalExpectedHours: number }>;
@@ -1813,20 +1813,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTask(id: string, taskUpdate: Partial<InsertTask>): Promise<Task | undefined> {
-    // Recalculate expected time if PERT values are updated
+    // If expectedTime is directly provided, use it. Otherwise, recalculate from PERT values if they're updated
     let expectedTime: number | undefined;
-    const currentTask = await db.select().from(tasks).where(eq(tasks.id, id)).limit(1);
+    const hasDirectExpectedTime = taskUpdate.expectedTime !== undefined;
     
-    if (currentTask.length > 0) {
-      const optimistic = taskUpdate.optimisticTime !== undefined ? taskUpdate.optimisticTime : currentTask[0].optimisticTime;
-      const mostLikely = taskUpdate.mostLikelyTime !== undefined ? taskUpdate.mostLikelyTime : currentTask[0].mostLikelyTime;
-      const pessimistic = taskUpdate.pessimisticTime !== undefined ? taskUpdate.pessimisticTime : currentTask[0].pessimisticTime;
+    // Only recalculate from PERT values if expectedTime is not directly provided
+    if (!hasDirectExpectedTime) {
+      const currentTask = await db.select().from(tasks).where(eq(tasks.id, id)).limit(1);
       
-      if (optimistic !== undefined && optimistic !== null && 
-          mostLikely !== undefined && mostLikely !== null && 
-          pessimistic !== undefined && pessimistic !== null) {
-        expectedTime = this.calculatePertTime(Number(optimistic), Number(mostLikely), Number(pessimistic));
+      if (currentTask.length > 0) {
+        const optimistic = taskUpdate.optimisticTime !== undefined ? taskUpdate.optimisticTime : currentTask[0].optimisticTime;
+        const mostLikely = taskUpdate.mostLikelyTime !== undefined ? taskUpdate.mostLikelyTime : currentTask[0].mostLikelyTime;
+        const pessimistic = taskUpdate.pessimisticTime !== undefined ? taskUpdate.pessimisticTime : currentTask[0].pessimisticTime;
+        
+        if (optimistic !== undefined && optimistic !== null && 
+            mostLikely !== undefined && mostLikely !== null && 
+            pessimistic !== undefined && pessimistic !== null) {
+          expectedTime = this.calculatePertTime(Number(optimistic), Number(mostLikely), Number(pessimistic));
+        }
       }
+    } else {
+      // Use the directly provided expectedTime
+      expectedTime = taskUpdate.expectedTime;
     }
 
     // Build the update object with proper type conversions
@@ -1843,9 +1851,9 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // Copy over other fields
+    // Copy over other fields (excluding expectedTime since we handle it separately)
     Object.keys(taskUpdate).forEach(key => {
-      if (key !== 'dueDate') {
+      if (key !== 'dueDate' && key !== 'expectedTime') {
         updateData[key] = taskUpdate[key as keyof typeof taskUpdate];
       }
     });
@@ -1923,12 +1931,18 @@ export class DatabaseStorage implements IStorage {
       : await query;
 
     // Fetch related data for each task
-    const tasksWithDetails = await Promise.all(
-      taskList.map(async (task) => {
+    const tasksWithDetailsPromises = taskList.map(async (task) => {
+      try {
         const assignedTo = task.assignedToId 
           ? (await this.getUser(task.assignedToId)) || null
           : null;
-        const createdBy = (await this.getUser(task.createdById))!;
+        // Handle case where createdById user might not exist (orphaned task)
+        const createdByUser = await this.getUser(task.createdById);
+        if (!createdByUser) {
+          console.error(`Task ${task.id} has invalid createdById: ${task.createdById} - skipping this task`);
+          return null; // Return null for orphaned tasks
+        }
+        const createdBy = createdByUser;
         const request = task.requestId
           ? await db.select().from(dataRequests).where(eq(dataRequests.id, task.requestId)).limit(1).then(r => r[0] || null)
           : null;
@@ -1939,10 +1953,16 @@ export class DatabaseStorage implements IStorage {
           createdBy,
           request,
         };
-      })
-    );
+      } catch (error) {
+        console.error(`Error processing task ${task.id}:`, error);
+        return null; // Return null on error to prevent crashing the entire query
+      }
+    });
 
-    return tasksWithDetails;
+    const tasksWithDetails = await Promise.all(tasksWithDetailsPromises);
+    
+    // Filter out null values (orphaned tasks or errors)
+    return tasksWithDetails.filter((task): task is TaskWithDetails => task !== null);
   }
 
   async assignTask(id: string, assignedToId: string): Promise<Task | undefined> {
@@ -1957,7 +1977,7 @@ export class DatabaseStorage implements IStorage {
     return task;
   }
 
-  async updateTaskStatus(id: string, status: string): Promise<Task | undefined> {
+  async updateTaskStatus(id: string, status: string, blockingReason?: string | null): Promise<Task | undefined> {
     const updateData: any = {
       status: status as any,
       updatedAt: new Date(),
@@ -1966,6 +1986,17 @@ export class DatabaseStorage implements IStorage {
     // If marking as completed, set completedAt
     if (status === 'completed') {
       updateData.completedAt = new Date();
+    }
+
+    // Handle blocking reason
+    if (status === 'blocked') {
+      // Set blocking reason if provided
+      if (blockingReason !== undefined) {
+        updateData.blockingReason = blockingReason || null;
+      }
+    } else {
+      // Clear blocking reason when status changes from blocked to another status
+      updateData.blockingReason = null;
     }
 
     const [task] = await db

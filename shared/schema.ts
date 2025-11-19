@@ -298,6 +298,7 @@ export const tasks = pgTable("tasks", {
   
   dueDate: timestamp("due_date"),
   completedAt: timestamp("completed_at"),
+  blockingReason: text("blocking_reason"), // Reason for blocking (required when status is blocked)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
