@@ -1461,7 +1461,7 @@ export default function DataRequestForm() {
                 <div className="mt-1 w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">1</div>
                 <div>
                   <h4 className="font-semibold text-foreground mb-1">Review by Data Lead</h4>
-                  <p className="text-sm text-muted-foreground">Your request will be reviewed by the Data Lead team. They will assess priority, feasibility, and assign it to the right analyst.</p>
+                  <p className="text-sm text-muted-foreground">Your request will be reviewed by the Data Lead. They will assess priority, feasibility, and assign it to the right analyst.</p>
                 </div>
               </div>
               
