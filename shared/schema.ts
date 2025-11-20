@@ -275,6 +275,7 @@ export const notifications = pgTable("notifications", {
   title: varchar("title").notNull(),
   message: text("message").notNull(),
   requestId: varchar("request_id").references(() => dataRequests.id, { onDelete: 'cascade' }),
+  taskId: varchar("task_id").references(() => tasks.id, { onDelete: 'cascade' }),
   read: varchar("read").notNull().default("false"), // "true" or "false"
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -430,6 +431,10 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   request: one(dataRequests, {
     fields: [notifications.requestId],
     references: [dataRequests.id],
+  }),
+  task: one(tasks, {
+    fields: [notifications.taskId],
+    references: [tasks.id],
   }),
 }));
 

@@ -1,22 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
+import RequestDetail from "@/components/request-detail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChart3, PieChart, TrendingUp, ListChecks, Clock, CheckCircle2, AlertCircle, ListTodo, Users, Calculator, Info, ArrowUpRight, ArrowDownRight, Activity, Target, Zap, Shield, ExternalLink } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
+import type { DataRequestWithDetails, TaskWithDetails } from "@shared/schema";
 
 export default function Analytics() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const [location, setLocation] = useLocation();
+  const searchString = useSearch();
   const [activeTab, setActiveTab] = useState("requests");
+  const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -50,6 +57,71 @@ export default function Analytics() {
       return;
     }
   }, [isAuthenticated, isLoading, user, toast, setLocation]);
+
+  // Check for requestId or taskId URL param and fetch specific request/task
+  useEffect(() => {
+    const urlParams = new URLSearchParams(searchString);
+    const requestId = urlParams.get('requestId');
+    const taskId = urlParams.get('taskId');
+    
+    if (requestId) {
+      // Fetch the specific request directly
+      fetch(`/api/requests/${requestId}`, {
+        credentials: 'include',
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch request: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(request => {
+          if (request && request.id) {
+            setSelectedRequest(request);
+          }
+          // Clear the URL param
+          setLocation(location);
+        })
+        .catch(err => {
+          console.error('Failed to fetch request:', err);
+          toast({ 
+            title: "Error", 
+            description: "Could not load the requested item", 
+            variant: "destructive" 
+          });
+          // Clear the URL param
+          setLocation(location);
+        });
+    } else if (taskId) {
+      // Fetch the specific task directly
+      fetch(`/api/tasks/${taskId}`, {
+        credentials: 'include',
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch task: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(task => {
+          if (task && task.id) {
+            setSelectedTask(task);
+          }
+          // Clear the URL param
+          setLocation(location);
+        })
+        .catch(err => {
+          console.error('Failed to fetch task:', err);
+          toast({ 
+            title: "Error", 
+            description: "Could not load the requested task", 
+            variant: "destructive" 
+          });
+          // Clear the URL param
+          setLocation(location);
+        });
+    }
+  }, [searchString, location, setLocation, toast]);
 
   const { data: departmentStats = [] } = useQuery<Array<{ department: string; count: number }>>({
     queryKey: ["/api/analytics/departments"],
@@ -1338,6 +1410,45 @@ export default function Analytics() {
           </Tabs>
         </main>
       </div>
+
+      {/* Request Detail Dialog */}
+      {selectedRequest && (
+        <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
+          <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden [&>button]:hidden" aria-describedby={undefined}>
+            <RequestDetail 
+              request={selectedRequest}
+              onClose={() => setSelectedRequest(null)}
+              onUpdate={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Task Detail Dialog - Navigate to tasks page for full functionality */}
+      {selectedTask && (
+        <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
+          <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden [&>button]:hidden" aria-describedby={undefined}>
+            <div className="p-6">
+              <p className="text-lg font-semibold mb-4">{selectedTask.title}</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                For full task details and management, please visit the Tasks page.
+              </p>
+              <button
+                onClick={() => {
+                  setSelectedTask(null);
+                  setLocation(`/tasks?taskId=${selectedTask.id}`);
+                }}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+              >
+                Open in Tasks Page
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

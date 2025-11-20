@@ -3,6 +3,8 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import notify from "@/lib/notifications";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation, useSearch } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,8 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
+import RequestDetail from "@/components/request-detail";
+import type { DataRequestWithDetails, TaskWithDetails } from "@shared/schema";
 
 const metricTypeSchema = z.object({
   name: z.string().min(1, "Type name is required"),
@@ -80,6 +84,9 @@ type Metric = MetricTypeWithMetrics["metrics"][number];
 export default function MetricDefinitions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [location, setLocation] = useLocation();
+  const searchString = useSearch();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAudience, setSelectedAudience] = useState<string>("all");
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
@@ -97,6 +104,8 @@ export default function MetricDefinitions() {
   const [isEditingDetail, setIsEditingDetail] = useState(false);
   const [detailDraft, setDetailDraft] = useState("");
   const detailEditorRef = useRef<HTMLDivElement | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
 
   // Fetch metric definitions (public endpoint)
   const { data: metricTypes = [], isLoading } = useQuery<MetricTypeWithMetrics[]>({
@@ -1326,6 +1335,45 @@ export default function MetricDefinitions() {
                 </Form>
               </DialogContent>
             </Dialog>
+
+            {/* Request Detail Dialog */}
+            {selectedRequest && (
+              <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
+                <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden [&>button]:hidden" aria-describedby={undefined}>
+                  <RequestDetail 
+                    request={selectedRequest}
+                    onClose={() => setSelectedRequest(null)}
+                    onUpdate={() => {
+                      queryClient.invalidateQueries({ queryKey: ["/api/requests"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Task Detail Dialog - Navigate to tasks page for full functionality */}
+            {selectedTask && (
+              <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
+                <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] flex flex-col p-0 overflow-hidden [&>button]:hidden" aria-describedby={undefined}>
+                  <div className="p-6">
+                    <p className="text-lg font-semibold mb-4">{selectedTask.title}</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      For full task details and management, please visit the Tasks page.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSelectedTask(null);
+                        setLocation(`/tasks?taskId=${selectedTask.id}`);
+                      }}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                    >
+                      Open in Tasks Page
+                    </button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </main>
       </div>

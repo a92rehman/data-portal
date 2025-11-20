@@ -2081,13 +2081,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const commenter = await storage.getUser(userId);
         const commenterName = commenter ? `${commenter.firstName} ${commenter.lastName}` : 'Someone';
         
-        // Create notifications for all stakeholders
-        const participants = [request.requestedById];
-        if (request.assignedToId) participants.push(request.assignedToId);
-        if (request.reviewedById) participants.push(request.reviewedById);
+        // Create notifications for all stakeholders using hybrid approach
+        const participants = [request.requestedById]; // Always notify requester
         
+        // Notify assigned analyst if exists
+        if (request.assignedToId) {
+          participants.push(request.assignedToId);
+        }
+        
+        // Notify Data Lead(s) based on review status
+        if (request.reviewedById) {
+          // Request has been reviewed - notify the reviewing Data Lead
+          participants.push(request.reviewedById);
+        } else if (request.status === 'pending_review') {
+          // Request not yet reviewed - notify all Data Leads
+          try {
+            const allDataLeads = await storage.getUsersByRole('team_lead');
+            allDataLeads.forEach(lead => {
+              if (lead.id) {
+                participants.push(lead.id);
+              }
+            });
+          } catch (error) {
+            console.error('Failed to fetch Data Leads for notification:', error);
+          }
+        }
+        
+        // Filter out commenter and create unique list
         const uniqueParticipants = Array.from(new Set(participants)).filter(id => id !== userId);
         
+        // Create database notifications
         for (const participantId of uniqueParticipants) {
           try {
             await storage.createNotification({
@@ -2103,6 +2126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // Send WebSocket push notifications
         const wsServer = getWebSocketServer();
         if (wsServer) {
           wsServer.notifyMultipleUsers(uniqueParticipants, {

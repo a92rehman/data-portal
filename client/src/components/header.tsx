@@ -87,10 +87,11 @@ export default function Header({ user }: HeaderProps) {
     }
     setIsNotificationOpen(false);
     
-    // Stay on current page and add requestId param to open dialog
-    if (notification.requestId) {
-      // Get current path (remove any existing query params)
-      const currentPath = location.split('?')[0];
+    // Stay on current page and add query parameter to open detail dialog
+    const currentPath = location.split('?')[0];
+    if (notification.taskId) {
+      setLocation(`${currentPath}?taskId=${notification.taskId}`);
+    } else if (notification.requestId) {
       setLocation(`${currentPath}?requestId=${notification.requestId}`);
     }
   };
