@@ -151,6 +151,21 @@ app.use((req, res, next) => {
       await db.execute(sql.raw(cleanTaskBlockingSQL));
       console.log('[Migration] ✅ Task blocking_reason column created/verified');
     }
+
+    // Run notification task_id migration
+    const notificationTaskSQL = readFileSync(
+      join(process.cwd(), 'migrations', 'add_notification_task_id.sql'),
+      'utf-8'
+    );
+    const cleanNotificationTaskSQL = notificationTaskSQL
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n')
+      .trim();
+    if (cleanNotificationTaskSQL) {
+      await db.execute(sql.raw(cleanNotificationTaskSQL));
+      console.log('[Migration] ✅ Notification task_id column created/verified');
+    }
   } catch (error: any) {
     console.error('[Migration] Failed to setup metric definitions:', error);
     // Don't throw - allow server to start even if migrations fail
