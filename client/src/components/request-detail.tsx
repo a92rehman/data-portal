@@ -2344,8 +2344,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
           }
         }}
       >
-        <DialogContent className="max-w-2xl" data-testid="dialog-create-task">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[95vh] !grid-cols-1 flex flex-col p-0 gap-0" data-testid="dialog-create-task">
+          <DialogHeader className="bg-background border-b px-6 pt-6 pb-4 flex-shrink-0">
             <DialogTitle className="text-lg flex items-center gap-2">
               <Clock className="w-4 h-4 text-primary" />
               Create New Task
@@ -2355,7 +2355,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6">
+            <div className="space-y-6 py-4">
             {/* Basic Task Info */}
             <div className="space-y-4">
               <div>
@@ -2523,8 +2524,9 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
                 Task will be automatically assigned to you. Data Lead can reassign it later if needed.
               </p>
             </div>
+            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="bg-background border-t px-6 py-4 flex-shrink-0 mt-auto">
             <Button
               variant="outline"
               onClick={() => {

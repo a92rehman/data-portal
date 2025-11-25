@@ -2444,8 +2444,8 @@ function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto [&>button]:hidden" data-testid="dialog-create-task">
-        <DialogHeader className="sticky top-0 z-10 bg-background border-b pr-2">
+      <DialogContent className="w-[98vw] max-w-[98vw] sm:max-w-xl md:max-w-2xl max-h-[95vh] !grid-cols-1 flex flex-col p-0 gap-0 [&>button]:hidden" data-testid="dialog-create-task">
+        <DialogHeader className="bg-background border-b px-6 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-start justify-between gap-2">
             <div>
               <DialogTitle className="text-lg flex items-center gap-2">
@@ -2468,7 +2468,8 @@ function CreateTaskDialog({
           </div>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6">
+          <div className="space-y-6 py-4">
           {/* Basic Task Info */}
           <div className="space-y-4">
             <div>
@@ -2636,9 +2637,10 @@ function CreateTaskDialog({
               Task will be automatically assigned to you. Data Lead can reassign it later if needed.
             </p>
           </div>
+          </div>
         </div>
         
-        <DialogFooter className="sticky bottom-0 bg-background border-t mt-2 pt-3">
+        <DialogFooter className="bg-background border-t px-6 py-4 flex-shrink-0 mt-auto">
           <Button variant="outline" onClick={onClose} data-testid="button-cancel-task">
             Cancel
           </Button>
