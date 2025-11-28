@@ -926,8 +926,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAtDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
       }
 
-      // Validate the data
-      const validatedData = insertDataRequestSchema.parse(restBody);
+      // Validate the data only if there are other fields to update
+      // If only createdAt is being updated, we can skip validation
+      let validatedData: any = {};
+      if (Object.keys(restBody).length > 0) {
+        validatedData = insertDataRequestSchema.parse(restBody);
+      }
       
       // Update the request
       const updatedRequest = await storage.updateDataRequest(requestId, validatedData, createdAtDate);
