@@ -65,7 +65,7 @@ export interface IStorage {
   
   // Data request operations
   createDataRequest(request: InsertDataRequest, userId: string): Promise<DataRequest>;
-  updateDataRequest(id: string, request: InsertDataRequest): Promise<DataRequest | undefined>;
+  updateDataRequest(id: string, request: InsertDataRequest, createdAt?: Date): Promise<DataRequest | undefined>;
   getDataRequest(id: string): Promise<DataRequestWithDetails | undefined>;
   getDataRequests(filters?: {
     status?: string;
@@ -450,13 +450,20 @@ export class DatabaseStorage implements IStorage {
     return dataRequest;
   }
 
-  async updateDataRequest(id: string, request: InsertDataRequest): Promise<DataRequest | undefined> {
+  async updateDataRequest(id: string, request: InsertDataRequest, createdAt?: Date): Promise<DataRequest | undefined> {
+    const updateData: any = {
+      ...request,
+      updatedAt: new Date(),
+    };
+    
+    // Only update createdAt if provided (only team_lead can do this)
+    if (createdAt !== undefined) {
+      updateData.createdAt = createdAt;
+    }
+    
     const [updatedRequest] = await db
       .update(dataRequests)
-      .set({
-        ...request,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(dataRequests.id, id))
       .returning();
     return updatedRequest;
@@ -1851,7 +1858,8 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    // Copy over other fields (excluding expectedTime since we handle it separately)
+    // Copy over other fields (excluding expectedTime and dueDate since we handle them separately)
+    // This includes requestId, which can be set to link/unlink tasks to requests
     Object.keys(taskUpdate).forEach(key => {
       if (key !== 'dueDate' && key !== 'expectedTime') {
         updateData[key] = taskUpdate[key as keyof typeof taskUpdate];

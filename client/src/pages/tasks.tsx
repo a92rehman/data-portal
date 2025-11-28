@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink, Edit2, Check, X, Clock, Target, Info, ChevronDown, ChevronRight, AlertCircle } from "lucide-react";
+import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink, Edit2, Check, X, Clock, Target, Info, ChevronDown, ChevronRight, AlertCircle, Link as LinkIcon } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskWithDetails, User, DataRequestWithDetails } from "@shared/schema";
 
@@ -1121,10 +1121,12 @@ function TaskDetailDialog({
   const [blockingReasonInput, setBlockingReasonInput] = useState("");
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [blockingTaskId, setBlockingTaskId] = useState<string | null>(null); // ID of task/subtask being blocked
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(task.requestId || null);
 
   const isTeamLead = (user as any)?.role === "team_lead";
   const isAnalyst = (user as any)?.role === "analyst";
   const isSubTask = !!task.parentTaskId; // Check if this task is itself a subtask
+  const canLinkRequest = isTeamLead || isAnalyst; // Both Data Lead and Analysts can link tasks to requests
   
   // Update dueDateValue when task changes
   useEffect(() => {
@@ -1156,6 +1158,24 @@ function TaskDetailDialog({
     },
     enabled: open && !isSubTask, // Only fetch if not a subtask
   });
+
+  // Fetch requests for linking (only for Data Lead and Analysts)
+  const { data: availableRequests = [] } = useQuery<DataRequestWithDetails[]>({
+    queryKey: ["/api/requests"],
+    queryFn: async () => {
+      const response = await fetch(`/api/requests`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch requests');
+      return response.json();
+    },
+    enabled: open && canLinkRequest,
+  });
+
+  // Update selectedRequestId when task changes
+  useEffect(() => {
+    setSelectedRequestId(task.requestId || null);
+  }, [task.requestId]);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ status, blockingReason }: { status: string; blockingReason?: string | null }) => {
@@ -1371,6 +1391,45 @@ function TaskDetailDialog({
     },
   });
 
+  const updateRequestLinkMutation = useMutation({
+    mutationFn: async (requestId: string | null) => {
+      return await apiRequest('PATCH', `/api/tasks/${task.id}`, {
+        requestId: requestId || null
+      });
+    },
+    onSuccess: async (updatedTask) => {
+      // Refetch the full task with all relations
+      try {
+        const response = await fetch(`/api/tasks/${task.id}`, {
+          credentials: 'include',
+        });
+        if (response.ok) {
+          const fullTask = await response.json();
+          onSelectTask(fullTask);
+        } else if (updatedTask) {
+          onSelectTask(updatedTask);
+        }
+      } catch (error) {
+        if (updatedTask) {
+          onSelectTask(updatedTask);
+        }
+      }
+      
+      await queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tasks', task.id] });
+      
+      toast({ 
+        title: 'Success', 
+        description: requestId ? 'Task linked to request successfully' : 'Task unlinked from request successfully' 
+      });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update request link', variant: 'destructive' });
+    },
+  });
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="w-[1200px] max-w-[98vw] max-h-[90vh] overflow-y-auto" data-testid="dialog-task-detail">
@@ -1452,8 +1511,8 @@ function TaskDetailDialog({
         </DialogHeader>
 
         <div className="space-y-6 pt-4">
-          {/* Task Information Grid - 4 columns in one row */}
-          <div className="grid grid-cols-5 gap-3">
+          {/* Task Information Grid - 6 columns if request linking available, 5 otherwise */}
+          <div className={`grid gap-3 ${canLinkRequest ? 'grid-cols-6' : 'grid-cols-5'}`}>
             {/* Assigned To Card */}
             <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group overflow-visible">
               <div className="flex items-center gap-2">
@@ -1640,6 +1699,44 @@ function TaskDetailDialog({
                 </div>
               </div>
             </Card>
+
+            {/* Linked Request Card */}
+            {canLinkRequest && (
+              <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 relative group overflow-visible">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <LinkIcon className="w-4 h-4 text-purple-600 dark:text-purple-300" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Linked Request</Label>
+                    <Select
+                      value={selectedRequestId || "none"}
+                      onValueChange={(value) => {
+                        const newRequestId = value === "none" ? null : value;
+                        setSelectedRequestId(newRequestId);
+                        updateRequestLinkMutation.mutate(newRequestId);
+                      }}
+                      disabled={updateRequestLinkMutation.isPending}
+                    >
+                      <SelectTrigger 
+                        className="h-8 text-xs w-full mt-1.5"
+                        data-testid="select-task-request"
+                      >
+                        <SelectValue placeholder="No request linked" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No request linked</SelectItem>
+                        {availableRequests.map((req) => (
+                          <SelectItem key={req.id} value={req.id}>
+                            #{req.requestNumber} - {req.title.substring(0, 40)}{req.title.length > 40 ? '...' : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </Card>
+            )}
 
             {/* Created Date Card */}
             <Card className="p-3 h-full w-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">

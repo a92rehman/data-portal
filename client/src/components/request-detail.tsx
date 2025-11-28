@@ -83,8 +83,12 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const [showCreateTaskDialog, setShowCreateTaskDialog] = useState(false);
   const [showEditPriorityDialog, setShowEditPriorityDialog] = useState(false);
   const [showEditDueDateDialog, setShowEditDueDateDialog] = useState(false);
+  const [showEditCreatedDateDialog, setShowEditCreatedDateDialog] = useState(false);
   const [showEditRequestTypeDialog, setShowEditRequestTypeDialog] = useState(false);
   const [showEditAssignedToDialog, setShowEditAssignedToDialog] = useState(false);
+  const [editedCreatedDate, setEditedCreatedDate] = useState(
+    request.createdAt ? new Date(request.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  );
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskAssignedTo, setNewTaskAssignedTo] = useState("unassigned");
@@ -317,6 +321,38 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
       toast({
         title: "Error",
         description: error.message || "Failed to update request type",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCreatedDateMutation = useMutation({
+    mutationFn: async (createdAt: string) => {
+      return await apiRequest("PATCH", `/api/requests/${request.id}`, { createdAt });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Request created date updated successfully",
+      });
+      onUpdate();
+      setShowEditCreatedDateDialog(false);
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update created date",
         variant: "destructive",
       });
     },
@@ -1135,8 +1171,8 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             )}
           </div>
 
-          {/* 5. Created Date Card */}
-          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-sm">
+          {/* 5. Created Date Card with Edit Button */}
+          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-blue-200 dark:border-blue-800/50 shadow-sm relative group">
             <p className="text-xs text-blue-600 dark:text-blue-400 uppercase mb-1 flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               Created
@@ -1144,6 +1180,20 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
             <p className="text-sm font-semibold truncate" data-testid="text-created-date">
               {request.createdAt ? new Date(request.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : 'N/A'}
             </p>
+            {isTeamLead && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => {
+                  setEditedCreatedDate(request.createdAt ? new Date(request.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+                  setShowEditCreatedDateDialog(true);
+                }}
+                data-testid="button-edit-created-date"
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
 
           {/* 6. Due Date Card with Edit Button */}
@@ -2832,6 +2882,54 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               data-testid="button-save-edit-priority"
             >
               {updatePriorityDeadlineMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Created Date Dialog */}
+      <Dialog open={showEditCreatedDateDialog} onOpenChange={setShowEditCreatedDateDialog}>
+        <DialogContent data-testid="dialog-edit-created-date">
+          <DialogHeader>
+            <DialogTitle>Edit Created Date</DialogTitle>
+            <DialogDescription>
+              Update the created date for this request. This allows backdating requests that were added after completion.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium mb-2 block">Created Date</label>
+            <Input 
+              type="date" 
+              value={editedCreatedDate}
+              onChange={(e) => setEditedCreatedDate(e.target.value)}
+              data-testid="input-dialog-created-date"
+            />
+            {request.createdAt && new Date(request.createdAt).toISOString().split('T')[0] !== editedCreatedDate && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Current: {new Date(request.createdAt).toLocaleDateString()} → New: {new Date(editedCreatedDate).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditedCreatedDate(request.createdAt ? new Date(request.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+                setShowEditCreatedDateDialog(false);
+              }}
+              data-testid="button-cancel-edit-created-date"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-300 disabled:text-white"
+              onClick={() => {
+                updateCreatedDateMutation.mutate(editedCreatedDate);
+              }}
+              disabled={updateCreatedDateMutation.isPending || (request.createdAt && new Date(request.createdAt).toISOString().split('T')[0] === editedCreatedDate)}
+              data-testid="button-save-edit-created-date"
+            >
+              {updateCreatedDateMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

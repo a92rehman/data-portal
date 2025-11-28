@@ -915,11 +915,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Analysts cannot update request details" });
       }
 
+      // Extract createdAt if provided - only team_lead can update it
+      const { createdAt, ...restBody } = req.body;
+      let createdAtDate: Date | undefined;
+      
+      if (createdAt !== undefined) {
+        if (user.role !== 'team_lead') {
+          return res.status(403).json({ message: "Only Data Lead can update created date" });
+        }
+        createdAtDate = createdAt instanceof Date ? createdAt : new Date(createdAt);
+      }
+
       // Validate the data
-      const validatedData = insertDataRequestSchema.parse(req.body);
+      const validatedData = insertDataRequestSchema.parse(restBody);
       
       // Update the request
-      const updatedRequest = await storage.updateDataRequest(requestId, validatedData);
+      const updatedRequest = await storage.updateDataRequest(requestId, validatedData, createdAtDate);
       res.json(updatedRequest);
     } catch (error) {
       console.error("Error updating request:", error);
@@ -2459,6 +2470,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Both Data Lead and Analyst can reassign subtasks
           if (!isDataLead && !isAnalyst) {
             return res.status(403).json({ message: "Only Data Lead or Analyst can reassign subtasks" });
+          }
+        }
+      }
+
+      // If updating requestId, validate that request exists and user has permission
+      if (req.body.requestId !== undefined) {
+        const isDataLead = user?.role === 'team_lead';
+        const isAnalyst = user?.role === 'analyst';
+        
+        // Both Data Lead and Analyst can link tasks to requests
+        if (!isDataLead && !isAnalyst) {
+          return res.status(403).json({ message: "Only Data Lead or Analyst can link tasks to requests" });
+        }
+        
+        // If requestId is provided (not null), validate that the request exists
+        if (req.body.requestId !== null && req.body.requestId !== '') {
+          const linkedRequest = await storage.getDataRequest(req.body.requestId);
+          if (!linkedRequest) {
+            return res.status(404).json({ message: "Request not found" });
           }
         }
       }
