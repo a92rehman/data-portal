@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'wouter';
 import { DEPARTMENTS, TEAM_OPTIONS } from '@shared/constants';
+import { apiRequest } from '@/lib/queryClient';
+import { isUnauthorizedError } from '@/lib/authUtils';
 import {
   Dialog,
   DialogContent,
@@ -392,6 +394,19 @@ export default function DataRequestForm() {
   };
 
   const handleSubmit = async () => {
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit a request. Redirecting to login...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 1500);
+      return;
+    }
+
     // Basic validation
     if (!requester.name || !requester.email || !department || !requestType || !priority || !impact || !deadline) {
       toast({
@@ -595,17 +610,8 @@ export default function DataRequestForm() {
           break;
       }
 
-      const response = await fetch('/api/requests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to submit request');
-      }
+      // Use apiRequest for better error handling and consistent behavior
+      await apiRequest("POST", "/api/requests", payload);
 
       // Success - show the success dialog with "What's Next" content
       setShowSuccessDialog(true);
@@ -673,9 +679,25 @@ export default function DataRequestForm() {
       setIsManualEdit(false);
       setFrequencyInteracted(false);
     } catch (error: any) {
+      console.error("Error submitting request:", error);
+      
+      // Handle unauthorized errors specifically (session expired)
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please log in again. Redirecting to login...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 1500);
+        return;
+      }
+      
+      // Handle other errors
       toast({
         title: "Error",
-        description: error.message || "Failed to submit request",
+        description: error.message || "Failed to submit request. Please try again.",
         variant: "destructive",
       });
     } finally {
