@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle, Copy, Check, X } from 'lucide-react';
+import { Loader2, Sparkles, RefreshCw, Maximize2, AlertCircle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 
@@ -23,11 +23,6 @@ declare global {
   }
 }
 
-// Power BI credentials constants
-const POWERBI_EMAIL = 'abdur.rehman@taleemabad.com';
-const POWERBI_PASSWORD = 'Abdul@6045099';
-const STORAGE_KEY_EMAIL = 'app_powerbi_email';
-const STORAGE_KEY_PASSWORD = 'app_powerbi_password';
 const STORAGE_KEY_CREDENTIALS_SAVED = 'app_powerbi_credentials_saved';
 
 export default function PowerBIDashboard({
@@ -51,69 +46,19 @@ export default function PowerBIDashboard({
   const [retryCount, setRetryCount] = useState(0);
   const fetchEmbedTokenRef = useRef<(() => Promise<void>) | null>(null);
   
-  // Credentials display state
-  const [isPowerBILoggedIn, setIsPowerBILoggedIn] = useState(false);
+  // Banner state for sign-in guidance
   const [credentialsAcknowledged, setCredentialsAcknowledged] = useState(false);
-  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
 
-  // Helper to bring the Power BI iframe/sign-in dialog back to the front
-  const refocusPowerBISignIn = useCallback(() => {
-    requestAnimationFrame(() => {
-      try {
-        const active = document.activeElement as HTMLElement | null;
-        active?.blur();
-      } catch (err) {
-        console.warn('Unable to blur active element:', err);
-      }
-      try {
-        if (iframeRef.current) {
-          iframeRef.current.focus();
-          iframeRef.current.contentWindow?.focus();
-        }
-        window.focus?.();
-      } catch (err) {
-        console.warn('Unable to refocus Power BI iframe:', err);
-      }
-    });
-  }, []);
-
-  // Copy to clipboard function
-  const copyToClipboard = async (text: string, field: 'email' | 'password') => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-      refocusPowerBISignIn();
-    } catch (err) {
-      console.error('Failed to copy:', err);
-      refocusPowerBISignIn();
-    }
-  };
-
-  // Save credentials to localStorage - use useCallback to make it stable
   // Check localStorage on mount for prior acknowledgement
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
       if (saved === 'true') {
         setCredentialsAcknowledged(true);
-        setIsPowerBILoggedIn(true);
       }
     } catch (err) {
       console.warn('Unable to read credential saved flag:', err);
     }
-  }, []);
-
-  const saveCredentials = useCallback(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_EMAIL, POWERBI_EMAIL);
-      localStorage.setItem(STORAGE_KEY_PASSWORD, POWERBI_PASSWORD);
-      localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
-    } catch (err) {
-      console.warn('Unable to persist Power BI credentials locally:', err);
-    }
-    setIsPowerBILoggedIn(true);
-    setCredentialsAcknowledged(true);
   }, []);
 
   // Fetch embed token on mount if reportId is provided
@@ -379,11 +324,8 @@ export default function PowerBIDashboard({
       setIsLoading(false);
       setError(null);
       
-      // Report loaded successfully - mark user as logged in for this session
-      console.log('[PowerBI] Report loaded successfully - marking Power BI login complete');
-      if (!isPowerBILoggedIn) {
-        saveCredentials();
-      }
+      // Report loaded successfully
+      console.log('[PowerBI] Report loaded successfully');
       
       if (showAiInsights && embedToken) {
         generateAIInsight().catch(console.error);
@@ -549,7 +491,7 @@ export default function PowerBIDashboard({
         messageHandler = null;
       }
     };
-  }, [finalEmbedUrl, showAiInsights, embedToken, saveCredentials]);
+  }, [finalEmbedUrl, showAiInsights, embedToken]);
 
   // SDK embedding disabled - using iframe method only
 
@@ -594,95 +536,37 @@ export default function PowerBIDashboard({
     >
       {/* Dashboard Embed Container */}
       <div className="relative flex-1 bg-white dark:bg-gray-900 rounded-lg overflow-hidden border border-border">
-        {/* Power BI Credentials Banner - Show when login is required */}
+        {/* Power BI Guidance Banner - visible until user closes it */}
         {!credentialsAcknowledged && (
           <div className="absolute top-4 left-4 right-4 z-50 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 border-2 border-purple-300 dark:border-purple-700 rounded-lg p-4 shadow-lg">
-            <div className="flex flex-col gap-3 relative">
-              {/* Close button - only show when logged in */}
-              {isPowerBILoggedIn && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-0 right-0 h-6 w-6 p-0 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 hover:bg-purple-100 dark:hover:bg-purple-800/50 rounded-full"
-                  onClick={() => {
+            <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4">
+              <div className="flex items-start gap-2 flex-1">
+                <AlertCircle className="w-5 h-5 text-purple-700 dark:text-purple-200 mt-0.5" />
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                    Sign in to view the report
+                  </h3>
+                  <p className="text-xs text-purple-800 dark:text-purple-200 leading-relaxed">
+                    Use your own email to sign in or sign up to Microsoft. After signing in, send a report view request so access can be granted. Do not expect shared credentials here.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-3 sm:mt-0 text-xs font-semibold"
+                onClick={() => {
+                  try {
                     localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
-                    setCredentialsAcknowledged(true);
-                  }}
-                  aria-label="Close credentials banner"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
-              <div>
-                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-1 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  Use only these credentials to sign in
-                </h3>
-                <p className="text-xs text-purple-700 dark:text-purple-300">
-                  Keep this window visible. Copy both values below and paste them into the Microsoft sign-in dialog that appears. After a successful login this banner will disappear automatically.
-                </p>
-              </div>
-              <div className="bg-white/70 dark:bg-gray-950/60 rounded-lg border border-purple-200 dark:border-purple-800 p-3 space-y-2">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-200">
-                  Step 1 · Copy the email
-                </div>
-                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
-                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Email:</span>
-                  <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100 break-all">{POWERBI_EMAIL}</code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    tabIndex={-1}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => copyToClipboard(POWERBI_EMAIL, 'email')}
-                  >
-                    {copiedField === 'email' ? (
-                      <Check className="w-3 h-3 text-green-600" />
-                    ) : (
-                      <Copy className="w-3 h-3 text-purple-600" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <div className="bg-white/70 dark:bg-gray-950/60 rounded-lg border border-purple-200 dark:border-purple-800 p-3 space-y-2">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-200">
-                  Step 2 · Copy the password
-                </div>
-                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded p-2 border border-purple-200 dark:border-purple-800">
-                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300 w-16">Password:</span>
-                  <code className="flex-1 text-xs font-mono text-purple-900 dark:text-purple-100 break-all">{POWERBI_PASSWORD}</code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    tabIndex={-1}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => copyToClipboard(POWERBI_PASSWORD, 'password')}
-                  >
-                    {copiedField === 'password' ? (
-                      <Check className="w-3 h-3 text-green-600" />
-                    ) : (
-                      <Copy className="w-3 h-3 text-purple-600" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] text-purple-800 dark:text-purple-200 font-medium">
-                <span>Step 3 · Paste both values into the sign-in screen and continue. Do not use a personal Microsoft account; access will fail.</span>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="text-xs font-semibold"
-                  disabled={!isPowerBILoggedIn}
-                  onClick={() => {
-                    localStorage.setItem(STORAGE_KEY_CREDENTIALS_SAVED, 'true');
-                    setCredentialsAcknowledged(true);
-                  }}
-                >
-                  I’ve signed in – hide this
-                </Button>
-              </div>
+                  } catch (err) {
+                    console.warn('Unable to persist banner dismissal:', err);
+                  }
+                  setCredentialsAcknowledged(true);
+                }}
+                aria-label="Close guidance banner"
+              >
+                Close
+              </Button>
             </div>
           </div>
         )}
