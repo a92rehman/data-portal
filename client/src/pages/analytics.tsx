@@ -830,7 +830,7 @@ export default function Analytics() {
                                 {stats.overdue} Overdue Request{stats.overdue > 1 ? 's' : ''}
                               </span>
                               <button
-                                onClick={() => setLocation("/all-requests?status=overdue")}
+                                onClick={() => setLocation("/")}
                                 className="text-xs text-red-600 hover:underline flex items-center gap-1"
                               >
                                 View <ExternalLink className="w-3 h-3" />
@@ -845,7 +845,7 @@ export default function Analytics() {
                                 {stats.atRisk} At-Risk Request{stats.atRisk > 1 ? 's' : ''}
                               </span>
                               <button
-                                onClick={() => setLocation("/all-requests?status=at_risk")}
+                                onClick={() => setLocation("/")}
                                 className="text-xs text-orange-600 hover:underline flex items-center gap-1"
                               >
                                 View <ExternalLink className="w-3 h-3" />
@@ -860,7 +860,7 @@ export default function Analytics() {
                                 {blockedRequestsData.count} Blocked Request{blockedRequestsData.count > 1 ? 's' : ''}
                               </span>
                               <button
-                                onClick={() => setLocation("/all-requests?blocked=true")}
+                                onClick={() => setLocation("/")}
                                 className="text-xs text-yellow-600 hover:underline flex items-center gap-1"
                               >
                                 View <ExternalLink className="w-3 h-3" />

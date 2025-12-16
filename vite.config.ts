@@ -28,5 +28,9 @@ export default defineConfig({
     // Disable HMR to prevent WebSocket errors with iframe embedding
     // HMR causes issues with PowerBI iframe rendering
     hmr: false,
+    // Disable HMR client connection attempts completely
+    watch: {
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
   },
 });

@@ -20,9 +20,7 @@ import Analytics from "@/pages/analytics";
 import MyAnalytics from "@/pages/my-analytics";
 import ProfileSetup from "@/pages/profile-setup";
 import RequesterSignup from "@/pages/requester-signup";
-import AllRequests from "@/pages/all-requests";
 import MyAssignments from "@/pages/my-assignments";
-import RequestAssignments from "@/pages/request-assignments";
 import MyRequests from "@/pages/my-requests";
 import Team from "@/pages/team";
 import Settings from "@/pages/settings";
@@ -65,9 +63,7 @@ function Router() {
       <Route path="/requests/mine">{() => <MyRequests />}</Route>
       <Route path="/requests/:id">{() => <RequestWorkspace />}</Route>
       <Route path="/requester-signup">{() => <RequesterSignup />}</Route>
-      <Route path="/all-requests">{() => <AllRequests />}</Route>
       <Route path="/my-assignments">{() => <MyAssignments />}</Route>
-      <Route path="/request-assignments">{() => <RequestAssignments />}</Route>
       <Route path="/tasks">{() => <Tasks />}</Route>
       <Route path="/team">{() => <Team />}</Route>
       <Route path="/analytics">{() => <Analytics />}</Route>

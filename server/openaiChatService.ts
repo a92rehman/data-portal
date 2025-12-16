@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { getDashboardData } from './powerbiService';
+import { getDashboardData, getStoredVisualData, VisualData, StoredVisualData } from './powerbiService';
 
 console.log('[OPENAI] Initializing OpenAI client...');
 if (!process.env.OPENAI_API_KEY) {
@@ -195,8 +195,39 @@ export async function sendChatMessage(params: {
                            Array.isArray(params.dashboardContext.dataContext.data) && 
                            params.dashboardContext.dataContext.data.length > 0;
   
-  if (isPowerBISuccess) {
-    // Power BI specific prompt - actual Power BI data extracted successfully
+  const isVisualDataSuccess = dataSource === 'powerbi_visuals' && 
+                              dataSuccess === true && 
+                              params.dashboardContext.dataContext?.data && 
+                              Array.isArray(params.dashboardContext.dataContext.data) && 
+                              params.dashboardContext.dataContext.data.length > 0;
+  
+  if (isVisualDataSuccess) {
+    // Power BI visual data specific prompt - most accurate and visual-specific
+    systemPrompt += `You are analyzing a Power BI dashboard showing Program Delivery metrics.
+
+IMPORTANT: You are analyzing REAL VISUAL DATA extracted directly from the Power BI report visuals. This data represents the actual visuals (charts, tables, cards) displayed in the dashboard.
+
+Current visual data extracted from Power BI report:
+${params.dashboardContext.dataContext?.formattedData || formatVisualDataForAI(params.dashboardContext.dataContext?.data || [])}
+
+The data above shows specific visuals from the Power BI report, including:
+- Visual names (e.g., "Total Observations by Grade", "Completion Rate Card")
+- Visual types (bar charts, tables, cards, etc.)
+- The actual data displayed in each visual
+- Which page each visual appears on
+
+When answering questions:
+- Reference specific visuals by name when relevant (e.g., "According to the 'Total Observations by Grade' bar chart...")
+- Use the actual data values from the visuals
+- Explain what each visual shows and what insights can be drawn
+- Be specific about numbers, trends, and patterns visible in the visual data
+
+Base all answers ONLY on the actual Power BI visual data provided above.
+Do NOT reference request management system, tasks, or data requests. Only discuss what's shown in the Power BI dashboard visuals.
+
+Be concise and helpful. Keep responses under 200 words.`;
+  } else if (isPowerBISuccess) {
+    // Power BI dataset data prompt - fallback when visual data not available
     systemPrompt += `You are analyzing a Power BI dashboard showing Program Delivery metrics.
 
 IMPORTANT: You are analyzing REAL data extracted directly from the Power BI dataset API.
@@ -330,10 +361,45 @@ export async function getDashboardContextData(
 ): Promise<any> {
   // Fetch relevant data based on dashboard
   if (dashboardId === 'program-delivery') {
-    // Try to fetch from Power BI first
+    // Try to fetch stored visual data first (fastest, most accurate)
     if (reportId) {
       try {
-        console.log('[DASHBOARD CONTEXT] Fetching Power BI data for report:', reportId);
+        console.log('[DASHBOARD CONTEXT] Checking for stored visual data for report:', reportId);
+        const storedVisualData = await getStoredVisualData(reportId);
+        
+        if (storedVisualData && storedVisualData.visuals && storedVisualData.visuals.length > 0) {
+          console.log('[DASHBOARD CONTEXT] ✓ Found stored visual data:', {
+            visualCount: storedVisualData.visuals.length,
+            timestamp: storedVisualData.timestamp,
+            expiresAt: storedVisualData.expiresAt
+          });
+          
+          // Format visual data for AI consumption
+          const formattedVisualData = formatVisualDataForAI(storedVisualData.visuals);
+          
+          return {
+            source: 'powerbi_visuals',
+            data: storedVisualData.visuals,
+            formattedData: formattedVisualData,
+            timestamp: storedVisualData.timestamp,
+            expiresAt: storedVisualData.expiresAt,
+            visualCount: storedVisualData.visuals.length,
+            success: true,
+            error: null
+          };
+        } else {
+          console.log('[DASHBOARD CONTEXT] No stored visual data found, falling back to dataset extraction');
+        }
+      } catch (visualDataError: any) {
+        console.warn('[DASHBOARD CONTEXT] Error fetching stored visual data:', visualDataError.message);
+        // Continue to fallback
+      }
+    }
+    
+    // Fallback: Try to fetch from Power BI dataset (slower, less specific)
+    if (reportId) {
+      try {
+        console.log('[DASHBOARD CONTEXT] Fetching Power BI dataset data for report:', reportId);
         const powerBIData = await getDashboardData(reportId);
         
         // Validate Power BI data - must be successful, have rows, and source must be 'powerbi'
@@ -469,6 +535,97 @@ Observation Types:
     success: false,
     error: 'Dashboard not supported'
   };
+}
+
+/**
+ * Format visual data for AI consumption
+ * Groups visuals by page and type, includes visual names and extracted data
+ */
+function formatVisualDataForAI(visuals: VisualData[]): string {
+  try {
+    if (!visuals || visuals.length === 0) {
+      return 'No visual data available from Power BI report.';
+    }
+
+    let summary = 'Power BI Report - Visual Data Extract:\n\n';
+    summary += `Total Visuals Extracted: ${visuals.length}\n\n`;
+    
+    // Group visuals by page
+    const visualsByPage: Record<string, VisualData[]> = {};
+    visuals.forEach(visual => {
+      const pageName = visual.pageName || 'Unknown Page';
+      if (!visualsByPage[pageName]) {
+        visualsByPage[pageName] = [];
+      }
+      visualsByPage[pageName].push(visual);
+    });
+
+    // Format each page's visuals
+    Object.entries(visualsByPage).forEach(([pageName, pageVisuals]) => {
+      summary += `\n=== Page: ${pageName} ===\n`;
+      summary += `Visuals on this page: ${pageVisuals.length}\n\n`;
+      
+      pageVisuals.forEach((visual, idx) => {
+        summary += `Visual ${idx + 1}: ${visual.visualName}\n`;
+        summary += `  Type: ${visual.visualType}\n`;
+        
+        // Include metadata
+        if (visual.metadata.fields.length > 0) {
+          summary += `  Fields: ${visual.metadata.fields.join(', ')}\n`;
+        }
+        if (visual.metadata.measures.length > 0) {
+          summary += `  Measures: ${visual.metadata.measures.join(', ')}\n`;
+        }
+        if (visual.metadata.aggregations.length > 0) {
+          summary += `  Aggregations: ${visual.metadata.aggregations.join(', ')}\n`;
+        }
+        
+        // Include data summary
+        if (visual.data && Array.isArray(visual.data) && visual.data.length > 0) {
+          summary += `  Data Points: ${visual.data.length}\n`;
+          
+          // Show sample of data (first 3 rows for cards/summaries, first 5 for tables)
+          const sampleSize = visual.visualType === 'card' ? 1 : Math.min(5, visual.data.length);
+          summary += `  Sample Data:\n`;
+          
+          visual.data.slice(0, sampleSize).forEach((row: any, rowIdx: number) => {
+            if (typeof row === 'object' && row !== null) {
+              const rowSummary = Object.entries(row)
+                .slice(0, 10) // Limit to first 10 fields
+                .map(([key, value]) => `${key}=${value}`)
+                .join(', ');
+              summary += `    Row ${rowIdx + 1}: ${rowSummary}\n`;
+            } else {
+              summary += `    Row ${rowIdx + 1}: ${row}\n`;
+            }
+          });
+          
+          if (visual.data.length > sampleSize) {
+            summary += `    ... and ${visual.data.length - sampleSize} more rows\n`;
+          }
+        }
+        
+        summary += `  Extracted At: ${visual.extractedAt}\n\n`;
+      });
+    });
+
+    // Add summary statistics
+    const visualTypes: Record<string, number> = {};
+    visuals.forEach(v => {
+      visualTypes[v.visualType] = (visualTypes[v.visualType] || 0) + 1;
+    });
+    
+    summary += '\n=== Visual Summary ===\n';
+    Object.entries(visualTypes).forEach(([type, count]) => {
+      summary += `  ${type}: ${count}\n`;
+    });
+
+    console.log('[DASHBOARD CONTEXT] Formatted visual data summary length:', summary.length);
+    return summary;
+  } catch (error) {
+    console.error('[DASHBOARD CONTEXT] Error formatting visual data:', error);
+    return JSON.stringify(visuals, null, 2);
+  }
 }
 
 /**

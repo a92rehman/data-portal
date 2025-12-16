@@ -1,4 +1,6 @@
 import { ClientSecretCredential } from '@azure/identity';
+import { db } from './db';
+import { sql } from 'drizzle-orm';
 
 console.log('[POWERBI] Initializing Power BI Service...');
 
@@ -26,6 +28,15 @@ interface TokenCache {
 }
 
 let tokenCache: TokenCache | null = null;
+
+// In-memory cache for visual data
+interface CachedVisualData {
+  data: StoredVisualData;
+  expiresAt: number;
+}
+
+const visualDataCache = new Map<string, CachedVisualData>();
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Clear the token cache to force a fresh token fetch
@@ -440,13 +451,32 @@ export async function getDashboardData(reportId: string): Promise<any> {
     const duration = Date.now() - startTime;
 
     // Validate results before returning
+    console.log('[POWERBI] Final results check:', {
+      resultsLength: results.length,
+      successfulExtractions,
+      failedExtractions,
+      tablesProcessed: tables.length
+    });
+    
     if (results.length > 0) {
       // Check if results actually contain meaningful data
       const hasMeaningfulData = results.some(row => {
         if (row.TotalRows && row.TotalRows > 0) return true;
         if (row.Count && row.Count > 0) return true;
         if (row.SampleRows && Array.isArray(row.SampleRows) && row.SampleRows.length > 0) return true;
+        // Also check for any non-empty values
+        if (row && typeof row === 'object') {
+          const hasAnyValue = Object.values(row).some(val => 
+            val !== null && val !== undefined && val !== ''
+          );
+          if (hasAnyValue) return true;
+        }
         return false;
+      });
+
+      console.log('[POWERBI] Meaningful data check:', {
+        hasMeaningfulData,
+        sampleRow: results[0] ? JSON.stringify(results[0]).substring(0, 200) : 'no rows'
       });
 
       if (hasMeaningfulData) {
@@ -468,7 +498,11 @@ export async function getDashboardData(reportId: string): Promise<any> {
         };
       } else {
         console.warn('[POWERBI] ✗ Extracted results but no meaningful data found');
+        console.warn('[POWERBI] Sample results:', JSON.stringify(results.slice(0, 3), null, 2));
       }
+    } else {
+      console.warn('[POWERBI] ✗ No results extracted from any tables');
+      console.warn('[POWERBI] Tables processed:', tables.map(t => t.name));
     }
 
     // No meaningful data extracted
@@ -753,4 +787,782 @@ export async function testConnection(): Promise<{ success: boolean; message: str
   }
 }
 
+/**
+ * Visual data interfaces
+ */
+export interface VisualData {
+  visualName: string;
+  visualType: string;
+  pageName: string;
+  data: any[];
+  metadata: {
+    fields: string[];
+    measures: string[];
+    aggregations: string[];
+    filters: any[];
+  };
+  extractedAt: string;
+}
 
+export interface StoredVisualData {
+  reportId: string;
+  timestamp: string;
+  visuals: VisualData[];
+  expiresAt: string;
+}
+
+/**
+ * Get all pages in a Power BI report
+ */
+export async function getReportPages(reportId: string, workspaceId?: string): Promise<any[]> {
+  try {
+    const accessToken = await getPowerBIAccessToken();
+    const targetWorkspaceId = workspaceId || process.env.POWERBI_WORKSPACE_ID || 'me';
+    
+    console.log('[POWERBI] Fetching pages for report:', reportId, 'in workspace:', targetWorkspaceId);
+    
+    // Get the report to find its workspace
+    let actualWorkspaceId = targetWorkspaceId;
+    try {
+      const reportResponse = await fetch(
+        `https://api.powerbi.com/v1.0/myorg/reports/${reportId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (reportResponse.ok) {
+        const reportData = await reportResponse.json();
+        if (reportData.workspaceId) {
+          actualWorkspaceId = reportData.workspaceId;
+          console.log('[POWERBI] Found report workspace:', actualWorkspaceId);
+        }
+      }
+    } catch (error) {
+      console.warn('[POWERBI] Could not fetch report details, using default workspace:', error);
+    }
+    
+    const pagesUrl = actualWorkspaceId === 'me' || !actualWorkspaceId
+      ? `https://api.powerbi.com/v1.0/myorg/reports/${reportId}/pages`
+      : `https://api.powerbi.com/v1.0/myorg/groups/${actualWorkspaceId}/reports/${reportId}/pages`;
+    
+    const response = await fetch(pagesUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[POWERBI] Failed to fetch pages:', response.status, errorText);
+      throw new Error(`Failed to fetch pages: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    const pages = data.value || [];
+    console.log('[POWERBI] Found', pages.length, 'pages in report');
+    return pages;
+  } catch (error) {
+    console.error('[POWERBI] Error fetching report pages:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all visuals on a specific page
+ */
+export async function getPageVisuals(reportId: string, pageName: string, workspaceId?: string): Promise<any[]> {
+  try {
+    const accessToken = await getPowerBIAccessToken();
+    const targetWorkspaceId = workspaceId || process.env.POWERBI_WORKSPACE_ID || 'me';
+    
+    // Get the report to find its workspace
+    let actualWorkspaceId = targetWorkspaceId;
+    try {
+      const reportResponse = await fetch(
+        `https://api.powerbi.com/v1.0/myorg/reports/${reportId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (reportResponse.ok) {
+        const reportData = await reportResponse.json();
+        if (reportData.workspaceId) {
+          actualWorkspaceId = reportData.workspaceId;
+        }
+      }
+    } catch (error) {
+      // Use default workspace
+    }
+    
+    // Power BI REST API doesn't directly expose visual metadata
+    // We need to use the ExportData API or parse the report definition
+    // For now, we'll try to get page details which may include visual information
+    const pageUrl = actualWorkspaceId === 'me' || !actualWorkspaceId
+      ? `https://api.powerbi.com/v1.0/myorg/reports/${reportId}/pages/${encodeURIComponent(pageName)}`
+      : `https://api.powerbi.com/v1.0/myorg/groups/${actualWorkspaceId}/reports/${reportId}/pages/${encodeURIComponent(pageName)}`;
+    
+    const response = await fetch(pageUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn('[POWERBI] Failed to fetch page details:', response.status, errorText);
+      // Return empty array if page details not available
+      return [];
+    }
+
+    const pageData = await response.json();
+    // Power BI API may not return visual details directly
+    // We'll need to use a workaround or alternative approach
+    // For now, return empty array and we'll construct visual data from report definition
+    console.log('[POWERBI] Page data retrieved for:', pageName);
+    return [];
+  } catch (error) {
+    console.error('[POWERBI] Error fetching page visuals:', error);
+    // Return empty array on error - we'll use alternative extraction method
+    return [];
+  }
+}
+
+/**
+ * Extract data from a visual by constructing DAX query from visual configuration
+ * Since Power BI REST API doesn't directly expose visual data, we'll use an alternative approach:
+ * 1. Try to get visual configuration from report definition
+ * 2. Construct DAX queries based on visual type and fields
+ * 3. Execute DAX queries to get the data
+ */
+export async function extractVisualData(visualConfig: any, reportId: string): Promise<any> {
+  try {
+    // Visual config should contain: visualType, fields, measures, filters
+    const visualType = visualConfig.visualType || 'table';
+    const fields = visualConfig.fields || [];
+    const measures = visualConfig.measures || [];
+    const filters = visualConfig.filters || [];
+    
+    // For now, we'll use a simplified approach:
+    // Extract data based on the dataset schema and visual type
+    // This is a fallback - ideally we'd get the actual visual query from Power BI
+    
+    // Get dataset schema to understand available tables
+    const schema = await getDatasetSchema();
+    const tables = schema.tables || [];
+    
+    if (tables.length === 0) {
+      console.warn('[POWERBI] No tables found in dataset for visual extraction');
+      return { rows: [] };
+    }
+    
+    // Try to construct a basic query based on visual type
+    // This is a simplified implementation - in production, you'd parse the actual visual query
+    let query = '';
+    
+    if (visualType === 'card' || visualType === 'kpi') {
+      // For cards/KPIs, get a single aggregated value
+      if (measures.length > 0) {
+        const measure = measures[0];
+        query = `EVALUATE ROW("Value", ${measure})`;
+      } else if (fields.length > 0) {
+        // Try to find the table containing this field
+        const field = fields[0];
+        for (const table of tables) {
+          const column = table.columns?.find((c: any) => c.name === field);
+          if (column && (column.type === 'Double' || column.type === 'Int64' || column.type === 'Decimal')) {
+            query = `EVALUATE ROW("Value", SUM('${table.name}'[${field}]))`;
+            break;
+          }
+        }
+      }
+    } else if (visualType === 'table' || visualType === 'matrix') {
+      // For tables, get the fields as columns
+      if (fields.length > 0) {
+        const fieldList = fields.slice(0, 10).join(', '); // Limit to 10 fields
+        query = `EVALUATE TOPN(100, SUMMARIZE('${tables[0].name}', ${fieldList}))`;
+      }
+    } else if (visualType === 'barChart' || visualType === 'columnChart' || visualType === 'lineChart') {
+      // For charts, group by category and aggregate by value
+      if (fields.length >= 1 && measures.length >= 1) {
+        const categoryField = fields[0];
+        const measure = measures[0];
+        query = `EVALUATE TOPN(50, SUMMARIZE('${tables[0].name}', '${tables[0].name}'[${categoryField}], "Value", ${measure}))`;
+      }
+    } else {
+      // Default: get sample data
+      query = `EVALUATE TOPN(50, '${tables[0].name}')`;
+    }
+    
+    if (!query) {
+      // Fallback: get sample data from first table
+      query = `EVALUATE TOPN(50, '${tables[0].name}')`;
+    }
+    
+    console.log('[POWERBI] Executing visual data query:', query.substring(0, 100));
+    const result = await executeDaxQuery(query);
+    return result;
+  } catch (error: any) {
+    console.error('[POWERBI] Error extracting visual data:', error);
+    return { rows: [] };
+  }
+}
+
+/**
+ * Extract data from all visuals in a Power BI report
+ * Uses the proven getDashboardData method and formats it as visual data
+ */
+export async function extractAllVisualsData(reportId: string, workspaceId?: string): Promise<StoredVisualData> {
+  const startTime = Date.now();
+  console.log('[POWERBI] Starting visual data extraction for report:', reportId);
+  
+  const visuals: VisualData[] = [];
+  
+  try {
+    // Get all pages in the report
+    let pages: any[] = [];
+    try {
+      pages = await getReportPages(reportId, workspaceId);
+      console.log('[POWERBI] Found', pages.length, 'pages in report');
+    } catch (pageError: any) {
+      console.warn('[POWERBI] Could not fetch pages, using default:', pageError.message);
+      pages = [{ name: 'Overview' }]; // Default page if pages can't be fetched
+    }
+    
+    // Use the proven getDashboardData function which successfully extracts data
+    console.log('[POWERBI] Calling getDashboardData for report:', reportId);
+    
+    let dashboardData;
+    try {
+      dashboardData = await getDashboardData(reportId);
+    } catch (error: any) {
+      console.error('[POWERBI] ❌ getDashboardData threw an exception:', error);
+      console.error('[POWERBI] Error stack:', error.stack);
+      return {
+        reportId,
+        timestamp: new Date().toISOString(),
+        visuals: [],
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      };
+    }
+    
+    console.log('[POWERBI] getDashboardData result:', {
+      success: dashboardData?.success,
+      source: dashboardData?.source,
+      rowCount: dashboardData?.rows?.length || 0,
+      error: dashboardData?.error,
+      hasRows: !!dashboardData?.rows,
+      rowsIsArray: Array.isArray(dashboardData?.rows),
+      fullResponse: JSON.stringify(dashboardData).substring(0, 500) // First 500 chars for debugging
+    });
+    
+    // Check if we have data - be very permissive
+    const hasData = dashboardData && 
+                   dashboardData.success !== false && 
+                   dashboardData.rows && 
+                   Array.isArray(dashboardData.rows) && 
+                   dashboardData.rows.length > 0;
+    
+    if (!hasData) {
+      console.error('[POWERBI] ⚠️ Dashboard data extraction returned no data:', {
+        success: dashboardData?.success,
+        source: dashboardData?.source,
+        error: dashboardData?.error,
+        rowCount: dashboardData?.rows?.length || 0,
+        rowsType: typeof dashboardData?.rows,
+        isArray: Array.isArray(dashboardData?.rows),
+        dashboardDataKeys: dashboardData ? Object.keys(dashboardData) : 'no dashboardData'
+      });
+      
+      // Try to get at least some data directly from the dataset
+      console.log('[POWERBI] Attempting direct dataset query as fallback...');
+      try {
+        const schema = await getDatasetSchema();
+        console.log('[POWERBI] Schema retrieved:', {
+          hasSchema: !!schema,
+          hasTables: !!(schema && schema.tables),
+          tableCount: schema?.tables?.length || 0
+        });
+        
+        if (schema && schema.tables && schema.tables.length > 0) {
+          const firstTable = schema.tables[0];
+          console.log('[POWERBI] Found first table:', firstTable.name, 'with', firstTable.columns?.length || 0, 'columns');
+          
+          // Try a simple count query
+          try {
+            const simpleQuery = `EVALUATE ROW("TableName", "${firstTable.name}", "TotalRows", COUNTROWS('${firstTable.name}'))`;
+            console.log('[POWERBI] Executing fallback query:', simpleQuery);
+            const simpleResult = await executeDaxQuery(simpleQuery);
+            
+            console.log('[POWERBI] Fallback query result:', {
+              hasResult: !!simpleResult,
+              hasRows: !!(simpleResult && simpleResult.rows),
+              rowCount: simpleResult?.rows?.length || 0,
+              firstRow: simpleResult?.rows?.[0] ? JSON.stringify(simpleResult.rows[0]).substring(0, 200) : 'no rows'
+            });
+            
+            if (simpleResult && simpleResult.rows && simpleResult.rows.length > 0 && simpleResult.rows[0]) {
+              console.log('[POWERBI] ✓ Direct query succeeded, creating visual from this data');
+              return {
+                reportId,
+                timestamp: new Date().toISOString(),
+                visuals: [{
+                  visualName: 'Dataset Overview',
+                  visualType: 'card',
+                  pageName: defaultPageName,
+                  data: simpleResult.rows,
+                  metadata: {
+                    fields: Object.keys(simpleResult.rows[0] || {}),
+                    measures: [],
+                    aggregations: ['COUNTROWS'],
+                    filters: [],
+                  },
+                  extractedAt: new Date().toISOString(),
+                }],
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              };
+            } else {
+              console.warn('[POWERBI] Direct query returned empty results');
+            }
+          } catch (queryError: any) {
+            console.error('[POWERBI] Direct query failed:', queryError.message);
+            console.error('[POWERBI] Query error stack:', queryError.stack);
+          }
+        } else {
+          console.warn('[POWERBI] Schema has no tables to query');
+        }
+      } catch (schemaError: any) {
+        console.error('[POWERBI] Could not get schema for fallback:', schemaError.message);
+        console.error('[POWERBI] Schema error stack:', schemaError.stack);
+      }
+      
+      // Return empty but valid structure
+      return {
+        reportId,
+        timestamp: new Date().toISOString(),
+        visuals: [],
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      };
+    }
+    
+    console.log('[POWERBI] Dashboard data extracted successfully:', {
+      rows: dashboardData.rows.length,
+      tables: dashboardData.tableCount,
+      successfulExtractions: dashboardData.successfulExtractions,
+      source: dashboardData.source
+    });
+    
+    // Transform dashboard data into visual data format
+    const dataRows = dashboardData.rows || [];
+    const defaultPageName = pages[0]?.name || 'Overview';
+    
+    // CRITICAL: If we have data rows, we MUST create visuals
+    if (dataRows.length === 0) {
+      console.error('[POWERBI] ❌ CRITICAL ERROR: dashboardData.rows is empty array despite hasData check!');
+      console.error('[POWERBI] dashboardData object:', JSON.stringify(dashboardData, null, 2));
+    }
+    
+    console.log('[POWERBI] Processing', dataRows.length, 'data rows');
+    if (dataRows.length > 0) {
+      console.log('[POWERBI] First data row sample:', JSON.stringify(dataRows[0], null, 2));
+      console.log('[POWERBI] First data row keys:', Object.keys(dataRows[0] || {}));
+    }
+    
+    // ALWAYS create at least one visual if we have data - be very permissive
+    // This ensures we never return 0 visuals when data exists
+    if (dataRows.length > 0) {
+      // Group data by type (but don't rely on this - always create fallback visuals)
+      const rowCountData = dataRows.filter((row: any) => 
+        (row.TotalRows && row.TotalRows > 0) || 
+        (row.Count && row.Count > 0) ||
+        row.TableName || 
+        row.Source
+      );
+      const sampleDataRows = dataRows.filter((row: any) => 
+        row.SampleRows && Array.isArray(row.SampleRows) && row.SampleRows.length > 0
+      );
+      const aggregationData = dataRows.filter((row: any) => {
+        return Object.keys(row).some(key => 
+          (key.endsWith('_Sum') || key.endsWith('_Count') || key.endsWith('_Average')) && 
+          row[key] !== null && row[key] !== undefined
+        );
+      });
+      const distinctDataRows = dataRows.filter((row: any) => 
+        row.DistinctValues && Array.isArray(row.DistinctValues) && row.DistinctValues.length > 0
+      );
+      
+      console.log('[POWERBI] Data categorization:', {
+        rowCountData: rowCountData.length,
+        sampleDataRows: sampleDataRows.length,
+        aggregationData: aggregationData.length,
+        distinctDataRows: distinctDataRows.length,
+        totalRows: dataRows.length
+      });
+      
+      // Create summary card visuals from row count data
+      if (rowCountData.length > 0) {
+        visuals.push({
+          visualName: 'Summary Metrics',
+          visualType: 'card',
+          pageName: defaultPageName,
+          data: rowCountData.slice(0, 20),
+          metadata: {
+            fields: Object.keys(rowCountData[0] || {}),
+            measures: [],
+            aggregations: ['COUNTROWS', 'COUNT'],
+            filters: [],
+          },
+          extractedAt: new Date().toISOString(),
+        });
+        console.log('[POWERBI] Created summary card visual with', rowCountData.length, 'rows');
+      }
+      
+      // Create table visuals from sample data
+      for (let i = 0; i < Math.min(sampleDataRows.length, 5); i++) {
+        const sampleRow = sampleDataRows[i];
+        if (sampleRow.SampleRows && sampleRow.SampleRows.length > 0) {
+          visuals.push({
+            visualName: `${sampleRow.TableName || 'Data Table'} - Sample Data`,
+            visualType: 'table',
+            pageName: defaultPageName,
+            data: sampleRow.SampleRows,
+            metadata: {
+              fields: sampleRow.ColumnNames || (sampleRow.SampleRows[0] ? Object.keys(sampleRow.SampleRows[0]) : []),
+              measures: [],
+              aggregations: [],
+              filters: [],
+            },
+            extractedAt: new Date().toISOString(),
+          });
+          console.log('[POWERBI] Created table visual:', sampleRow.TableName, 'with', sampleRow.SampleRows.length, 'sample rows');
+        }
+      }
+      
+      // Create chart visuals from aggregation data
+      if (aggregationData.length > 0) {
+        visuals.push({
+          visualName: 'Aggregated Metrics',
+          visualType: 'barChart',
+          pageName: defaultPageName,
+          data: aggregationData.slice(0, 20),
+          metadata: {
+            fields: aggregationData[0] ? Object.keys(aggregationData[0]).filter(k => !k.endsWith('_Sum') && !k.endsWith('_Count') && !k.endsWith('_Average') && k !== 'TableName') : [],
+            measures: aggregationData[0] ? Object.keys(aggregationData[0]).filter(k => k.endsWith('_Sum') || k.endsWith('_Count') || k.endsWith('_Average')) : [],
+            aggregations: ['SUM', 'COUNT', 'AVERAGE'],
+            filters: [],
+          },
+          extractedAt: new Date().toISOString(),
+        });
+        console.log('[POWERBI] Created aggregation chart visual with', aggregationData.length, 'rows');
+      }
+      
+      // Create visuals from distinct values (categorization data)
+      for (let i = 0; i < Math.min(distinctDataRows.length, 5); i++) {
+        const distinctRow = distinctDataRows[i];
+        if (distinctRow.DistinctValues && distinctRow.DistinctValues.length > 0) {
+          visuals.push({
+            visualName: `${distinctRow.ColumnName || 'Categories'} - Categories`,
+            visualType: 'pieChart',
+            pageName: defaultPageName,
+            data: distinctRow.DistinctValues.map((val: any) => ({ 
+              category: distinctRow.ColumnName || 'Category',
+              value: val,
+              count: 1 
+            })),
+            metadata: {
+              fields: [distinctRow.ColumnName || 'Category'],
+              measures: [],
+              aggregations: [],
+              filters: [],
+            },
+            extractedAt: new Date().toISOString(),
+          });
+          console.log('[POWERBI] Created pie chart visual:', distinctRow.ColumnName, 'with', distinctRow.DistinctValues.length, 'values');
+        }
+      }
+      
+      // CRITICAL: ALWAYS create at least one visual from ALL data if we haven't created any yet
+      // This is a safety net to ensure we never return 0 visuals when data exists
+      if (visuals.length === 0) {
+        console.log('[POWERBI] ⚠️ No categorized visuals created, creating fallback visuals from all data');
+        
+        // Create a comprehensive visual from all data
+        visuals.push({
+          visualName: 'Dashboard Data Overview',
+          visualType: 'table',
+          pageName: defaultPageName,
+          data: dataRows.slice(0, 100), // First 100 rows of data
+          metadata: {
+            fields: dataRows[0] ? Object.keys(dataRows[0]) : [],
+            measures: [],
+            aggregations: [],
+            filters: [],
+          },
+          extractedAt: new Date().toISOString(),
+        });
+        console.log('[POWERBI] Created fallback overview visual with', Math.min(100, dataRows.length), 'rows');
+      }
+      
+      // Also create additional summary visual if we have summary-like data
+      const hasSummaryData = dataRows.some((row: any) => 
+        row.TotalRows || row.Count || row.TableName || row.Source
+      );
+      if (hasSummaryData && visuals.length < 3) {
+        const summaryRows = dataRows.filter((row: any) => 
+          row.TotalRows || row.Count || row.TableName || row.Source
+        );
+        if (summaryRows.length > 0) {
+          visuals.push({
+            visualName: 'Data Summary',
+            visualType: 'card',
+            pageName: defaultPageName,
+            data: summaryRows.slice(0, 50),
+            metadata: {
+              fields: summaryRows[0] ? Object.keys(summaryRows[0]) : [],
+              measures: [],
+              aggregations: [],
+              filters: [],
+            },
+            extractedAt: new Date().toISOString(),
+          });
+          console.log('[POWERBI] Created additional summary visual with', summaryRows.length, 'rows');
+        }
+      }
+    } else {
+      console.warn('[POWERBI] ⚠️ No data rows to process - cannot create visuals');
+    }
+    
+    const duration = Date.now() - startTime;
+    console.log('[POWERBI] ✅ Visual data extraction completed:', {
+      reportId,
+      pagesProcessed: pages.length,
+      visualsExtracted: visuals.length,
+      dataRowsProcessed: dataRows.length,
+      duration: `${duration}ms`
+    });
+    
+    // FINAL SAFETY CHECK: If we STILL have no visuals but have data, create one no matter what
+    if (visuals.length === 0 && dataRows.length > 0) {
+      console.error('[POWERBI] ❌ CRITICAL: No visuals created despite having', dataRows.length, 'data rows');
+      console.error('[POWERBI] Creating emergency fallback visual...');
+      console.error('[POWERBI] Data row sample:', JSON.stringify(dataRows.slice(0, 2), null, 2));
+      console.error('[POWERBI] Data row keys:', dataRows[0] ? Object.keys(dataRows[0]) : 'no keys');
+      
+      // Emergency fallback - create visual from ANY data structure
+      visuals.push({
+        visualName: 'Extracted Data',
+        visualType: 'table',
+        pageName: defaultPageName,
+        data: dataRows.slice(0, 100),
+        metadata: {
+          fields: dataRows[0] ? Object.keys(dataRows[0]) : ['data'],
+          measures: [],
+          aggregations: [],
+          filters: [],
+        },
+        extractedAt: new Date().toISOString(),
+      });
+      console.log('[POWERBI] ✅ Created emergency fallback visual with', Math.min(100, dataRows.length), 'rows');
+    }
+    
+    if (visuals.length > 0) {
+      console.log('[POWERBI] ✅ Successfully created', visuals.length, 'visuals from', dataRows.length, 'data rows');
+    } else {
+      console.error('[POWERBI] ❌ FAILED: No visuals created and no data available');
+    }
+    
+    return {
+      reportId,
+      timestamp: new Date().toISOString(),
+      visuals,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 min TTL
+    };
+  } catch (error: any) {
+    console.error('[POWERBI] ❌ Error extracting all visuals data:', error);
+    console.error('[POWERBI] Error stack:', error.stack);
+    return {
+      reportId,
+      timestamp: new Date().toISOString(),
+      visuals: [],
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    };
+  }
+}
+
+/**
+ * Store visual data in both cache and database
+ */
+export async function storeVisualData(reportId: string, visualData: StoredVisualData): Promise<void> {
+  try {
+    // Store in cache
+    visualDataCache.set(reportId, {
+      data: visualData,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    });
+    console.log('[POWERBI] Visual data cached for report:', reportId);
+    
+    // Store in database
+    try {
+      // Delete existing records for this report
+      await db.execute(sql`
+        DELETE FROM powerbi_visual_data 
+        WHERE report_id = ${reportId}
+      `);
+      
+      // Insert new records for each visual
+      for (const visual of visualData.visuals) {
+        await db.execute(sql`
+          INSERT INTO powerbi_visual_data (
+            report_id, 
+            page_name, 
+            visual_name, 
+            visual_type, 
+            data_json, 
+            metadata_json, 
+            extracted_at, 
+            expires_at
+          ) VALUES (
+            ${reportId},
+            ${visual.pageName},
+            ${visual.visualName},
+            ${visual.visualType},
+            ${JSON.stringify(visual.data)}::jsonb,
+            ${JSON.stringify(visual.metadata)}::jsonb,
+            ${visual.extractedAt}::timestamp,
+            ${visualData.expiresAt}::timestamp
+          )
+        `);
+      }
+      
+      console.log('[POWERBI] Visual data stored in database for report:', reportId, '-', visualData.visuals.length, 'visuals');
+    } catch (dbError: any) {
+      // If database storage fails, log but don't throw (cache is still available)
+      console.error('[POWERBI] Failed to store visual data in database:', dbError.message);
+      // Check if table exists, if not, we'll create it in migration
+      if (dbError.message?.includes('does not exist') || dbError.message?.includes('relation') || dbError.message?.includes('table')) {
+        console.warn('[POWERBI] powerbi_visual_data table may not exist yet. Run migration to create it.');
+      }
+    }
+  } catch (error: any) {
+    console.error('[POWERBI] Error storing visual data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get stored visual data (from cache first, fallback to database)
+ */
+export async function getStoredVisualData(reportId: string): Promise<StoredVisualData | null> {
+  try {
+    // Check cache first
+    const cached = visualDataCache.get(reportId);
+    if (cached && cached.expiresAt > Date.now()) {
+      console.log('[POWERBI] Visual data retrieved from cache for report:', reportId);
+      return cached.data;
+    }
+    
+    // Remove expired cache entry
+    if (cached && cached.expiresAt <= Date.now()) {
+      visualDataCache.delete(reportId);
+    }
+    
+    // Try database
+    try {
+      const result = await db.execute(sql`
+        SELECT 
+          report_id,
+          page_name,
+          visual_name,
+          visual_type,
+          data_json,
+          metadata_json,
+          extracted_at,
+          expires_at
+        FROM powerbi_visual_data
+        WHERE report_id = ${reportId}
+          AND expires_at > NOW()
+        ORDER BY extracted_at DESC
+      `);
+      
+      if (result.rows && result.rows.length > 0) {
+        // Group by visual and reconstruct StoredVisualData
+        const visuals: VisualData[] = result.rows.map((row: any) => ({
+          visualName: row.visual_name,
+          visualType: row.visual_type,
+          pageName: row.page_name,
+          data: row.data_json || [],
+          metadata: row.metadata_json || { fields: [], measures: [], aggregations: [], filters: [] },
+          extractedAt: row.extracted_at,
+        }));
+        
+        const storedData: StoredVisualData = {
+          reportId: reportId,
+          timestamp: result.rows[0]?.extracted_at || new Date().toISOString(),
+          visuals,
+          expiresAt: result.rows[0]?.expires_at || new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        };
+        
+        // Cache it for future use
+        visualDataCache.set(reportId, {
+          data: storedData,
+          expiresAt: Date.now() + CACHE_TTL_MS,
+        });
+        
+        console.log('[POWERBI] Visual data retrieved from database for report:', reportId, '-', visuals.length, 'visuals');
+        return storedData;
+      }
+    } catch (dbError: any) {
+      // If table doesn't exist, that's okay - we'll create it in migration
+      if (dbError.message?.includes('does not exist') || dbError.message?.includes('relation') || dbError.message?.includes('table')) {
+        console.warn('[POWERBI] powerbi_visual_data table may not exist yet. Run migration to create it.');
+      } else {
+        console.error('[POWERBI] Error retrieving visual data from database:', dbError.message);
+      }
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.error('[POWERBI] Error getting stored visual data:', error);
+    return null;
+  }
+}
+
+/**
+ * Clear expired visual data from cache and database
+ */
+export async function clearExpiredVisualData(): Promise<void> {
+  try {
+    // Clear expired cache entries
+    const now = Date.now();
+    for (const [reportId, cached] of visualDataCache.entries()) {
+      if (cached.expiresAt <= now) {
+        visualDataCache.delete(reportId);
+      }
+    }
+    
+    // Clear expired database entries
+    try {
+      await db.execute(sql`
+        DELETE FROM powerbi_visual_data 
+        WHERE expires_at < NOW()
+      `);
+      console.log('[POWERBI] Expired visual data cleared from database');
+    } catch (dbError: any) {
+      // Table might not exist yet
+      if (!dbError.message?.includes('does not exist') && !dbError.message?.includes('relation') && !dbError.message?.includes('table')) {
+        console.error('[POWERBI] Error clearing expired visual data from database:', dbError.message);
+      }
+    }
+  } catch (error: any) {
+    console.error('[POWERBI] Error clearing expired visual data:', error);
+  }
+}

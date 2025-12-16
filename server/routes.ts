@@ -13,7 +13,7 @@ import { eq } from "drizzle-orm";
 import { generateAIInsight } from "./openaiService";
 import { generateDashboardInsights, sendChatMessage, getDashboardContextData } from "./openaiChatService";
 import { getOrCreateConversation, generateConversationId } from "./conversationStore";
-import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData, generateEmbedToken, clearPowerBITokenCache } from "./powerbiService";
+import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData, generateEmbedToken, clearPowerBITokenCache, extractAllVisualsData, storeVisualData, getStoredVisualData } from "./powerbiService";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -3527,6 +3527,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error generating AI insight:", error);
       res.status(500).json({ message: "Failed to generate insight" });
+    }
+  });
+
+  // Power BI Visual Data Extraction endpoints
+  app.post('/api/powerbi/visuals/extract-all', isAuthenticated, async (req: any, res) => {
+    try {
+      const { reportId, workspaceId } = req.body;
+      
+      if (!reportId) {
+        return res.status(400).json({ message: "reportId is required" });
+      }
+
+      console.log('[POWERBI VISUALS] Extraction requested for report:', reportId);
+      
+      // Extract all visual data
+      const visualData = await extractAllVisualsData(reportId, workspaceId);
+      
+      console.log('[POWERBI VISUALS] Extraction completed:', {
+        reportId,
+        visualCount: visualData.visuals.length,
+        timestamp: visualData.timestamp,
+        expiresAt: visualData.expiresAt
+      });
+      
+      // Store in cache and database
+      await storeVisualData(reportId, visualData);
+      
+      res.json({
+        success: true,
+        visualCount: visualData.visuals.length,
+        timestamp: visualData.timestamp,
+        expiresAt: visualData.expiresAt,
+      });
+    } catch (error: any) {
+      console.error("[POWERBI VISUALS] Error extracting visual data:", error);
+      console.error("[POWERBI VISUALS] Error stack:", error.stack);
+      res.status(500).json({ 
+        message: error.message || "Failed to extract visual data",
+        error: error.toString()
+      });
+    }
+  });
+
+  app.get('/api/powerbi/visuals/data/:reportId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { reportId } = req.params;
+      
+      if (!reportId) {
+        return res.status(400).json({ message: "reportId is required" });
+      }
+
+      console.log('[POWERBI VISUALS] Retrieving stored data for report:', reportId);
+      
+      // Get stored visual data
+      const visualData = await getStoredVisualData(reportId);
+      
+      if (!visualData) {
+        return res.status(404).json({ 
+          message: "No visual data found for this report. Extract data first using POST /api/powerbi/visuals/extract-all" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        reportId: visualData.reportId,
+        timestamp: visualData.timestamp,
+        expiresAt: visualData.expiresAt,
+        visualCount: visualData.visuals.length,
+        visuals: visualData.visuals,
+      });
+    } catch (error: any) {
+      console.error("Error retrieving visual data:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to retrieve visual data" 
+      });
     }
   });
 

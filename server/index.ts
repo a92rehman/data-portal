@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { generateEmbedToken } from './powerbiService';
+import { generateEmbedToken, extractAllVisualsData, storeVisualData, clearExpiredVisualData } from './powerbiService';
 
 const app = express();
 
@@ -166,6 +166,21 @@ app.use((req, res, next) => {
       await db.execute(sql.raw(cleanNotificationTaskSQL));
       console.log('[Migration] ✅ Notification task_id column created/verified');
     }
+
+    // Run powerbi_visual_data migration
+    const powerbiVisualSQL = readFileSync(
+      join(process.cwd(), 'migrations', 'create_powerbi_visual_data.sql'),
+      'utf-8'
+    );
+    const cleanPowerbiVisualSQL = powerbiVisualSQL
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n')
+      .trim();
+    if (cleanPowerbiVisualSQL) {
+      await db.execute(sql.raw(cleanPowerbiVisualSQL));
+      console.log('[Migration] ✅ Power BI visual data table created/verified');
+    }
   } catch (error: any) {
     console.error('[Migration] Failed to setup metric definitions:', error);
     // Don't throw - allow server to start even if migrations fail
@@ -276,6 +291,68 @@ app.use((req, res, next) => {
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Set up periodic refresh job for Power BI visual data
+  // Refresh interval: 15 minutes (configurable via env var)
+  const refreshIntervalMs = parseInt(process.env.POWERBI_VISUAL_REFRESH_INTERVAL_MS || '900000', 10); // 15 min default
+  
+  // Get list of reports to refresh from environment or use default
+  const reportsToRefresh: string[] = process.env.POWERBI_REPORTS_TO_REFRESH
+    ? process.env.POWERBI_REPORTS_TO_REFRESH.split(',').map(r => r.trim()).filter(r => r)
+    : [];
+  
+  if (reportsToRefresh.length > 0 || process.env.POWERBI_DATASET_ID) {
+    console.log('[POWERBI REFRESH] Setting up periodic refresh job');
+    console.log('[POWERBI REFRESH] Refresh interval:', refreshIntervalMs / 1000, 'seconds');
+    console.log('[POWERBI REFRESH] Reports to refresh:', reportsToRefresh.length > 0 ? reportsToRefresh.join(', ') : 'Will extract from active reports');
+    
+    // Function to refresh visual data for all tracked reports
+    const refreshVisualData = async () => {
+      try {
+        console.log('[POWERBI REFRESH] Starting periodic visual data refresh...');
+        
+        // Clear expired data first
+        await clearExpiredVisualData();
+        
+        // If specific reports are configured, refresh those
+        if (reportsToRefresh.length > 0) {
+          for (const reportId of reportsToRefresh) {
+            try {
+              console.log('[POWERBI REFRESH] Refreshing visual data for report:', reportId);
+              const visualData = await extractAllVisualsData(reportId);
+              await storeVisualData(reportId, visualData);
+              console.log('[POWERBI REFRESH] ✅ Refreshed', visualData.visuals.length, 'visuals for report:', reportId);
+            } catch (error: any) {
+              console.error('[POWERBI REFRESH] ❌ Failed to refresh report', reportId, ':', error.message);
+            }
+          }
+        } else {
+          // If no specific reports configured, try to get reports from database
+          // For now, we'll skip this and only refresh when reports are explicitly configured
+          // or when extraction is triggered manually via API
+          console.log('[POWERBI REFRESH] No reports configured for automatic refresh. Use POWERBI_REPORTS_TO_REFRESH env var to enable.');
+        }
+        
+        console.log('[POWERBI REFRESH] Periodic refresh completed');
+      } catch (error: any) {
+        console.error('[POWERBI REFRESH] Error in periodic refresh:', error);
+      }
+    };
+    
+    // Run initial refresh after 1 minute (to let server fully start)
+    setTimeout(() => {
+      refreshVisualData().catch(console.error);
+    }, 60000);
+    
+    // Set up interval for periodic refresh
+    setInterval(() => {
+      refreshVisualData().catch(console.error);
+    }, refreshIntervalMs);
+    
+    console.log('[POWERBI REFRESH] ✅ Periodic refresh job configured');
+  } else {
+    console.log('[POWERBI REFRESH] No reports configured for automatic refresh. Set POWERBI_REPORTS_TO_REFRESH env var to enable.');
+  }
 
   // Ensure API routes are registered and matched BEFORE Vite middleware
   // The Power BI embed token route is already registered above (before registerRoutes)

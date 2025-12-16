@@ -382,8 +382,12 @@ export default function Tasks() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-1" data-testid="page-title">Team Tasks</h1>
-              <p className="text-muted-foreground">Manage your team's tasks and workload</p>
+              <h1 className="text-3xl font-bold mb-1" data-testid="page-title">
+                {isTeamLead ? "Team Tasks" : "My Tasks"}
+              </h1>
+              <p className="text-muted-foreground">
+                {isTeamLead ? "Manage your team's tasks and workload" : "Manage your tasks and workload"}
+              </p>
             </div>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)} 

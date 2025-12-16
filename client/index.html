@@ -15,6 +15,23 @@
       onload="console.log('[PowerBI] SDK script loaded successfully'); if (window.powerbi) { console.log('[PowerBI] window.powerbi is available:', typeof window.powerbi); } else { console.warn('[PowerBI] window.powerbi not found after script load'); }"
       onerror="console.error('[PowerBI] Failed to load SDK script'); const fallback = document.createElement('script'); fallback.src = 'https://cdn.jsdelivr.net/npm/powerbi-client@2.23.9/dist/powerbi.min.js'; fallback.crossOrigin = 'anonymous'; document.head.appendChild(fallback);"
     ></script>
+    <!-- Prevent Vite HMR client from attempting connections -->
+    <script>
+      // Disable Vite HMR client before it loads
+      if (typeof window !== 'undefined') {
+        window.__VITE_IS_HMR__ = false;
+        // Override fetch to prevent Vite ping requests
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+          const url = args[0];
+          if (typeof url === 'string' && (url.includes(':24678') || url.includes('text/x-vite-ping') || url.includes('spock.replit.dev:24678'))) {
+            // Silently reject Vite HMR requests
+            return Promise.reject(new Error('Vite HMR disabled'));
+          }
+          return originalFetch.apply(this, args);
+        };
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

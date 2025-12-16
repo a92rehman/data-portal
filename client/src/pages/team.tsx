@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import Header from "@/components/header";
 import Sidebar from "@/components/sidebar";
 import RequestDetail from "@/components/request-detail";
-import { Users, Mail, UserCog, UserMinus, Settings, UserPlus } from "lucide-react";
+import { Users, Mail, UserCog, UserMinus, Settings, UserPlus, Search } from "lucide-react";
 import type { User, DataRequestWithDetails, TaskWithDetails } from "@shared/schema";
 import emailjs from "@emailjs/browser";
 
@@ -63,6 +63,8 @@ export default function Team() {
   const [newMemberRole, setNewMemberRole] = useState("");
   const [newMemberDepartment, setNewMemberDepartment] = useState("");
   const [newMemberName, setNewMemberName] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
 
   const isDataLead = (user as any)?.role === "team_lead";
 
@@ -372,6 +374,24 @@ export default function Team() {
   const requesters = allUsers.filter(u => u.role === 'requester');
   const noRole = allUsers.filter(u => !u.role);
 
+  // Filter users based on search query and role filter
+  const filteredUsers = allUsers.filter(user => {
+    // Role filter
+    if (roleFilter !== "all" && user.role !== roleFilter) {
+      return false;
+    }
+    
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const fullName = `${user.firstName || ""} ${user.lastName || ""}`.toLowerCase();
+      const email = (user.email || "").toLowerCase();
+      return fullName.includes(query) || email.includes(query);
+    }
+    
+    return true;
+  });
+
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -488,6 +508,42 @@ export default function Team() {
             </Card>
           </div>
 
+          {/* Filters */}
+          <Card className="mb-6 border-2 border-gray-200 shadow-md">
+            <CardContent className="p-4">
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                      data-testid="input-search-team"
+                    />
+                  </div>
+                </div>
+                <Select 
+                  value={roleFilter} 
+                  onValueChange={setRoleFilter}
+                  data-testid="select-role-filter"
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All Roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="requester">Data Requesters</SelectItem>
+                    <SelectItem value="analyst">Data Analysts</SelectItem>
+                    <SelectItem value="team_lead">Data Leads</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* All Team Members */}
           <Card className="border-2 border-gray-200 shadow-md">
             <CardHeader>
@@ -497,9 +553,9 @@ export default function Team() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {allUsers.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No team members found
+                  {allUsers.length === 0 ? "No team members found" : "No team members match your filters"}
                 </div>
               ) : (
                 <div className="rounded-md border">
@@ -514,7 +570,7 @@ export default function Team() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {allUsers.map((member) => (
+                      {filteredUsers.map((member) => (
                         <TableRow key={member.id} data-testid={`row-member-${member.id}`}>
                           <TableCell>
                             <div className="flex items-center gap-3">

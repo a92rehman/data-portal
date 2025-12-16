@@ -18,62 +18,6 @@ externalPort = 80
 localPort = 24678
 externalPort = 3001
 
-[[ports]]
-localPort = 35005
-externalPort = 6800
-
-[[ports]]
-localPort = 36163
-externalPort = 6000
-
-[[ports]]
-localPort = 37833
-externalPort = 5173
-
-[[ports]]
-localPort = 39485
-externalPort = 8080
-
-[[ports]]
-localPort = 39737
-externalPort = 4200
-
-[[ports]]
-localPort = 40429
-externalPort = 3002
-
-[[ports]]
-localPort = 40817
-externalPort = 3003
-
-[[ports]]
-localPort = 40943
-externalPort = 8081
-
-[[ports]]
-localPort = 42037
-externalPort = 3000
-
-[[ports]]
-localPort = 42311
-externalPort = 8000
-
-[[ports]]
-localPort = 43807
-externalPort = 8099
-
-[[ports]]
-localPort = 44119
-externalPort = 5000
-
-[[ports]]
-localPort = 45013
-externalPort = 9000
-
-[[ports]]
-localPort = 46851
-externalPort = 8008
-
 [env]
 PORT = "5000"
 EMAILJS_PUBLIC_KEY = "bbB5OWlxTY3OJZZhj"

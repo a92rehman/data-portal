@@ -23,7 +23,7 @@ declare global {
   }
 }
 
-const STORAGE_KEY_CREDENTIALS_SAVED = 'app_powerbi_credentials_saved';
+const STORAGE_KEY_CREDENTIALS_SAVED = 'app_powerbi_credentials_saved_v2';
 
 export default function PowerBIDashboard({
   embedUrl,
@@ -46,12 +46,26 @@ export default function PowerBIDashboard({
   const [retryCount, setRetryCount] = useState(0);
   const fetchEmbedTokenRef = useRef<(() => Promise<void>) | null>(null);
   
+  // Visual data extraction status
+  const [visualDataStatus, setVisualDataStatus] = useState<{
+    status: 'idle' | 'extracting' | 'success' | 'error';
+    visualCount?: number;
+    timestamp?: string;
+    error?: string;
+  }>({ status: 'idle' });
+  
   // Banner state for sign-in guidance
   const [credentialsAcknowledged, setCredentialsAcknowledged] = useState(false);
 
   // Check localStorage on mount for prior acknowledgement
   useEffect(() => {
     try {
+      // Clear old storage key if it exists (one-time cleanup)
+      const oldKey = 'app_powerbi_credentials_saved';
+      if (localStorage.getItem(oldKey)) {
+        localStorage.removeItem(oldKey);
+      }
+      
       const saved = localStorage.getItem(STORAGE_KEY_CREDENTIALS_SAVED);
       if (saved === 'true') {
         setCredentialsAcknowledged(true);
@@ -253,31 +267,79 @@ export default function PowerBIDashboard({
   useEffect(() => {
     const originalError = console.error;
     const originalWarn = console.warn;
+    const originalLog = console.log;
+    
+    // Helper function to check if error should be filtered
+    const shouldFilterError = (errorString: string): boolean => {
+      const lowerError = errorString.toLowerCase();
+      
+      // Filter out Application Insights 429 errors (telemetry rate limiting)
+      if ((lowerError.includes('applicationinsights') || 
+           lowerError.includes('application-insights')) && 
+          (lowerError.includes('429') || 
+           lowerError.includes('too many requests') ||
+           lowerError.includes('rate limit'))) {
+        return true;
+      }
+      
+      // Filter out Vite HMR WebSocket errors - these are dev server issues, not app issues
+      if ((lowerError.includes('websocket') || lowerError.includes('connection')) && 
+          (lowerError.includes('localhost:undefined') || 
+           lowerError.includes('failed to construct \'websocket\'') ||
+           lowerError.includes('err_connection_timed_out') ||
+           lowerError.includes('err_connection_refused') ||
+           lowerError.includes('24678') ||
+           lowerError.includes('vite') ||
+           lowerError.includes('server connection lost') ||
+           lowerError.includes('polling for restart') ||
+           lowerError.includes('spock.replit.dev') ||
+           lowerError.includes('waitforsuccessfulping') ||
+           lowerError.includes('ping') ||
+           lowerError.includes('hmr') ||
+           lowerError.includes('text/x-vite-ping'))) {
+        return true;
+      }
+      
+      // Filter out network timeout/refused errors from Vite dev server
+      if ((lowerError.includes('err_connection_timed_out') || 
+           lowerError.includes('err_connection_refused') ||
+           lowerError.includes('net::err_connection_timed_out') ||
+           lowerError.includes('net::err_connection_refused')) && 
+          (lowerError.includes('spock.replit.dev') || 
+           lowerError.includes('24678') ||
+           lowerError.includes('vite') ||
+           lowerError.includes('failed to load resource') ||
+           lowerError.includes('text/x-vite-ping'))) {
+        return true;
+      }
+      
+      // Filter out Vite-specific network errors (including ping requests)
+      if (lowerError.includes('failed to load resource') && 
+          (lowerError.includes('spock.replit.dev') || 
+           lowerError.includes('24678') ||
+           lowerError.includes('vite') ||
+           lowerError.includes('text/x-vite-ping'))) {
+        return true;
+      }
+      
+      // Filter out any errors containing the Vite ping header
+      if (lowerError.includes('text/x-vite-ping')) {
+        return true;
+      }
+      
+      // Filter out errors from client:736 (Vite HMR client code)
+      if (lowerError.includes('client:736') || lowerError.includes('client.ts')) {
+        return true;
+      }
+      
+      return false;
+    };
     
     // Intercept console errors to filter out Application Insights telemetry errors and Vite HMR WebSocket errors
     const errorInterceptor = (...args: any[]) => {
-      const errorString = String(args.join(' ')).toLowerCase();
-      // Filter out Application Insights 429 errors (telemetry rate limiting)
-      // These are harmless Power BI telemetry errors and can be safely ignored
-      if ((errorString.includes('applicationinsights') || 
-           errorString.includes('application-insights')) && 
-          (errorString.includes('429') || 
-           errorString.includes('too many requests') ||
-           errorString.includes('rate limit'))) {
-        // Silently ignore - this is Power BI telemetry rate limiting, not a functional error
-        return;
-      }
-      // Filter out Vite HMR WebSocket errors - these are dev server issues, not app issues
-      if ((errorString.includes('websocket') || errorString.includes('connection')) && 
-          (errorString.includes('localhost:undefined') || 
-           errorString.includes('failed to construct \'websocket\'') ||
-           errorString.includes('err_connection_timed_out') ||
-           errorString.includes('24678') ||
-           errorString.includes('vite') ||
-           errorString.includes('server connection lost') ||
-           errorString.includes('polling for restart'))) {
-        // Silently ignore - these are Vite dev server HMR issues, not functional errors
-        // The actual application WebSocket (for notifications) works fine
+      const errorString = String(args.join(' '));
+      if (shouldFilterError(errorString)) {
+        // Silently ignore - these are dev server issues, not functional errors
         return;
       }
       // Log other errors normally
@@ -285,27 +347,75 @@ export default function PowerBIDashboard({
     };
 
     const warnInterceptor = (...args: any[]) => {
-      const warnString = String(args.join(' ')).toLowerCase();
+      const warnString = String(args.join(' '));
+      if (shouldFilterError(warnString)) {
+        // Silently ignore
+        return;
+      }
       // Also filter warnings from Application Insights
-      if (warnString.includes('applicationinsights') && warnString.includes('429')) {
+      const lowerWarn = warnString.toLowerCase();
+      if (lowerWarn.includes('applicationinsights') && lowerWarn.includes('429')) {
         return;
       }
       originalWarn.apply(console, args);
     };
+    
+    // Also filter some log messages that are noisy
+    const logInterceptor = (...args: any[]) => {
+      const logString = String(args.join(' '));
+      if (shouldFilterError(logString)) {
+        // Silently ignore
+        return;
+      }
+      originalLog.apply(console, args);
+    };
 
     console.error = errorInterceptor;
     console.warn = warnInterceptor;
+    console.log = logInterceptor;
+
+    // Also suppress unhandled promise rejections from Vite
+    const originalUnhandledRejection = window.onunhandledrejection;
+    window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+      const errorString = String(event.reason || event.reason?.message || '').toLowerCase();
+      if (shouldFilterError(errorString)) {
+        event.preventDefault();
+        return;
+      }
+      if (originalUnhandledRejection) {
+        originalUnhandledRejection.call(window, event);
+      }
+    };
+
+    // Suppress global error events from Vite HMR
+    const originalErrorHandler = window.onerror;
+    window.onerror = (message, source, lineno, colno, error) => {
+      const errorString = String(message || error?.message || '').toLowerCase();
+      if (shouldFilterError(errorString)) {
+        return true; // Suppress the error
+      }
+      if (originalErrorHandler) {
+        return originalErrorHandler.call(window, message, source, lineno, colno, error);
+      }
+      return false;
+    };
 
     return () => {
       console.error = originalError;
       console.warn = originalWarn;
+      console.log = originalLog;
+      window.onunhandledrejection = originalUnhandledRejection;
+      window.onerror = originalErrorHandler;
     };
   }, []);
 
   // Set up iframe load handlers with improved detection
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe || !finalEmbedUrl) return;
+    if (!iframe || !finalEmbedUrl) {
+      console.log('[PowerBI] Iframe setup skipped - iframe:', !!iframe, 'finalEmbedUrl:', !!finalEmbedUrl);
+      return;
+    }
 
     let loadHandled = false;
     let timeoutId: NodeJS.Timeout | null = null;
@@ -326,6 +436,87 @@ export default function PowerBIDashboard({
       
       // Report loaded successfully
       console.log('[PowerBI] Report loaded successfully');
+      
+      // Get current values (in case of closure issues)
+      const currentReportId = reportId;
+      const currentFinalEmbedUrl = finalEmbedUrl;
+      
+      console.log('[PowerBI] Extraction check - reportId:', currentReportId, 'finalEmbedUrl:', !!currentFinalEmbedUrl);
+      
+      // Extract visual data after report loads (non-blocking)
+      // Note: We only need reportId - embedToken is optional (autoAuth mode doesn't use tokens)
+      if (currentReportId && currentFinalEmbedUrl) {
+        console.log('[PowerBI] ✅ Conditions met - Triggering visual data extraction for report:', currentReportId);
+        setVisualDataStatus({ status: 'extracting' });
+        
+        const extractionUrl = '/api/powerbi/visuals/extract-all';
+        console.log('[PowerBI] Making POST request to:', extractionUrl, 'with reportId:', currentReportId);
+        
+        fetch(extractionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ reportId: currentReportId })
+        })
+          .then(res => {
+            console.log('[PowerBI] Extraction response status:', res.status, res.statusText);
+            if (res.ok) {
+              return res.json();
+            }
+            // Try to get error message from response
+            return res.text().then(text => {
+              let errorMessage = `Extraction failed: ${res.status}`;
+              try {
+                const errorData = JSON.parse(text);
+                errorMessage = errorData.message || errorMessage;
+              } catch {
+                errorMessage = text || errorMessage;
+              }
+              throw new Error(errorMessage);
+            });
+          })
+          .then(data => {
+            console.log('[PowerBI] ✅ Visual data extraction completed successfully:', {
+              visualCount: data.visualCount,
+              timestamp: data.timestamp,
+              expiresAt: data.expiresAt
+            });
+            setVisualDataStatus({
+              status: 'success',
+              visualCount: data.visualCount,
+              timestamp: data.timestamp
+            });
+            
+            // Auto-hide success status after 5 seconds
+            setTimeout(() => {
+              setVisualDataStatus(prev => prev.status === 'success' ? { status: 'idle' } : prev);
+            }, 5000);
+          })
+          .catch(error => {
+            console.error('[PowerBI] ❌ Visual data extraction failed:', error);
+            console.error('[PowerBI] Error details:', {
+              message: error.message,
+              stack: error.stack,
+              name: error.name
+            });
+            setVisualDataStatus({
+              status: 'error',
+              error: error.message || 'Extraction failed'
+            });
+            
+            // Auto-hide error status after 10 seconds
+            setTimeout(() => {
+              setVisualDataStatus(prev => prev.status === 'error' ? { status: 'idle' } : prev);
+            }, 10000);
+          });
+      } else {
+        console.warn('[PowerBI] ⚠️ Extraction skipped - Missing conditions:', {
+          hasReportId: !!currentReportId,
+          hasFinalEmbedUrl: !!currentFinalEmbedUrl,
+          reportId: currentReportId,
+          finalEmbedUrl: currentFinalEmbedUrl?.substring(0, 50) + '...'
+        });
+      }
       
       if (showAiInsights && embedToken) {
         generateAIInsight().catch(console.error);
@@ -491,7 +682,7 @@ export default function PowerBIDashboard({
         messageHandler = null;
       }
     };
-  }, [finalEmbedUrl, showAiInsights, embedToken]);
+  }, [finalEmbedUrl, showAiInsights, embedToken, reportId]);
 
   // SDK embedding disabled - using iframe method only
 
@@ -590,8 +781,31 @@ export default function PowerBIDashboard({
 
         {/* SDK container removed - using iframe method only */}
 
+        {/* Visual Data Extraction Status Badge */}
+        {visualDataStatus.status !== 'idle' && reportId && (
+          <div className="absolute top-2 right-2 z-40 flex gap-2">
+            {visualDataStatus.status === 'extracting' && (
+              <Badge variant="secondary" className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-700">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span className="text-xs">Extracting visual data...</span>
+              </Badge>
+            )}
+            {visualDataStatus.status === 'success' && (
+              <Badge variant="default" className="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white border-green-700">
+                <span className="text-xs">✓ {visualDataStatus.visualCount || 0} visuals loaded</span>
+              </Badge>
+            )}
+            {visualDataStatus.status === 'error' && (
+              <Badge variant="destructive" className="flex items-center gap-1.5">
+                <AlertCircle className="w-3 h-3" />
+                <span className="text-xs">Extraction failed</span>
+              </Badge>
+            )}
+          </div>
+        )}
+
         {/* Test button - Open PowerBI URL directly in new tab for debugging */}
-        {finalEmbedUrl && embedToken && (
+        {finalEmbedUrl && embedToken && visualDataStatus.status === 'idle' && (
           <div className="absolute top-2 right-2 z-40">
             <Button
               onClick={() => {
