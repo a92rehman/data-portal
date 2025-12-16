@@ -1104,7 +1104,7 @@ export class DatabaseStorage implements IStorage {
     ];
   }
 
-  async getTeamWorkload(): Promise<Array<{
+  async getTeamWorkload(includeDataLeads: boolean = false): Promise<Array<{
     analystId: string;
     firstName: string;
     lastName: string;
@@ -1130,11 +1130,15 @@ export class DatabaseStorage implements IStorage {
     const EFFECTIVE_WEEKLY_CAPACITY = DAYS_PER_WEEK * HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 22.5 hours
     const EFFECTIVE_HOURS_PER_DAY = HOURS_PER_DAY * PRODUCTIVITY_FACTOR; // 4.5 hours (productive day)
 
-    // Get all analysts AND team leads
+    // Get analysts, optionally include team leads (data leads) when requested
     const teamMembers = await db
       .select()
       .from(users)
-      .where(or(eq(users.role, 'analyst'), eq(users.role, 'team_lead')));
+      .where(
+        includeDataLeads
+          ? or(eq(users.role, 'analyst'), eq(users.role, 'team_lead'))
+          : eq(users.role, 'analyst')
+      );
 
     // Helpers for business-day spreading
     const startOfDay = (d: Date) => {
@@ -1257,7 +1261,7 @@ export class DatabaseStorage implements IStorage {
         const availableDays = availableHours / EFFECTIVE_HOURS_PER_DAY;
 
         // Enhanced capacity assessment
-        const capacityLevel = 
+        const capacityLevel: 'available' | 'light' | 'moderate' | 'heavy' | 'overloaded' = 
           totalExpectedHours === 0 ? 'available' :
           currentUtilization <= 20 ? 'available' :
           currentUtilization <= 50 ? 'light' :
@@ -1822,7 +1826,8 @@ export class DatabaseStorage implements IStorage {
   async updateTask(id: string, taskUpdate: Partial<InsertTask>): Promise<Task | undefined> {
     // If expectedTime is directly provided, use it. Otherwise, recalculate from PERT values if they're updated
     let expectedTime: number | undefined;
-    const hasDirectExpectedTime = taskUpdate.expectedTime !== undefined;
+    const directExpectedTime = (taskUpdate as any).expectedTime;
+    const hasDirectExpectedTime = directExpectedTime !== undefined;
     
     // Only recalculate from PERT values if expectedTime is not directly provided
     if (!hasDirectExpectedTime) {
@@ -1841,7 +1846,7 @@ export class DatabaseStorage implements IStorage {
       }
     } else {
       // Use the directly provided expectedTime
-      expectedTime = taskUpdate.expectedTime;
+      expectedTime = directExpectedTime;
     }
 
     // Build the update object with proper type conversions

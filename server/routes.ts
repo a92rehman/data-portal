@@ -2887,7 +2887,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied. Only Data Lead can view workload analytics." });
       }
 
-      const workload = await storage.getTeamWorkload();
+      const includeDataLeads = String(req.query.includeDataLeads || '').toLowerCase() === 'true';
+      const workload = await storage.getTeamWorkload(includeDataLeads);
       // Ensure responses are never cached so clients always get fresh weekly planning
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');

@@ -10,6 +10,7 @@ import RequestDetail from "@/components/request-detail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import { BarChart3, PieChart, TrendingUp, ListChecks, Clock, CheckCircle2, AlertCircle, ListTodo, Users, Calculator, Info, ArrowUpRight, ArrowDownRight, Activity, Target, Zap, Shield, ExternalLink } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
@@ -24,6 +25,27 @@ export default function Analytics() {
   const [activeTab, setActiveTab] = useState("requests");
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
+  const PRIMARY_DATA_LEAD_EMAIL = "abdur.rehman@taleemabad.com";
+  const userId = (user as any)?.id;
+  const isPrimaryDataLead = (user as any)?.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL;
+  const storageKey = userId ? `analytics_workload_include_data_leads_${userId}` : "analytics_workload_include_data_leads";
+  const [includeDataLeads, setIncludeDataLeads] = useState(false);
+
+  // Hydrate toggle state once user is known
+  useEffect(() => {
+    if (!user) return;
+    const stored = localStorage.getItem(storageKey);
+    if (stored != null) {
+      setIncludeDataLeads(stored === "true");
+    } else {
+      setIncludeDataLeads(false);
+    }
+  }, [user, storageKey]);
+
+  const handleToggleDataLeads = (checked: boolean) => {
+    setIncludeDataLeads(checked);
+    localStorage.setItem(storageKey, String(checked));
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -237,9 +259,12 @@ export default function Analytics() {
   };
 
   const { data: teamWorkload = [] } = useQuery<Array<TeamWorkloadRow>>({
-    queryKey: ["/api/analytics/tasks/workload"],
+    queryKey: ["/api/analytics/tasks/workload", { includeDataLeads }],
     queryFn: async () => {
-      const res = await fetch(`/api/analytics/tasks/workload?t=${Date.now()}` , { credentials: "include", cache: 'no-store' as RequestCache });
+      const url = new URL(`/api/analytics/tasks/workload`, window.location.origin);
+      url.searchParams.set("t", Date.now().toString());
+      if (includeDataLeads) url.searchParams.set("includeDataLeads", "true");
+      const res = await fetch(url.toString(), { credentials: "include", cache: 'no-store' as RequestCache });
       if (!res.ok) throw new Error("Failed to fetch workload");
       return res.json();
     },
@@ -1194,11 +1219,27 @@ export default function Analytics() {
               {/* Team Workload Management */}
               <Card className="gradient-card">
                 <CardHeader>
+              <div className="flex items-start justify-between gap-4">
+                <div>
                   <CardTitle className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2">
                     <Users className="w-5 h-5 text-purple-600" />
                     Team Workload Management
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">Monitor task distribution and analyst capacity</p>
+                </div>
+                {isPrimaryDataLead && (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={includeDataLeads}
+                      onCheckedChange={handleToggleDataLeads}
+                      id="include-data-leads-toggle"
+                    />
+                    <label htmlFor="include-data-leads-toggle" className="text-sm text-foreground">
+                      Include Data Leads
+                    </label>
+                  </div>
+                )}
+              </div>
                   
                   {/* Workload Calculation Formula */}
                   <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
