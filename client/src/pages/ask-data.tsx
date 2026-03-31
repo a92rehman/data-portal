@@ -33,10 +33,10 @@ export default function AskData() {
     mutationFn: async (q: string) => {
       return apiRequest("POST", "/api/insightflow/query", { question: q });
     },
-    onSuccess: (data: { query_id: string }) => {
+    onSuccess: (data: { data: { query_id: string } }) => {
       setStreaming(true);
       setResult(null);
-      openStream(data.query_id);
+      openStream(data.data.query_id);
     },
     onError: () => toast.error("Analytics service unavailable. Try again shortly."),
   });
