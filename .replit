@@ -30,6 +30,7 @@ EMAILJS_SERVICE_ID = "service_uyby7sf"
 EMAILJS_TEMPLATE_ID = "template_i7jxbqo"
 VITE_EMAILJS_PUBLIC_KEY = "bbB5OWlxTY3OJZZhj"
 VITE_EMAILJS_SERVICE_ID = "service_uyby7sf"
+INSIGHTFLOW_URL = "https://insightflow-741747349152.us-central1.run.app"
 
 [agent]
 integrations = ["javascript_log_in_with_replit:1.0.0", "javascript_database:1.0.0", "javascript_object_storage:1.0.0"]
