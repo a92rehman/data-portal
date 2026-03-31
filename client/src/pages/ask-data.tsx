@@ -42,19 +42,28 @@ export default function AskData() {
   });
 
   function openStream(queryId: string) {
-    // withCredentials required: Express uses session cookies for isAuthenticated.
-    // Without it, the SSE connection has no session cookie and returns 401.
     const es = new EventSource(`/api/insightflow/query/${queryId}/stream`, { withCredentials: true });
-    es.onmessage = (e) => {
+
+    es.addEventListener("answer", (e) => {
       try {
         const parsed = JSON.parse(e.data);
-        if (parsed.type === "answer") {
-          setResult(parsed.data as InsightResult);
-          setStreaming(false);
-          es.close();
-        }
-      } catch { /* ignore parse errors in partial chunks */ }
-    };
+        setResult(parsed as InsightResult);
+        setStreaming(false);
+        es.close();
+      } catch { /* ignore parse errors */ }
+    });
+
+    es.addEventListener("error", (e: any) => {
+      try {
+        const parsed = JSON.parse(e.data);
+        toast.error(parsed.message || "Query failed");
+      } catch { toast.error("Query failed"); }
+      setStreaming(false);
+      es.close();
+    });
+
+    es.addEventListener("done", () => { setStreaming(false); es.close(); });
+
     es.onerror = () => { setStreaming(false); es.close(); };
   }
 
