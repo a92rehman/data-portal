@@ -5,28 +5,17 @@
  * - HTTP proxy for REST calls; iterative SSE pump for streaming
  */
 import jwt from "jsonwebtoken";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import type { Request, Response } from "express";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const INSIGHTFLOW_URL = process.env.INSIGHTFLOW_URL || "http://localhost:8080";
 
-function loadPrivateKey(): string {
-  // 1. Try key file next to this module
-  const keyFile = path.join(__dirname, "bridge_private.pem");
-  if (fs.existsSync(keyFile)) return fs.readFileSync(keyFile, "utf8");
-  // 2. Fall back to env var (base64 or raw PEM with literal \n)
-  const raw = process.env.INSIGHTFLOW_JWT_PRIVATE_KEY || "";
-  if (!raw) return "";
-  return raw.startsWith("-----") ? raw.replace(/\\n/g, "\n") : Buffer.from(raw, "base64").toString("utf8");
-}
-
-const PRIVATE_KEY = loadPrivateKey();
-console.log(`[InsightFlow] Private key loaded: ${PRIVATE_KEY ? `yes (${PRIVATE_KEY.length} chars)` : "NO — JWT signing will fail"}`);
+// Accepts base64-encoded PEM or raw PEM (with literal \n or real newlines)
+const _raw = process.env.INSIGHTFLOW_JWT_PRIVATE_KEY || "";
+const PRIVATE_KEY = _raw.startsWith("-----")
+  ? _raw.replace(/\\n/g, "\n")
+  : _raw
+  ? Buffer.from(_raw, "base64").toString("utf8")
+  : "";
 
 const ROLE_MAP: Record<string, string> = {
   requester: "viewer",
@@ -84,10 +73,7 @@ export async function proxyToInsightFlow(
 
   let token: string;
   try { token = signBridgeToken(user); }
-  catch (err) {
-    console.error("[InsightFlow] Failed to sign bridge token:", err);
-    res.status(500).json({ message: "Failed to sign auth token", detail: String(err) }); return;
-  }
+  catch { res.status(500).json({ message: "Failed to sign auth token" }); return; }
 
   const method = options.method ?? req.method;
   const fetchOptions: RequestInit = {
@@ -100,13 +86,11 @@ export async function proxyToInsightFlow(
 
   try {
     const upstream = await fetch(`${INSIGHTFLOW_URL}${path}`, fetchOptions);
-    console.log(`[InsightFlow] upstream ${method} ${path} → ${upstream.status}`);
     res.status(upstream.status);
     res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
     res.send(await upstream.text());
-  } catch (err) {
-    console.error("[InsightFlow] Fetch error:", err);
-    res.status(503).json({ message: "Analytics service temporarily unavailable.", detail: String(err) });
+  } catch {
+    res.status(503).json({ message: "Analytics service temporarily unavailable." });
   }
 }
 
@@ -122,10 +106,7 @@ export async function proxySSEToInsightFlow(
   // Sign fresh token immediately before opening SSE connection (not reused)
   let token: string;
   try { token = signBridgeToken(user); }
-  catch (err) {
-    console.error("[InsightFlow] Failed to sign bridge token (SSE):", err);
-    res.status(500).json({ message: "Failed to sign auth token", detail: String(err) }); return;
-  }
+  catch { res.status(500).json({ message: "Failed to sign auth token" }); return; }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");

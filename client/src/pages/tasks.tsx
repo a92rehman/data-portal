@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink, Edit2, Check, X, Clock, Target, Info, ChevronDown, ChevronRight, AlertCircle, Link as LinkIcon, Download } from "lucide-react";
+import { Plus, User as UserIcon, Calendar as CalendarIcon, ListChecks, Trash2, Eye, CornerDownRight, ExternalLink, Edit2, Check, X, Clock, Target, Info, ChevronDown, ChevronRight, AlertCircle, Link as LinkIcon } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskWithDetails, User, DataRequestWithDetails } from "@shared/schema";
 
@@ -365,163 +365,6 @@ export default function Tasks() {
     return statusMap[status as keyof typeof statusMap] || status;
   };
 
-  // CSV export function
-  const exportTasksToCSV = () => {
-    // Flatten all tasks (parent + subtasks) that match current filters
-    const allTasksToExport: TaskWithDetails[] = [];
-    
-    filteredParentTasks.forEach(parent => {
-      allTasksToExport.push(parent);
-      const subTasks = sortedSubTasksMap.get(parent.id) || [];
-      allTasksToExport.push(...subTasks);
-    });
-
-    if (allTasksToExport.length === 0) {
-      toast({
-        title: "No tasks to export",
-        description: "There are no tasks matching the current filters.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Helper function to escape CSV fields
-    const escapeCSV = (value: any): string => {
-      if (value === null || value === undefined) return "";
-      const str = String(value);
-      // If contains comma, quote, or newline, wrap in quotes and escape internal quotes
-      if (str.includes(",") || str.includes('"') || str.includes("\n")) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-    };
-
-    // Helper function to format date
-    const formatDate = (date: Date | string | null): string => {
-      if (!date) return "";
-      try {
-        const d = new Date(date);
-        return format(d, "yyyy-MM-dd HH:mm:ss");
-      } catch {
-        return "";
-      }
-    };
-
-    // Helper function to get task health
-    const getTaskHealthForExport = (task: TaskWithDetails): { status: string; days: string } => {
-      if (!task.dueDate) return { status: "no-date", days: "" };
-      
-      const now = new Date();
-      const due = new Date(task.dueDate);
-      const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (task.status === 'blocked') {
-        return { status: "blocked", days: daysUntilDue.toString() };
-      }
-      
-      if (daysUntilDue < 0 && task.status !== 'completed') {
-        return { status: "overdue", days: daysUntilDue.toString() };
-      }
-      
-      if (daysUntilDue <= 2 && task.status !== 'completed') {
-        return { status: "at-risk", days: daysUntilDue.toString() };
-      }
-      
-      return { status: "on-track", days: daysUntilDue.toString() };
-    };
-
-    // CSV Headers
-    const headers = [
-      "Task ID",
-      "Task Type",
-      "Title",
-      "Description",
-      "Status",
-      "Assigned To Name",
-      "Assigned To Email",
-      "Assigned To Department",
-      "Created By Name",
-      "Created By Email",
-      "Created By Department",
-      "Request Number",
-      "Request Title",
-      "Parent Task ID",
-      "Parent Task Title",
-      "Due Date",
-      "Expected Time (hours)",
-      "Optimistic Time (hours)",
-      "Most Likely Time (hours)",
-      "Pessimistic Time (hours)",
-      "Created At",
-      "Completed At",
-      "Blocking Reason",
-      "Task Health Status",
-      "Days Until Due / Days Overdue"
-    ];
-
-    // Build CSV rows
-    const rows = allTasksToExport.map(task => {
-      const health = getTaskHealthForExport(task);
-      // Find parent task - first check in exported tasks, then in all tasks
-      const parentTask = task.parentTaskId 
-        ? (allTasksToExport.find(t => t.id === task.parentTaskId) || 
-           tasks.find(t => t.id === task.parentTaskId))
-        : null;
-
-      return [
-        escapeCSV(task.id),
-        escapeCSV(task.parentTaskId ? "Subtask" : "Parent"),
-        escapeCSV(task.title),
-        escapeCSV(task.description),
-        escapeCSV(formatStatus(task.status)),
-        escapeCSV(task.assignedTo ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}` : ""),
-        escapeCSV(task.assignedTo?.email || ""),
-        escapeCSV(task.assignedTo?.department || ""),
-        escapeCSV(task.createdBy ? `${task.createdBy.firstName} ${task.createdBy.lastName}` : ""),
-        escapeCSV(task.createdBy?.email || ""),
-        escapeCSV(task.createdBy?.department || ""),
-        escapeCSV(task.request?.requestNumber || ""),
-        escapeCSV(task.request?.title || ""),
-        escapeCSV(task.parentTaskId || ""),
-        escapeCSV(parentTask?.title || ""),
-        escapeCSV(formatDate(task.dueDate)),
-        escapeCSV(task.expectedTime?.toFixed(2) || ""),
-        escapeCSV(task.optimisticTime?.toFixed(2) || ""),
-        escapeCSV(task.mostLikelyTime?.toFixed(2) || ""),
-        escapeCSV(task.pessimisticTime?.toFixed(2) || ""),
-        escapeCSV(formatDate(task.createdAt)),
-        escapeCSV(formatDate(task.completedAt)),
-        escapeCSV(task.blockingReason || ""),
-        escapeCSV(health.status),
-        escapeCSV(health.days)
-      ];
-    });
-
-    // Combine headers and rows
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.join(","))
-    ].join("\n");
-
-    // Create blob and download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    
-    const timestamp = format(new Date(), "yyyy-MM-dd-HHmmss");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `team-tasks-${timestamp}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Export successful",
-      description: `Exported ${allTasksToExport.length} task(s) to CSV.`,
-    });
-  };
-
   if (!isAuthenticated) {
     return null;
   }
@@ -546,27 +389,14 @@ export default function Tasks() {
                 {isTeamLead ? "Manage your team's tasks and workload" : "Manage your tasks and workload"}
               </p>
             </div>
-            <div className="flex gap-3">
-              {isTeamLead && (
-                <Button 
-                  onClick={exportTasksToCSV}
-                  data-testid="button-export-tasks"
-                  variant="outline"
-                  className="border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export Tasks
-                </Button>
-              )}
-              <Button 
-                onClick={() => setIsCreateDialogOpen(true)} 
-                data-testid="button-create-task"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Task
-              </Button>
-            </div>
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)} 
+              data-testid="button-create-task"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Task
+            </Button>
           </div>
 
           {/* Filters */}
