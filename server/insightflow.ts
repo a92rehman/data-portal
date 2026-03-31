@@ -8,7 +8,11 @@ import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
 
 const INSIGHTFLOW_URL = process.env.INSIGHTFLOW_URL || "http://localhost:8080";
-const PRIVATE_KEY = (process.env.INSIGHTFLOW_JWT_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+const _rawKey = process.env.INSIGHTFLOW_JWT_PRIVATE_KEY || "";
+// Accept either base64-encoded PEM or raw PEM (with literal \n)
+const PRIVATE_KEY = _rawKey.startsWith("-----")
+  ? _rawKey.replace(/\\n/g, "\n")
+  : Buffer.from(_rawKey, "base64").toString("utf8");
 
 const ROLE_MAP: Record<string, string> = {
   requester: "viewer",
