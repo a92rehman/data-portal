@@ -1,14 +1,15 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { 
-  LayoutDashboard, 
-  Inbox, 
-  BarChart3, 
-  Users, 
+import {
+  LayoutDashboard,
+  Inbox,
+  BarChart3,
+  Users,
   Plus,
   ListTodo,
-  BookOpen
+  BookOpen,
+  Brain
 } from "lucide-react";
 
 interface SidebarProps {
@@ -31,6 +32,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         { href: "/tasks", icon: ListTodo, label: "Team Tasks", testId: "nav-tasks" },
         { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
         { href: "/team", icon: Users, label: "Team Management", testId: "nav-team" },
+        { href: "/ask-data", icon: Brain, label: "Ask Data", testId: "nav-ask-data" },
       ];
     } else if (role === "analyst") {
       // Analyst - Moderate access
@@ -39,11 +41,13 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         { href: "/requests/mine", icon: Inbox, label: "My Requests", testId: "nav-my-requests" },
         { href: "/tasks", icon: ListTodo, label: "My Tasks", testId: "nav-tasks" },
         { href: "/my-analytics", icon: BarChart3, label: "My Analytics", testId: "nav-my-analytics" },
+        { href: "/ask-data", icon: Brain, label: "Ask Data", testId: "nav-ask-data" },
       ];
     } else {
       // Requester - Limited access
       return [
         { href: "/", icon: LayoutDashboard, label: "My Requests", testId: "nav-dashboard" },
+        { href: "/ask-data", icon: Brain, label: "Ask Data", testId: "nav-ask-data" },
       ];
     }
   };
