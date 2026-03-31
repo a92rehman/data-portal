@@ -9,7 +9,10 @@ import {
   Plus,
   ListTodo,
   BookOpen,
-  Brain
+  Brain,
+  LayoutGrid,
+  FileText,
+  Activity
 } from "lucide-react";
 
 interface SidebarProps {
@@ -33,6 +36,7 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
         { href: "/analytics", icon: BarChart3, label: "Analytics", testId: "nav-analytics" },
         { href: "/team", icon: Users, label: "Team Management", testId: "nav-team" },
         { href: "/ask-data", icon: Brain, label: "Ask Data", testId: "nav-ask-data" },
+        { href: "/observability", icon: Activity, label: "Observability", testId: "nav-observability" },
       ];
     } else if (role === "analyst") {
       // Analyst - Moderate access
@@ -56,12 +60,24 @@ export default function Sidebar({ onNewRequest, user }: SidebarProps) {
 
   // Analytics section links
   const analyticsLinks = [
-    { 
+    {
       href: '/dashboards/program-delivery',
       label: 'Program Delivery',
       icon: BarChart3,
       testId: 'nav-program-delivery'
-    }
+    },
+    {
+      href: '/my-dashboards',
+      label: 'My Dashboards',
+      icon: LayoutGrid,
+      testId: 'nav-my-dashboards'
+    },
+    {
+      href: '/my-reports',
+      label: 'My Reports',
+      icon: FileText,
+      testId: 'nav-my-reports'
+    },
   ];
 
   return (
