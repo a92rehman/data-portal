@@ -7,7 +7,11 @@
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import type { Request, Response } from "express";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const INSIGHTFLOW_URL = process.env.INSIGHTFLOW_URL || "http://localhost:8080";
 
@@ -22,6 +26,7 @@ function loadPrivateKey(): string {
 }
 
 const PRIVATE_KEY = loadPrivateKey();
+console.log(`[InsightFlow] Private key loaded: ${PRIVATE_KEY ? `yes (${PRIVATE_KEY.length} chars)` : "NO — JWT signing will fail"}`);
 
 const ROLE_MAP: Record<string, string> = {
   requester: "viewer",
@@ -79,7 +84,10 @@ export async function proxyToInsightFlow(
 
   let token: string;
   try { token = signBridgeToken(user); }
-  catch { res.status(500).json({ message: "Failed to sign auth token" }); return; }
+  catch (err) {
+    console.error("[InsightFlow] Failed to sign bridge token:", err);
+    res.status(500).json({ message: "Failed to sign auth token", detail: String(err) }); return;
+  }
 
   const method = options.method ?? req.method;
   const fetchOptions: RequestInit = {
@@ -92,11 +100,13 @@ export async function proxyToInsightFlow(
 
   try {
     const upstream = await fetch(`${INSIGHTFLOW_URL}${path}`, fetchOptions);
+    console.log(`[InsightFlow] upstream ${method} ${path} → ${upstream.status}`);
     res.status(upstream.status);
     res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
     res.send(await upstream.text());
-  } catch {
-    res.status(503).json({ message: "Analytics service temporarily unavailable." });
+  } catch (err) {
+    console.error("[InsightFlow] Fetch error:", err);
+    res.status(503).json({ message: "Analytics service temporarily unavailable.", detail: String(err) });
   }
 }
 
@@ -112,7 +122,10 @@ export async function proxySSEToInsightFlow(
   // Sign fresh token immediately before opening SSE connection (not reused)
   let token: string;
   try { token = signBridgeToken(user); }
-  catch { res.status(500).json({ message: "Failed to sign auth token" }); return; }
+  catch (err) {
+    console.error("[InsightFlow] Failed to sign bridge token (SSE):", err);
+    res.status(500).json({ message: "Failed to sign auth token", detail: String(err) }); return;
+  }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
