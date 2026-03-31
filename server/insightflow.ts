@@ -5,14 +5,23 @@
  * - HTTP proxy for REST calls; iterative SSE pump for streaming
  */
 import jwt from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
 import type { Request, Response } from "express";
 
 const INSIGHTFLOW_URL = process.env.INSIGHTFLOW_URL || "http://localhost:8080";
-const _rawKey = process.env.INSIGHTFLOW_JWT_PRIVATE_KEY || "";
-// Accept either base64-encoded PEM or raw PEM (with literal \n)
-const PRIVATE_KEY = _rawKey.startsWith("-----")
-  ? _rawKey.replace(/\\n/g, "\n")
-  : Buffer.from(_rawKey, "base64").toString("utf8");
+
+function loadPrivateKey(): string {
+  // 1. Try key file next to this module
+  const keyFile = path.join(__dirname, "bridge_private.pem");
+  if (fs.existsSync(keyFile)) return fs.readFileSync(keyFile, "utf8");
+  // 2. Fall back to env var (base64 or raw PEM with literal \n)
+  const raw = process.env.INSIGHTFLOW_JWT_PRIVATE_KEY || "";
+  if (!raw) return "";
+  return raw.startsWith("-----") ? raw.replace(/\\n/g, "\n") : Buffer.from(raw, "base64").toString("utf8");
+}
+
+const PRIVATE_KEY = loadPrivateKey();
 
 const ROLE_MAP: Record<string, string> = {
   requester: "viewer",
