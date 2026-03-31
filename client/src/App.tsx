@@ -30,6 +30,10 @@ import Tasks from "@/pages/tasks";
 import MetricDefinitions from "@/pages/metric-definitions";
 import Dashboards from "@/pages/dashboards";
 import NotFound from "@/pages/not-found";
+import AskData from "@/pages/ask-data";
+import MyDashboards from "@/pages/my-dashboards";
+import MyReports from "@/pages/my-reports";
+import Observability from "@/pages/observability";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -73,6 +77,10 @@ function Router() {
       <Route path="/profile-setup">{() => <ProfileSetup />}</Route>
       <Route path="/settings">{() => <Settings />}</Route>
       <Route path="/metric-definitions" component={MetricDefinitions} />
+      <Route path="/ask-data">{() => <AskData />}</Route>
+      <Route path="/my-dashboards">{() => <MyDashboards />}</Route>
+      <Route path="/my-reports">{() => <MyReports />}</Route>
+      <Route path="/observability">{() => <Observability />}</Route>
       <Route>{() => <NotFound />}</Route>
     </Switch>
   );

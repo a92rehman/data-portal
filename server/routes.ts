@@ -14,6 +14,7 @@ import { generateAIInsight } from "./openaiService";
 import { generateDashboardInsights, sendChatMessage, getDashboardContextData } from "./openaiChatService";
 import { getOrCreateConversation, generateConversationId } from "./conversationStore";
 import { listDatasets, getDatasetSchema, executeDaxQuery, testConnection, getDashboardData, generateEmbedToken, clearPowerBITokenCache, extractAllVisualsData, storeVisualData, getStoredVisualData } from "./powerbiService";
+import { proxyToInsightFlow, proxySSEToInsightFlow } from "./insightflow";
 
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
@@ -3605,6 +3606,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // ── InsightFlow proxy routes ──────────────────────────────────────
+  app.post("/api/insightflow/query", isAuthenticated, (req, res) =>
+    proxyToInsightFlow(req, res, "/api/v1/query", { method: "POST" }));
+
+  app.get("/api/insightflow/query/:queryId/stream", isAuthenticated, (req, res) =>
+    proxySSEToInsightFlow(req, res, req.params.queryId));
+
+  app.get("/api/insightflow/insights", isAuthenticated, (req, res) =>
+    proxyToInsightFlow(req, res, "/api/v1/insights"));
+
+  app.post("/api/insightflow/feedback", isAuthenticated, (req, res) =>
+    proxyToInsightFlow(req, res, "/api/v1/feedback", { method: "POST" }));
+
+  app.get("/api/insightflow/dashboards", isAuthenticated, (req, res) =>
+    proxyToInsightFlow(req, res, "/api/v1/dashboards"));
+
+  app.post("/api/insightflow/dashboards", isAuthenticated, (req, res) =>
+    proxyToInsightFlow(req, res, "/api/v1/dashboards", { method: "POST" }));
+
+  app.get("/api/insightflow/reports", isAuthenticated, (req, res) =>
+    proxyToInsightFlow(req, res, "/api/v1/reports"));
+
+  app.post("/api/insightflow/reports", isAuthenticated, (req, res) =>
+    proxyToInsightFlow(req, res, "/api/v1/reports", { method: "POST" }));
+
+  app.get("/api/insightflow/observability", isAuthenticated, (req: any, res) => {
+    if (req.user?.role !== "team_lead") {
+      return res.status(403).json({ message: "Data leads only" });
+    }
+    return proxyToInsightFlow(req, res, "/api/v1/admin/observability");
+  });
+  // ── End InsightFlow proxy routes ──────────────────────────────────
 
   const httpServer = createServer(app);
   setupWebSocketServer(httpServer);
