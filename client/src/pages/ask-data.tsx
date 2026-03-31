@@ -31,8 +31,7 @@ export default function AskData() {
 
   const submitMutation = useMutation({
     mutationFn: async (q: string) => {
-      const r = await apiRequest("POST", "/api/insightflow/query", { question: q });
-      return r.json();
+      return apiRequest("POST", "/api/insightflow/query", { question: q });
     },
     onSuccess: (data: { query_id: string }) => {
       setStreaming(true);
