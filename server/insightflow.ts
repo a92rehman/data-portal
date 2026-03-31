@@ -73,7 +73,7 @@ export async function proxyToInsightFlow(
     method,
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   };
-  if (method !== "GET") {
+  if (method !== "GET" && method !== "HEAD") {
     fetchOptions.body = JSON.stringify(options.body ?? req.body);
   }
 
@@ -110,7 +110,11 @@ export async function proxySSEToInsightFlow(
       `${INSIGHTFLOW_URL}/api/v1/query/${queryId}/stream`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
-    if (!upstream.body) { res.end(); return; }
+    if (!upstream.ok || !upstream.body) {
+      res.write(`data: {"error":"upstream error","status":${upstream.status}}\n\n`);
+      res.end();
+      return;
+    }
 
     const reader = upstream.body.getReader();
     const decoder = new TextDecoder();
