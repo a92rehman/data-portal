@@ -8,23 +8,6 @@ import type { Request, Response } from "express";
 
 const INSIGHTFLOW_URL = process.env.INSIGHTFLOW_URL || "http://localhost:8080";
 
-// ── Health check with 30s cache ──────────────────────────────────────
-let _healthCache = { ok: true, checkedAt: 0 };
-const HEALTH_TTL_MS = 30_000;
-
-async function isHealthy(): Promise<boolean> {
-  const now = Date.now();
-  if (now - _healthCache.checkedAt < HEALTH_TTL_MS) return _healthCache.ok;
-  try {
-    const r = await fetch(`${INSIGHTFLOW_URL}/api/v1/health/live`,
-      { signal: AbortSignal.timeout(3000) });
-    _healthCache = { ok: r.ok, checkedAt: now };
-  } catch {
-    _healthCache = { ok: false, checkedAt: now };
-  }
-  return _healthCache.ok;
-}
-
 // ── HTTP proxy ────────────────────────────────────────────────────────
 
 export async function proxyToInsightFlow(
@@ -34,11 +17,6 @@ export async function proxyToInsightFlow(
 ): Promise<void> {
   const user = req.user as any;
   if (!user) { res.status(401).json({ message: "Unauthorized" }); return; }
-
-  if (!(await isHealthy())) {
-    res.status(503).json({ message: "Analytics service temporarily unavailable. Your existing dashboards are still saved." });
-    return;
-  }
 
   const method = options.method ?? req.method;
   const fetchOptions: RequestInit = {
