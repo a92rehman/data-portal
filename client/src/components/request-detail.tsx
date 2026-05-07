@@ -2926,7 +2926,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
               onClick={() => {
                 updateCreatedDateMutation.mutate(editedCreatedDate);
               }}
-              disabled={updateCreatedDateMutation.isPending || (request.createdAt && new Date(request.createdAt).toISOString().split('T')[0] === editedCreatedDate)}
+              disabled={updateCreatedDateMutation.isPending || !!(request.createdAt && new Date(request.createdAt).toISOString().split('T')[0] === editedCreatedDate)}
               data-testid="button-save-edit-created-date"
             >
               {updateCreatedDateMutation.isPending ? "Saving..." : "Save"}

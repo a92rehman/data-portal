@@ -302,7 +302,7 @@ export default function MetricDefinitions() {
     },
   });
 
-  const isTeamLead = user && (user as any)?.role === "team_lead";
+  const isTeamLead = !!(user && (user as any)?.role === "team_lead");
   const updateDetailMutation = useMutation({
     mutationFn: async ({ id, detailBody }: { id: string; detailBody: string }) => {
       return await apiRequest("PATCH", `/api/metrics/${id}`, { detailBody });
@@ -526,7 +526,7 @@ export default function MetricDefinitions() {
       <Header user={user as any} />
       
       <div>
-        {user && (
+        {!!user && (
           <Sidebar onNewRequest={() => {}} user={user as any} />
         )}
         

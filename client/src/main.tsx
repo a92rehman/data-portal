@@ -2,9 +2,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Suppress Vite HMR WebSocket errors in console
-// Even though HMR is disabled, Vite may still try to connect
-if (typeof window !== 'undefined') {
+// Suppress Vite HMR WebSocket errors in development only
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   const originalError = console.error;
   const originalWarn = console.warn;
   

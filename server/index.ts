@@ -84,106 +84,31 @@ app.use((req, res, next) => {
     console.error('[Migration] Failed to setup Data Lead:', error);
   }
 
-  // Run metric definitions migrations
+  // Run SQL migrations
   try {
-    console.log('[Migration] Running metric definitions migrations...');
+    console.log('[Migration] Running SQL migrations...');
     const { readFileSync } = await import('fs');
     const { join } = await import('path');
     const { sql } = await import('drizzle-orm');
     const { db } = await import('./db.js');
-    
-    // Run metric_types and metrics migration
-    const metricDefsSQL = readFileSync(
-      join(process.cwd(), 'migrations', 'create_metric_definitions.sql'),
-      'utf-8'
-    );
-    const cleanMetricDefsSQL = metricDefsSQL
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n')
-      .trim();
-    if (cleanMetricDefsSQL) {
-      await db.execute(sql.raw(cleanMetricDefsSQL));
-      console.log('[Migration] ✅ Metric definitions tables created/verified');
-    }
 
-    // Run metric_features migration
-    const metricFeaturesSQL = readFileSync(
-      join(process.cwd(), 'migrations', 'add_metric_features.sql'),
-      'utf-8'
-    );
-    const cleanMetricFeaturesSQL = metricFeaturesSQL
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n')
-      .trim();
-    if (cleanMetricFeaturesSQL) {
-      await db.execute(sql.raw(cleanMetricFeaturesSQL));
-      console.log('[Migration] ✅ Metric features table created/verified');
-    }
+    const runMigration = async (filename: string, label: string) => {
+      const raw = readFileSync(join(process.cwd(), 'migrations', filename), 'utf-8');
+      const cleaned = raw.split('\n').filter(line => !line.trim().startsWith('--')).join('\n').trim();
+      if (cleaned) {
+        await db.execute(sql.raw(cleaned));
+        console.log(`[Migration] ${label}`);
+      }
+    };
 
-    // Run metric_detail_body migration
-    const metricDetailSQL = readFileSync(
-      join(process.cwd(), 'migrations', 'add_metric_detail_body.sql'),
-      'utf-8'
-    );
-    const cleanMetricDetailSQL = metricDetailSQL
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n')
-      .trim();
-    if (cleanMetricDetailSQL) {
-      await db.execute(sql.raw(cleanMetricDetailSQL));
-      console.log('[Migration] ✅ Metric detail body column created/verified');
-    }
-
-    // Run task blocking_reason migration
-    const taskBlockingSQL = readFileSync(
-      join(process.cwd(), 'migrations', 'add_task_blocking_reason.sql'),
-      'utf-8'
-    );
-    const cleanTaskBlockingSQL = taskBlockingSQL
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n')
-      .trim();
-    if (cleanTaskBlockingSQL) {
-      await db.execute(sql.raw(cleanTaskBlockingSQL));
-      console.log('[Migration] ✅ Task blocking_reason column created/verified');
-    }
-
-    // Run notification task_id migration
-    const notificationTaskSQL = readFileSync(
-      join(process.cwd(), 'migrations', 'add_notification_task_id.sql'),
-      'utf-8'
-    );
-    const cleanNotificationTaskSQL = notificationTaskSQL
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n')
-      .trim();
-    if (cleanNotificationTaskSQL) {
-      await db.execute(sql.raw(cleanNotificationTaskSQL));
-      console.log('[Migration] ✅ Notification task_id column created/verified');
-    }
-
-    // Run powerbi_visual_data migration
-    const powerbiVisualSQL = readFileSync(
-      join(process.cwd(), 'migrations', 'create_powerbi_visual_data.sql'),
-      'utf-8'
-    );
-    const cleanPowerbiVisualSQL = powerbiVisualSQL
-      .split('\n')
-      .filter(line => !line.trim().startsWith('--'))
-      .join('\n')
-      .trim();
-    if (cleanPowerbiVisualSQL) {
-      await db.execute(sql.raw(cleanPowerbiVisualSQL));
-      console.log('[Migration] ✅ Power BI visual data table created/verified');
-    }
+    await runMigration('create_metric_definitions.sql', 'Metric definitions tables created/verified');
+    await runMigration('add_metric_features.sql', 'Metric features table created/verified');
+    await runMigration('add_metric_detail_body.sql', 'Metric detail body column created/verified');
+    await runMigration('add_task_blocking_reason.sql', 'Task blocking_reason column created/verified');
+    await runMigration('add_notification_task_id.sql', 'Notification task_id column created/verified');
+    await runMigration('create_powerbi_visual_data.sql', 'Power BI visual data table created/verified');
   } catch (error: any) {
-    console.error('[Migration] Failed to setup metric definitions:', error);
-    // Don't throw - allow server to start even if migrations fail
+    console.error('[Migration] Failed to run SQL migrations:', error);
   }
 
   // Seed metric definitions if tables are empty
@@ -200,17 +125,17 @@ app.use((req, res, next) => {
       
       // Find a team lead user to use as creator
       const teamLeads = await db.select().from(users).where(eq(users.role, 'team_lead')).limit(1);
-      let creatorId: string;
-      
+      let creatorId: string | undefined;
+
       if (teamLeads.length > 0) {
         creatorId = teamLeads[0].id;
       } else {
         const allUsers = await db.select().from(users).limit(1);
         if (allUsers.length === 0) {
-          console.log('[Migration] ⚠️  No users found. Skipping seed (will seed when user exists)');
+          console.log('[Migration] No users found. Skipping seed (will seed when user exists)');
         } else {
           creatorId = allUsers[0].id;
-          console.log('[Migration] ⚠️  No team lead found. Using first user as creator');
+          console.log('[Migration] No team lead found. Using first user as creator');
         }
       }
 
@@ -354,19 +279,6 @@ app.use((req, res, next) => {
     console.log('[POWERBI REFRESH] No reports configured for automatic refresh. Set POWERBI_REPORTS_TO_REFRESH env var to enable.');
   }
 
-  // Ensure API routes are registered and matched BEFORE Vite middleware
-  // The Power BI embed token route is already registered above (before registerRoutes)
-  // All other API routes are registered in registerRoutes()
-  // Now set up Vite middleware - it will skip /api/* routes
-  
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
-
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
@@ -375,6 +287,16 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+
+  // Error handler MUST be registered after all routes and Vite middleware
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+    console.error(`[ERROR] ${status}: ${message}`, err.stack);
+    if (!res.headersSent) {
+      res.status(status).json({ message });
+    }
+  });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.

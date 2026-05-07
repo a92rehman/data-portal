@@ -3,4 +3,17 @@ dist
 .DS_Store
 server/public
 vite.config.ts.*
-*.tar.gzserver/bridge_private.pem
+*.tar.gz
+server/bridge_private.pem
+
+# Environment
+.env
+.env.*
+
+# OS / IDE
+*.stackdump
+.idea/
+.vscode/
+
+# Build artifacts
+*.tsbuildinfo

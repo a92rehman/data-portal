@@ -289,7 +289,7 @@ const ChartLegendContent = React.forwardRef<
           const key = `${nameKey || item.dataKey || "value"}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
           // Use color from payload, config, or fallback to a default
-          const legendColor = item.color || itemConfig?.color || item.payload?.fill || '#888'
+          const legendColor = item.color || itemConfig?.color || (item.payload as any)?.fill || '#888'
 
           return (
             <div

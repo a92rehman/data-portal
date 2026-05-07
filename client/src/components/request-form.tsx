@@ -33,8 +33,9 @@ interface RequestFormProps {
 export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
   const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<string>("");
-  const { user } = useAuth();
-  
+  const { user: rawUser } = useAuth();
+  const user = rawUser as User | null | undefined;
+
   const { data: analysts } = useQuery<User[]>({
     queryKey: ["/api/users/analysts"],
     enabled: user?.role === "team_lead",
@@ -145,7 +146,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Department/Team <span className="text-destructive">*</span></FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-department">
+                  <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-form-department">
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select department..." />
@@ -194,7 +195,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Assign to Analyst (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-assignee">
+                    <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-form-assignee">
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select analyst..." />
@@ -231,7 +232,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                       field.onChange(value);
                       setSelectedType(value);
                     }} 
-                    value={field.value} 
+                    value={field.value ?? undefined}
                     data-testid="select-form-type"
                   >
                     <FormControl>
@@ -260,10 +261,11 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 <FormItem>
                   <FormLabel>Primary Question <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="What is the primary question you are trying to answer through this request? Be specific about the metric and time window..."
                       rows={3}
                       {...field}
+                      value={field.value ?? ""}
                       data-testid="textarea-form-primary-question"
                     />
                   </FormControl>
@@ -279,10 +281,11 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 <FormItem>
                   <FormLabel>Business Problem or Goal <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Describe the program or operational problem this request solves, and the outcome you're aiming for..."
                       rows={3}
                       {...field}
+                      value={field.value ?? ""}
                       data-testid="textarea-form-business-problem"
                     />
                   </FormControl>
@@ -298,10 +301,11 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 <FormItem>
                   <FormLabel>Decision or Action <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="What specific decision or action will you take once you have this data/analysis/dashboard?"
                       rows={3}
                       {...field}
+                      value={field.value ?? ""}
                       data-testid="textarea-form-decision-action"
                     />
                   </FormControl>
@@ -317,7 +321,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority Level <span className="text-destructive">*</span></FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-priority">
+                    <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-form-priority">
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority..." />
@@ -341,7 +345,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Impact <span className="text-destructive">*</span></FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-impact">
+                    <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-form-impact">
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select impact..." />
@@ -371,7 +375,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>At which frequency will you see this data? <span className="text-destructive">*</span></FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-frequency">
+                  <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-form-frequency">
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select frequency..." />
@@ -399,10 +403,11 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                     <FormItem>
                       <FormLabel>For how long?</FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           type="number"
                           placeholder="e.g., 3"
                           {...field}
+                          value={field.value ?? ""}
                           onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                           data-testid="input-form-frequency-duration"
                         />
@@ -418,7 +423,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-frequency-unit">
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-form-frequency-unit">
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select unit..." />
@@ -451,9 +456,10 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                   <FormItem>
                     <FormLabel>Who are the primary audience/users?</FormLabel>
                     <FormControl>
-                      <Input 
+                      <Input
                         placeholder="e.g., PMs, Coaches, PAFM, RMs, AEOs, Principals..."
                         {...field}
+                        value={field.value ?? ""}
                         data-testid="input-form-dashboard-audience"
                       />
                     </FormControl>
@@ -468,7 +474,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Intended Refresh Frequency</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} data-testid="select-form-dashboard-refresh">
+                    <Select onValueChange={field.onChange} value={field.value ?? undefined} data-testid="select-form-dashboard-refresh">
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select refresh frequency..." />
@@ -495,10 +501,11 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                   <FormItem>
                     <FormLabel>Key Metrics/KPIs Needed</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Please list the specific metrics. Example: Daily Active Users, Course Completion Rate, etc."
                         rows={3}
                         {...field}
+                        value={field.value ?? ""}
                         data-testid="textarea-form-key-metrics"
                       />
                     </FormControl>
@@ -518,6 +525,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                         placeholder="How do you want to slice the data? Example: By date range, by geographic region, by school, by user type..."
                         rows={3}
                         {...field}
+                        value={field.value ?? ""}
                         data-testid="textarea-form-filters"
                       />
                     </FormControl>
@@ -537,6 +545,7 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                         placeholder="Please provide links or descriptions of similar reports/dashboards..."
                         rows={2}
                         {...field}
+                        value={field.value ?? ""}
                         data-testid="textarea-form-mockups"
                       />
                     </FormControl>
@@ -556,10 +565,11 @@ export default function RequestForm({ onClose, onSuccess }: RequestFormProps) {
                   <FormItem>
                     <FormLabel>Action Plan</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="How will you and your team act on the insights from this analysis/dashboard?"
                         rows={3}
                         {...field}
+                        value={field.value ?? ""}
                         data-testid="textarea-form-action-plan"
                       />
                     </FormControl>

@@ -306,7 +306,7 @@ export async function getDashboardData(reportId: string): Promise<any> {
             const columnsToAggregate = numericColumns.slice(0, 5);
             
             // Build aggregation query for selected numeric columns
-            const aggregations = columnsToAggregate.map(col => {
+            const aggregations = columnsToAggregate.map((col: any) => {
               const colName = col.name;
               // Escape column name if it contains special characters
               const safeColName = colName.replace(/[\[\]']/g, '');
@@ -1118,7 +1118,7 @@ export async function extractAllVisualsData(reportId: string, workspaceId?: stri
                 visuals: [{
                   visualName: 'Dataset Overview',
                   visualType: 'card',
-                  pageName: defaultPageName,
+                  pageName: 'Overview',
                   data: simpleResult.rows,
                   metadata: {
                     fields: Object.keys(simpleResult.rows[0] || {}),
@@ -1506,9 +1506,9 @@ export async function getStoredVisualData(reportId: string): Promise<StoredVisua
         
         const storedData: StoredVisualData = {
           reportId: reportId,
-          timestamp: result.rows[0]?.extracted_at || new Date().toISOString(),
+          timestamp: String(result.rows[0]?.extracted_at || new Date().toISOString()),
           visuals,
-          expiresAt: result.rows[0]?.expires_at || new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+          expiresAt: String(result.rows[0]?.expires_at || new Date(Date.now() + CACHE_TTL_MS).toISOString()),
         };
         
         // Cache it for future use

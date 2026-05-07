@@ -1401,7 +1401,7 @@ function TaskDetailDialog({
         requestId: requestId || null
       });
     },
-    onSuccess: async (updatedTask) => {
+    onSuccess: async (updatedTask, linkedRequestId) => {
       // Refetch the full task with all relations
       try {
         const response = await fetch(`/api/tasks/${task.id}`, {
@@ -1418,14 +1418,14 @@ function TaskDetailDialog({
           onSelectTask(updatedTask);
         }
       }
-      
+
       await queryClient.invalidateQueries({ queryKey: ['/api/tasks'] });
       await queryClient.refetchQueries({ queryKey: ['/api/tasks'] });
       queryClient.invalidateQueries({ queryKey: ['/api/tasks', task.id] });
-      
-      toast({ 
-        title: 'Success', 
-        description: requestId ? 'Task linked to request successfully' : 'Task unlinked from request successfully' 
+
+      toast({
+        title: 'Success',
+        description: linkedRequestId ? 'Task linked to request successfully' : 'Task unlinked from request successfully'
       });
       onUpdate();
     },
