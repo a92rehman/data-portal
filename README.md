@@ -1,4 +1,4 @@
-# Taleemabad Data Portal
+# Data Portal
 
 A comprehensive data request management system that streamlines data workflows for educational organizations. Built with modern web technologies, it enables team leads to submit data requests and data analysts to efficiently manage, review, and complete them.
 
