@@ -19,15 +19,6 @@ import { proxyToInsightFlow, proxySSEToInsightFlow } from "./insightflow";
 // Test emails for testing purposes
 const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
 
-// Helper function to check if an email is allowed for requesters
-function isAllowedRequesterEmail(email: string): boolean {
-  const lowerEmail = email.toLowerCase();
-  const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
-  const hasValidDomain = allowedDomains.some(domain => lowerEmail.endsWith(domain));
-  const isTestEmail = TEST_EMAILS.includes(lowerEmail);
-  return hasValidDomain || isTestEmail;
-}
-
 // Middleware to check if user is authenticated
 function isAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) {
@@ -158,22 +149,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SECURITY: Protect primary data lead - role cannot be changed
-      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      const PRIMARY_DATA_LEAD_EMAIL = 'ar92info@gmail.com';
       if (targetUser.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
         return res.status(403).json({ 
           message: "Primary Data Lead role cannot be changed" 
         });
-      }
-
-      // Email validation: Requesters can only use company email or test emails
-      if (role === 'requester') {
-        const email = targetUser.email || '';
-        
-        if (!isAllowedRequesterEmail(email)) {
-          return res.status(403).json({ 
-            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
-          });
-        }
       }
 
       const updatedUser = await storage.updateUserRole(req.params.userId, role, department);
@@ -204,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SECURITY: Protect primary data lead - cannot be edited
-      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      const PRIMARY_DATA_LEAD_EMAIL = 'ar92info@gmail.com';
       if (targetUser.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
         return res.status(403).json({ 
           message: "Primary Data Lead information cannot be modified" 
@@ -238,17 +218,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid role" });
       }
 
-      // Email validation: Requesters must use company email or test emails
-      const finalEmail = email || targetUser.email;
-      const finalRole = role || targetUser.role;
-      if (finalRole === 'requester' && finalEmail) {
-        if (!isAllowedRequesterEmail(finalEmail)) {
-          return res.status(403).json({ 
-            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
-          });
-        }
-      }
-
       // Update user with all provided fields
       const updatedUser = await storage.upsertUser({
         ...targetUser,
@@ -280,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // SECURITY: Protect primary data lead - cannot be removed
       const targetUser = await storage.getUser(req.params.userId);
-      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      const PRIMARY_DATA_LEAD_EMAIL = 'ar92info@gmail.com';
       if (targetUser?.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
         return res.status(403).json({ 
           message: "Primary Data Lead cannot be removed" 
@@ -344,20 +313,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SECURITY: Protect primary data lead - cannot invite or change via this endpoint
-      const PRIMARY_DATA_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      const PRIMARY_DATA_LEAD_EMAIL = 'ar92info@gmail.com';
       if (email.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL) {
         return res.status(403).json({ 
           message: "Primary Data Lead role cannot be changed" 
         });
-      }
-
-      // Email validation: Requesters must use company email or test emails
-      if (role === 'requester') {
-        if (!isAllowedRequesterEmail(email)) {
-          return res.status(403).json({ 
-            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
-          });
-        }
       }
 
       // Create or update user with the invited role
@@ -468,25 +428,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ success: true });
       }
 
-      // SECURITY: Bootstrap Data Lead - only abdur.rehman@taleemabad.com can self-select team_lead
+      // SECURITY: Bootstrap Data Lead - only ar92info@gmail.com can self-select team_lead
       // Others can only become team_lead through team management
       if (role === 'team_lead') {
-        const isBootstrapEmail = user.email?.toLowerCase() === 'abdur.rehman@taleemabad.com';
+        const isBootstrapEmail = user.email?.toLowerCase() === 'ar92info@gmail.com';
         
         if (!isBootstrapEmail) {
           return res.status(403).json({ 
             message: "Team Lead role can only be assigned by an existing Data Lead. Please contact support or sign in as Data Requester." 
-          });
-        }
-      }
-
-      // Email validation: Requesters can only use company email or test emails
-      if (role === 'requester') {
-        const email = user.email || '';
-        
-        if (!isAllowedRequesterEmail(email)) {
-          return res.status(403).json({ 
-            message: "Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)" 
           });
         }
       }
@@ -653,7 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email is required" });
       }
 
-      const PRIMARY_LEAD_EMAIL = 'abdur.rehman@taleemabad.com';
+      const PRIMARY_LEAD_EMAIL = 'ar92info@gmail.com';
       const isPrimaryLeadRequest = email.trim().toLowerCase() === PRIMARY_LEAD_EMAIL.toLowerCase();
       
       console.log(`[forgot-password] Processing request for: ${email}`);
@@ -1283,7 +1232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(req.user.id);
       
       // Only primary Data Lead can delete requests
-      const isPrimaryDataLead = user?.email === 'abdur.rehman@taleemabad.com' && user?.role === 'team_lead';
+      const isPrimaryDataLead = user?.email === 'ar92info@gmail.com' && user?.role === 'team_lead';
       
       if (!user || !isPrimaryDataLead) {
         return res.status(403).json({ message: "Only the primary Data Lead can delete requests" });

@@ -1143,7 +1143,7 @@ export default function RequestWorkspace() {
                               <FormControl>
                                 <Input 
                                   type="email"
-                                  placeholder="user@taleemabad.com"
+                                  placeholder="user@example.com"
                                   {...field}
                                   value={field.value || ""}
                                   data-testid="input-bq-email"

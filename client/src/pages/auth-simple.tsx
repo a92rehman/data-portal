@@ -76,22 +76,7 @@ export default function AuthSimple() {
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate company email or test emails for requesters
     if (selectedRole === "requester") {
-      const emailLower = email.toLowerCase();
-      const allowedDomains = ['@taleemabad.com', '@niete.edu.pk', '@niete.pk'];
-      const hasValidDomain = allowedDomains.some(domain => emailLower.endsWith(domain));
-      const isTestEmail = TEST_EMAILS.includes(emailLower);
-      
-      if (!hasValidDomain && !isTestEmail) {
-        toast({
-          title: "Invalid Email",
-          description: "Data Requesters must use a company email address (@taleemabad.com, @niete.edu.pk, or @niete.pk)",
-          variant: "destructive",
-        });
-        return;
-      }
-
       if (!department) {
         toast({
           title: "Department Required",
@@ -200,20 +185,17 @@ export default function AuthSimple() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Company Email</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@taleemabad.com"
+                  placeholder="you@example.com"
                   required
                   autoComplete="email"
                   data-testid="input-email"
                 />
-                <p className="text-xs text-gray-500">
-                  Must be @taleemabad.com, @niete.edu.pk, or @niete.pk
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -333,7 +315,7 @@ export default function AuthSimple() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@taleemabad.com"
+                  placeholder="you@example.com"
                   required
                   autoComplete="email"
                   data-testid="input-email"

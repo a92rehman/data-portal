@@ -28,18 +28,6 @@ export async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-// Test emails for testing purposes
-const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
-
-// Validate email domain for requesters
-function isValidRequesterEmail(email: string): boolean {
-  const emailLower = email.toLowerCase();
-  const allowedDomains = ['@taleemabad.com', '@niete.edu.pk', '@niete.pk'];
-  const hasValidDomain = allowedDomains.some(domain => emailLower.endsWith(domain));
-  const isTestEmail = TEST_EMAILS.includes(emailLower);
-  return hasValidDomain || isTestEmail;
-}
-
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
@@ -90,20 +78,13 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Register endpoint - only for requesters with valid company emails
+  // Register endpoint
   app.post("/api/register", async (req, res, next) => {
     try {
       const { email, password, name, firstName, lastName, role, department } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
-      }
-
-      // Validate email domain for requesters
-      if (!isValidRequesterEmail(email)) {
-        return res.status(403).json({ 
-          message: "Only company emails (@taleemabad.com, @niete.edu.pk, @niete.pk) can register as requesters" 
-        });
       }
 
       // Check if user already exists

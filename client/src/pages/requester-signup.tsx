@@ -32,21 +32,6 @@ export default function RequesterSignup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate company email or test emails
-    const email = user?.email?.toLowerCase() || '';
-    const allowedDomains = ['@taleemabad.com', '@niete.edu.pk'];
-    const hasValidDomain = allowedDomains.some(domain => email.endsWith(domain));
-    const isTestEmail = TEST_EMAILS.includes(email);
-    
-    if (!hasValidDomain && !isTestEmail) {
-      toast({
-        title: "Invalid Email",
-        description: "Data Requesters must use a company email address (@taleemabad.com or @niete.edu.pk)",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!department) {
       toast({
         title: "Department Required",
@@ -179,13 +164,6 @@ export default function RequesterSignup() {
                     data-testid="input-email"
                   />
                 </div>
-                {user?.email && (
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {user.email.endsWith('@taleemabad.com') || user.email.endsWith('@niete.edu.pk') 
-                      ? '✓ Valid company email' 
-                      : '⚠ Must be a company email (@taleemabad.com or @niete.edu.pk)'}
-                  </p>
-                )}
               </div>
             </div>
 

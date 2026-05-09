@@ -24,14 +24,7 @@ const TEST_EMAILS = ["ar09info@gmail.com", "ar92info@gmail.com"];
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email").refine(
-    (email) => 
-      email.endsWith("@taleemabad.com") || 
-      email.endsWith("@niete.edu.pk") || 
-      email.endsWith("@niete.pk") ||
-      TEST_EMAILS.includes(email.toLowerCase()),
-    "Must use company email (@taleemabad.com, @niete.edu.pk, or @niete.pk)"
-  ),
+  email: z.string().email("Please enter a valid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
   department: z.string().optional(),
@@ -128,7 +121,7 @@ export default function Auth() {
             <AnimatedLogo size="lg" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
-            Taleemabad DataHub
+            DataHub
           </CardTitle>
           <div className="flex items-center justify-center gap-2 text-purple-600 dark:text-purple-400 mt-2">
             <Sparkles className="w-4 h-4" />
@@ -203,7 +196,7 @@ export default function Auth() {
                           name={field.name}
                           ref={field.ref}
                           type="email"
-                          placeholder="you@taleemabad.com"
+                          placeholder="you@example.com"
                           autoComplete="email"
                           data-testid="input-email"
                         />
@@ -311,7 +304,7 @@ export default function Auth() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company Email</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
                           value={field.value || ""}
@@ -320,7 +313,7 @@ export default function Auth() {
                           name={field.name}
                           ref={field.ref}
                           type="email"
-                          placeholder="you@taleemabad.com"
+                          placeholder="you@example.com"
                           autoComplete="email"
                           data-testid="input-email"
                         />

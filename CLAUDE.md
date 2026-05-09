@@ -1,8 +1,8 @@
-# Taleemabad Data Portal
+# Data Portal
 
 ## What This Is
 
-Internal data request management system for Taleemabad. Team leads submit data requests, analysts manage and complete them. Includes Power BI dashboard embedding, AI chat (InsightFlow), and metric definitions.
+Internal data request management system. Team leads submit data requests, analysts manage and complete them. Includes Power BI dashboard embedding, AI chat (InsightFlow), and metric definitions.
 
 ## Quick Start
 
@@ -95,4 +95,3 @@ Optional:
 - Vite HMR is disabled (`hmr: false`) because it interferes with Power BI iframe rendering
 - The `data_analyst` role in the enum is legacy; `analyst` is the current role
 - `server/index.ts` runs raw SQL migrations at startup (not Drizzle migrations)
-- Email domain validation: only `@taleemabad.com` and `@niete.edu.pk` can self-register as requesters

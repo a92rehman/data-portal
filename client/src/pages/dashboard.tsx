@@ -63,9 +63,6 @@ export default function Dashboard() {
     if (!isLoading && isAuthenticated && user && !(user as any)?.role) {
       const selectedRole = localStorage.getItem("selected_role");
       const email = (user as any)?.email || "";
-      const emailLower = email.toLowerCase();
-      const isCompanyEmail = email.endsWith("@taleemabad.com") || email.endsWith("@niete.edu.pk");
-      const isTestEmail = TEST_EMAILS.includes(emailLower);
       
       // If they have a selected role from landing page, process it
       if (selectedRole) {
@@ -89,22 +86,9 @@ export default function Dashboard() {
         applyRoleSelection();
       } else {
         // No selected_role in localStorage (cleared, new device, etc.)
-        // Automatically redirect based on email domain or test email
-        if (isCompanyEmail || isTestEmail) {
-          // Company email or test email → likely a requester, send to signup
-          localStorage.setItem("selected_role", "requester");
-          setLocation("/requester-signup");
-        } else {
-          // Non-company email → must be added by admin
-          toast({
-            title: "Access Restricted",
-            description: "Please contact your Data Lead to get access. Only team leads with company emails can self-register.",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = "/api/logout";
-          }, 3000);
-        }
+        // Default to requester signup
+        localStorage.setItem("selected_role", "requester");
+        setLocation("/requester-signup");
       }
     } else if (isAuthenticated && user && (user as any)?.role) {
       // User already has a role, clear any lingering selected_role from localStorage
@@ -801,7 +785,7 @@ export default function Dashboard() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            {(user as any)?.role === "team_lead" && (user as any)?.email === "abdur.rehman@taleemabad.com" && (
+                            {(user as any)?.role === "team_lead" && (user as any)?.email === "ar92info@gmail.com" && (
                               <Button
                                 variant="ghost"
                                 size="sm"

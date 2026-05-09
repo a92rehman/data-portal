@@ -2,7 +2,7 @@
 
 ## ✅ Implementation Complete!
 
-Your Power BI dashboard has been successfully integrated into the Taleemabad Data Portal with AI-powered insights!
+Your Power BI dashboard has been successfully integrated into the Data Portal with AI-powered insights!
 
 ---
 

@@ -23,7 +23,7 @@ export default function Landing() {
             <AnimatedLogo size="xl" />
           </div>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent leading-tight">
-            Taleemabad DataHub
+            DataHub
           </h1>
           <p className="text-xl sm:text-2xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Streamline your data requests and collaborate seamlessly with your team

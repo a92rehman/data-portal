@@ -117,7 +117,7 @@ export default function AnimatedLogo({
           transition={{ delay: 0.5 }}
         >
           <h1 className="text-lg font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
-            Taleemabad DataHub
+            DataHub
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Request Management System

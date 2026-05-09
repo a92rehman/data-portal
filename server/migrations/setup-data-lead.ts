@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 const scryptAsync = promisify(scrypt);
 
 export async function setupDataLead() {
-  const email = 'abdur.rehman@taleemabad.com';
+  const email = 'ar92info@gmail.com';
   const password = 'DataHub2024!';
 
   console.log('[Migration] Checking if Data Lead exists...');

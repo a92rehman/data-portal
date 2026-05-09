@@ -313,7 +313,7 @@ export default function Team() {
   };
 
   // Primary Data Lead - cannot have role changed
-  const PRIMARY_DATA_LEAD_EMAIL = "abdur.rehman@taleemabad.com";
+  const PRIMARY_DATA_LEAD_EMAIL = "ar92info@gmail.com";
   
   const isPrimaryDataLead = (member: User) => {
     return member.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL;
@@ -792,7 +792,7 @@ export default function Team() {
                 type="email"
                 value={newMemberEmail}
                 onChange={(e) => setNewMemberEmail(e.target.value)}
-                placeholder="email@taleemabad.com"
+                placeholder="email@example.com"
                 data-testid="input-member-email"
               />
             </div>

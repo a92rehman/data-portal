@@ -6,7 +6,7 @@ apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BR
 
 // Use environment variable for sender email, fallback to default
 // IMPORTANT: This email must be verified in your Brevo account
-const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'noreply@taleemabad.com';
+const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'noreply@datahub.app';
 const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'DataHub Data Requests';
 
 interface AssignmentEmailData {

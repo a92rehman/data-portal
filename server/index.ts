@@ -143,7 +143,7 @@ app.use((req, res, next) => {
         // Metric Type 1: Program Delivery & Implementation Metrics
         const programDeliveryType = await storage.createMetricType({
           name: "Program Delivery & Implementation Metrics",
-          whatAreThey: "These are process-oriented metrics that track the on-the-ground execution of the Taleemabad model. They are leading indicators of potential impact.",
+          whatAreThey: "These are process-oriented metrics that track the on-the-ground execution of the program model. They are leading indicators of potential impact.",
           focus: "Quantity, Quality, and Consistency of service delivery.",
           whyTheyMatter: "They ensure the program is being implemented with fidelity, which is a prerequisite for achieving outcomes.",
           keyQuestion: "Are we delivering our program to schools and teachers as planned and with quality?",

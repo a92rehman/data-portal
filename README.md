@@ -90,8 +90,8 @@ REPLIT_SIDECAR_ENDPOINT=your_replit_sidecar_endpoint
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Abdur92Rehman/Taleemabad_Data_Portal.git
-   cd Taleemabad_Data_Portal
+   git clone https://github.com/a92rehman/data-portal.git
+   cd data-portal
    ```
 
 2. **Install dependencies**
@@ -227,13 +227,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👥 Team
 
 - **Abdur Rehman** - Lead Developer
-- **Taleemabad** - Educational Technology Organization
 
 ## 📞 Support
 
 For support and questions:
-- Email: abdur.rehman@taleemabad.com
-- GitHub Issues: [Create an issue](https://github.com/Abdur92Rehman/Taleemabad_Data_Portal/issues)
+- Email: ar92info@gmail.com
+- GitHub Issues: [Create an issue](https://github.com/a92rehman/data-portal/issues)
 
 ---
 

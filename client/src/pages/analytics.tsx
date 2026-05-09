@@ -25,7 +25,7 @@ export default function Analytics() {
   const [activeTab, setActiveTab] = useState("requests");
   const [selectedRequest, setSelectedRequest] = useState<DataRequestWithDetails | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
-  const PRIMARY_DATA_LEAD_EMAIL = "abdur.rehman@taleemabad.com";
+  const PRIMARY_DATA_LEAD_EMAIL = "ar92info@gmail.com";
   const userId = (user as any)?.id;
   const isPrimaryDataLead = (user as any)?.email?.toLowerCase() === PRIMARY_DATA_LEAD_EMAIL;
   const storageKey = userId ? `analytics_workload_include_data_leads_${userId}` : "analytics_workload_include_data_leads";

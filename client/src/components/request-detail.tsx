@@ -805,7 +805,7 @@ export default function RequestDetail({ request, onClose, onUpdate }: RequestDet
   const isTeamLead = (user as any)?.role === "team_lead";
   const isRequester = (user as any)?.role === "requester";
   const isAssignedToMe = request.assignedToId === (user as any)?.id;
-  const isPrimaryDataLead = (user as any)?.email === "abdur.rehman@taleemabad.com" && (user as any)?.role === "team_lead";
+  const isPrimaryDataLead = (user as any)?.email === "ar92info@gmail.com" && (user as any)?.role === "team_lead";
 
   const [deliveryType, setDeliveryType] = useState("attachment");
   const [deliveryLink, setDeliveryLink] = useState("");

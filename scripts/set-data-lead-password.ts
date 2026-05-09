@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 const scryptAsync = promisify(scrypt);
 
 async function setDataLeadPassword() {
-  const email = 'abdur.rehman@taleemabad.com';
+  const email = 'ar92info@gmail.com';
   const password = 'DataHub2024!';
 
   console.log('Setting password for Data Lead:', email);

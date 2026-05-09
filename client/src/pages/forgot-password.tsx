@@ -204,7 +204,7 @@ export default function ForgotPassword() {
                           <Input
                             {...field}
                             type="email"
-                            placeholder="your.email@taleemabad.com"
+                            placeholder="your.email@example.com"
                             className="h-12 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:border-purple-500 dark:focus:border-purple-400 transition-all duration-200"
                             disabled={isLoading}
                             data-testid="input-email"
